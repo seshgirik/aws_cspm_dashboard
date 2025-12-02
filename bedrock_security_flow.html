@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Bedrock Access Network Diagram</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #232F3E;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .header .subtitle {
+            color: #546E7A;
+            font-size: 14px;
+        }
+
+        .network-diagram {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .flow-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            padding: 30px;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .flow-column.laptop-flow {
+            background: linear-gradient(180deg, #E8EAF6 0%, #C5CAE9 100%);
+            border: 3px solid #5C6BC0;
+        }
+
+        .flow-column.ec2-flow {
+            background: linear-gradient(180deg, #FFF3E0 0%, #FFE0B2 100%);
+            border: 3px solid #FF9900;
+        }
+
+        .flow-header {
+            text-align: center;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 18px;
+            width: 100%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .flow-header.laptop-header {
+            background: #5C6BC0;
+            color: white;
+        }
+
+        .flow-header.ec2-header {
+            background: #FF9900;
+            color: white;
+        }
+
+        /* Entity boxes */
+        .entity {
+            background: white;
+            border: 3px solid;
+            border-radius: 10px;
+            padding: 20px 30px;
+            text-align: center;
+            width: 100%;
+            max-width: 280px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            position: relative;
+            z-index: 10;
+        }
+
+        .entity-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .entity-title {
+            font-weight: bold;
+            font-size: 16px;
+            color: #232F3E;
+            margin-bottom: 8px;
+        }
+
+        .entity-subtitle {
+            font-size: 13px;
+            color: #546E7A;
+            line-height: 1.5;
+        }
+
+        .entity.laptop {
+            border-color: #5C6BC0;
+        }
+
+        .entity.internet {
+            border-color: #90CAF9;
+            background: #E3F2FD;
+        }
+
+        .entity.ec2 {
+            border-color: #FF9900;
+        }
+
+        .entity.security-group {
+            border-color: #DD344C;
+            border-style: dashed;
+        }
+
+        .entity.vpc-endpoint {
+            border-color: #527FFF;
+        }
+
+        .entity.iam {
+            border-color: #759C3E;
+        }
+
+        .entity.bedrock {
+            border-color: #9146FF;
+            background: linear-gradient(135deg, #f8f4ff 0%, #ede7ff 100%);
+        }
+
+        .vpc-box {
+            border: 4px dashed #7AA116;
+            border-radius: 12px;
+            padding: 25px;
+            background: rgba(240, 248, 240, 0.8);
+            position: relative;
+            width: 100%;
+        }
+
+        .vpc-label {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #7AA116;
+            color: white;
+            padding: 6px 15px;
+            font-weight: bold;
+            font-size: 13px;
+            border-radius: 5px;
+        }
+
+        .arrow-down {
+            width: 4px;
+            height: 40px;
+            background: #232F3E;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .arrow-down::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 15px solid #232F3E;
+        }
+
+        .laptop-flow .arrow-down {
+            background: #5C6BC0;
+        }
+
+        .laptop-flow .arrow-down::after {
+            border-top-color: #5C6BC0;
+        }
+
+        .ec2-flow .arrow-down {
+            background: #FF9900;
+        }
+
+        .ec2-flow .arrow-down::after {
+            border-top-color: #FF9900;
+        }
+
+        /* Legend */
+        .legend {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #232F3E;
+        }
+
+        .legend-title {
+            font-weight: bold;
+            color: #232F3E;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 12px;
+        }
+
+        .legend-item {
+            font-size: 13px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .legend-item strong {
+            color: #232F3E;
+        }
+
+        .check-badge {
+            background: #FFF3CD;
+            border: 2px solid #FFC107;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #856404;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+            margin: 10px 0;
+        }
+
+        .check-badge.pass {
+            background: #E8F5E9;
+            border-color: #4CAF50;
+            color: #2E7D32;
+        }
+
+        .check-badge.skip {
+            background: #FFEBEE;
+            border-color: #F44336;
+            color: #C62828;
+        }
+
+        .step-number {
+            background: #232F3E;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            margin: 0 auto 15px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        }
+
+        .laptop-flow .step-number {
+            background: #5C6BC0;
+        }
+
+        .ec2-flow .step-number {
+            background: #FF9900;
+        }
+
+        @media (max-width: 1000px) {
+            .network-diagram {
+                grid-template-columns: 1fr;
+            }
+            
+            .flow-column {
+                margin-bottom: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AWS Bedrock Access - Network Architecture</h1>
+            <p class="subtitle">Security Flow Diagram</p>
+        </div>
+
+        <div class="network-diagram">
+            <!-- LEFT COLUMN: Laptop Path -->
+            <div class="flow-column laptop-flow">
+                <div class="flow-header laptop-header">
+                    🔵 PATH A: Laptop → Public Internet
+                </div>
+
+                <!-- Step 1 -->
+                <div class="step-number">1</div>
+                <div class="entity laptop">
+                    <div class="entity-icon">💻</div>
+                    <div class="entity-title">Laptop User</div>
+                    <div class="entity-subtitle">AWS Credentials via STS</div>
+                </div>
+
+                <div class="arrow-down"></div>
+
+                <!-- Step 2 -->
+                <div class="step-number">2</div>
+                <div class="entity internet">
+                    <div class="entity-icon">🌐</div>
+                    <div class="entity-title">Public Internet</div>
+                    <div class="entity-subtitle">AWS Public API Endpoint</div>
+                </div>
+                <div class="check-badge">✓ IAM Policy Check ONLY</div>
+                <div class="check-badge skip">✗ Security Group: NOT APPLIED</div>
+                <div class="check-badge skip">✗ VPC Endpoint Policy: NOT EVALUATED</div>
+
+                <div class="arrow-down"></div>
+
+                <!-- Step 3 -->
+                <div class="step-number">3</div>
+                <div class="entity bedrock">
+                    <div class="entity-icon">🤖</div>
+                    <div class="entity-title">Amazon Bedrock</div>
+                    <div class="entity-subtitle">AI Model Service</div>
+                </div>
+                <div class="check-badge pass">✅ Request Succeeds (IAM allows)</div>
+            </div>
+
+            <!-- RIGHT COLUMN: EC2 Path -->
+            <div class="flow-column ec2-flow">
+                <div class="flow-header ec2-header">
+                    🟠 PATH B: EC2 → VPC Endpoint
+                </div>
+
+                <!-- VPC Box containing EC2 entities -->
+                <div class="vpc-box">
+                    <div class="vpc-label">VPC</div>
+
+                    <!-- Step 1 -->
+                    <div class="step-number">1</div>
+                    <div class="entity ec2">
+                        <div class="entity-icon">�️</div>
+                        <div class="entity-title">EC2 Instance</div>
+                        <div class="entity-subtitle">AllowedBedrockGroup Role</div>
+                    </div>
+
+                    <div class="arrow-down"></div>
+
+                    <!-- Step 2 -->
+                    <div class="step-number">2</div>
+                    <div class="entity security-group">
+                        <div class="entity-icon">🛡️</div>
+                        <div class="entity-title">Security Group</div>
+                        <div class="entity-subtitle">Network-level control</div>
+                    </div>
+                    <div class="check-badge pass">✓ CHECK 1: ENI allows traffic?</div>
+
+                    <div class="arrow-down"></div>
+
+                    <!-- Step 3 -->
+                    <div class="step-number">3</div>
+                    <div class="entity vpc-endpoint">
+                        <div class="entity-icon">🔌</div>
+                        <div class="entity-title">VPC Endpoint</div>
+                        <div class="entity-subtitle">Bedrock Private Link</div>
+                    </div>
+                    <div class="check-badge pass">✓ CHECK 2: VPC Endpoint Policy (role/IP allowed?)</div>
+
+                    <div class="arrow-down"></div>
+
+                    <!-- Step 4 -->
+                    <div class="step-number">4</div>
+                    <div class="entity iam">
+                        <div class="entity-icon">🔐</div>
+                        <div class="entity-title">IAM Role/Policy</div>
+                        <div class="entity-subtitle">AllowedBedrockGroup</div>
+                    </div>
+                    <div class="check-badge pass">✓ CHECK 3: Bedrock IAM Policy (invoke model?)</div>
+                </div>
+
+                <div class="arrow-down"></div>
+
+                <!-- Step 5 -->
+                <div class="step-number">5</div>
+                <div class="entity bedrock">
+                    <div class="entity-icon">🤖</div>
+                    <div class="entity-title">Amazon Bedrock</div>
+                    <div class="entity-subtitle">AI Model Service</div>
+                </div>
+                <div class="check-badge pass">✅ Request Succeeds (All checks passed)</div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-title">� Key Differences Between Access Paths</div>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <strong>🔵 PATH A - Laptop (Public Internet):</strong><br>
+                    ✓ IAM Policy check ONLY<br>
+                    ✗ Security Groups do NOT apply<br>
+                    ✗ VPC Endpoint Policy NOT evaluated<br>
+                    <br>
+                    <strong>Result:</strong> Laptop users can access Bedrock if IAM allows, regardless of VPC restrictions.
+                </div>
+                <div class="legend-item">
+                    <strong>🟠 PATH B - EC2 (VPC Endpoint):</strong><br>
+                    ✓ Security Group check (ENI traffic)<br>
+                    ✓ VPC Endpoint Policy (role/IP)<br>
+                    ✓ IAM Policy (model access)<br>
+                    <br>
+                    <strong>Result:</strong> EC2 must pass ALL three security layers to access Bedrock.
+                </div>
+                <div class="legend-item">
+                    <strong>� Why This Matters:</strong><br>
+                    The AllowedBedrockGroup role restrictions <strong>only work for EC2 instances inside the VPC</strong> because they rely on VPC Endpoint policies and Security Groups.
+                    <br><br>
+                    When a laptop user accesses Bedrock via the <strong>public AWS API endpoint</strong>, the traffic doesn't go through the VPC Endpoint, so those network-level controls are completely bypassed.
+                    <br><br>
+                    <strong>This is a key distinction in AWS security architecture!</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

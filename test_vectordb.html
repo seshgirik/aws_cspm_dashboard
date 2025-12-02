@@ -1,0 +1,39 @@
+
+<!DOCTYPE html>
+<html>
+<head><title>Test Vector DB Filter</title></head>
+<body>
+<h2>Testing Vector DB Filtering</h2>
+<div id="results"></div>
+<script>
+fetch('security_findings_all.json')
+    .then(r => r.json())
+    .then(findings => {
+        // Test category matching
+        function matchesCategoryTab(finding, category) {
+            if (category === 'all') return true;
+            const id = finding.id;
+            const categoryDefinitions = {
+                'vectordb': { prefix: 'vectordb-' },
+                'zerotrust': { prefix: 'zerotrust-' }
+            };
+            const catDef = categoryDefinitions[category];
+            if (!catDef) return false;
+            return id.startsWith(catDef.prefix);
+        }
+        
+        const vectordbFindings = findings.filter(f => matchesCategoryTab(f, 'vectordb'));
+        
+        document.getElementById('results').innerHTML = `
+            <h3>Total findings: ${findings.length}</h3>
+            <h3>Vector DB findings: ${vectordbFindings.length}</h3>
+            <ul>
+                ${vectordbFindings.map(f => `
+                    <li><strong>${f.id}</strong>: ${f.detail.findings[0].Title}</li>
+                `).join('')}
+            </ul>
+        `;
+    });
+</script>
+</body>
+</html>

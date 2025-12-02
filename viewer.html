@@ -1,0 +1,2891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Security Findings Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #667eea 75%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+            animation: gradient 20s ease infinite;
+            background-size: 400% 400%;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            color: #718096;
+            font-size: 1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            border-color: var(--card-color-1);
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--card-color-1), var(--card-color-2));
+            box-shadow: 0 2px 10px rgba(var(--card-color-1-rgb), 0.3);
+        }
+        
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--card-color-1), var(--card-color-2));
+            opacity: 0.05;
+            border-radius: 50%;
+            transform: translate(30%, 30%);
+        }
+        
+        .stat-card h3 {
+            color: #4a5568;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stat-icon {
+            font-size: 1.2rem;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2d3748;
+            position: relative;
+            z-index: 1;
+            animation: countUp 0.5s ease-out;
+        }
+        
+        @keyframes countUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        .stat-card.critical {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .stat-trend {
+            font-size: 0.75rem;
+            margin-top: 8px;
+            color: #718096;
+        }
+        
+        .filters {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-size: 0.875rem;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        select, input {
+            padding: 10px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            background: white;
+            color: #2d3748;
+            min-width: 150px;
+            transition: all 0.3s ease;
+        }
+        
+        select:hover, input:hover {
+            border-color: #cbd5e0;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .findings-container {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .finding-card {
+            background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .finding-card:hover {
+            transform: translateY(-5px) scale(1.01);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+            border-color: rgba(102, 126, 234, 0.2);
+        }
+        
+        .finding-header {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 15px;
+        }
+        
+        .finding-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1a202c;
+            flex: 1;
+        }
+        
+        .badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .severity-critical {
+            background: linear-gradient(135deg, #fed7d7 0%, #fc8181 100%);
+            color: #742a2a;
+            box-shadow: 0 2px 10px rgba(197, 48, 48, 0.3);
+            font-weight: 700;
+        }
+        
+        .severity-high {
+            background: linear-gradient(135deg, #feebc8 0%, #f6ad55 100%);
+            color: #7c2d12;
+            box-shadow: 0 2px 10px rgba(192, 86, 33, 0.3);
+            font-weight: 700;
+        }
+        
+        .severity-medium {
+            background: linear-gradient(135deg, #fefcbf 0%, #faf089 100%);
+            color: #744210;
+            box-shadow: 0 2px 10px rgba(151, 90, 22, 0.3);
+            font-weight: 700;
+        }
+        
+        .severity-low {
+            background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
+            color: #22543d;
+            box-shadow: 0 2px 10px rgba(39, 103, 73, 0.3);
+            font-weight: 700;
+        }
+        
+        .compliance-noncompliant {
+            background: #e53e3e;
+            color: white;
+        }
+        
+        .compliance-warning {
+            background: #dd6b20;
+            color: white;
+        }
+        
+        .finding-body {
+            padding: 20px;
+        }
+        
+        .finding-description {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .finding-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .detail-label {
+            font-size: 0.75rem;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        .detail-value {
+            font-size: 0.875rem;
+            color: #2d3748;
+            word-break: break-all;
+        }
+        
+        .resource-badge {
+            background: #edf2f7;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.75rem;
+            color: #2d3748;
+        }
+        
+        .no-results {
+            background: white;
+            padding: 60px;
+            border-radius: 12px;
+            text-align: center;
+            color: #718096;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .chart-card h3 {
+            color: #1a202c;
+            font-size: 1.125rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .analytics-card {
+            background: linear-gradient(135deg, var(--card-bg-1), var(--card-bg-2));
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .analytics-card:hover {
+            transform: scale(1.05);
+        }
+        
+        .analytics-card h4 {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .analytics-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .section-header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .section-header h2 {
+            color: #1a202c;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Tabs Styling */
+        .tabs-container {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            padding: 15px 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            border-radius: 10px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            color: #4a5568;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tab::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .tab:hover::before {
+            left: 100%;
+        }
+        
+        .tab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            border-color: #cbd5e0;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .tab-icon {
+            font-size: 1.1rem;
+        }
+        
+        .tab-count {
+            background: rgba(255,255,255,0.25);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .tab.active .tab-count {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .service-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 5px solid transparent;
+            position: relative;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+        }
+        
+        .service-card.active {
+            border-left-color: #667eea;
+            background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+        }
+        
+        .service-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .service-icon {
+            font-size: 1.5rem;
+        }
+        
+        .service-stats {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .service-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .service-stat-label {
+            font-size: 0.75rem;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .service-stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .service-stat-value.critical { color: #c53030; }
+        .service-stat-value.high { color: #c05621; }
+        .service-stat-value.medium { color: #d69e2e; }
+        .service-stat-value.low { color: #38a169; }
+        
+        .major-issues-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: none;
+        }
+        
+        .major-issues-section.visible {
+            display: block;
+            animation: slideIn 0.4s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .major-issues-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .major-issues-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .close-issues {
+            background: #e2e8f0;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #4a5568;
+            transition: all 0.2s;
+        }
+        
+        .close-issues:hover {
+            background: #cbd5e0;
+        }
+        
+        .issues-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .issue-item {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #cbd5e0;
+            transition: all 0.2s;
+        }
+        
+        .issue-item:hover {
+            background: #edf2f7;
+            border-left-color: #667eea;
+        }
+        
+        .issue-item.critical { border-left-color: #c53030; }
+        .issue-item.high { border-left-color: #c05621; }
+        .issue-item.medium { border-left-color: #d69e2e; }
+        .issue-item.low { border-left-color: #38a169; }
+        
+        .issue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+        
+        .issue-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1a202c;
+            flex: 1;
+        }
+        
+        .issue-severity {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 10px;
+        }
+        
+        .issue-description {
+            font-size: 0.875rem;
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .issue-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 0.75rem;
+            color: #718096;
+        }
+        
+        .issue-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .risk-score-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        .risk-score-value {
+            font-size: 5rem;
+            font-weight: bold;
+            line-height: 1;
+            margin: 10px 0;
+        }
+        
+        .risk-score-label {
+            font-size: 1.5rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .risk-score-trend {
+            font-size: 1rem;
+            margin-top: 10px;
+            opacity: 0.85;
+        }
+        
+        .pillars-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .pillar-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-top: 4px solid var(--pillar-color);
+        }
+        
+        .pillar-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+        }
+        
+        .pillar-card.active {
+            background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+            border-top-width: 6px;
+        }
+        
+        .pillar-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .pillar-icon {
+            font-size: 2rem;
+        }
+        
+        .pillar-name {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #1a202c;
+        }
+        
+        .pillar-risk-score {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--pillar-color);
+            margin-bottom: 10px;
+        }
+        
+        .pillar-findings {
+            font-size: 0.875rem;
+            color: #718096;
+        }
+        
+        .mitre-badge {
+            display: inline-block;
+            background: #2d3748;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .remediation-section {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #4299e1;
+        }
+        
+        .remediation-title {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .remediation-steps {
+            font-size: 0.875rem;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #68d391;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.75rem;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+        
+        .executive-summary {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .summary-item {
+            text-align: center;
+        }
+        
+        .summary-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .summary-label {
+            font-size: 0.875rem;
+            color: #718096;
+            margin-top: 5px;
+        }
+        
+        .trend-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        
+        .trend-up {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .trend-down {
+            background: #c6f6d5;
+            color: #276749;
+        }
+        
+        .account-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .account-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #cbd5e0;
+        }
+        
+        .account-card.production {
+            border-left-color: #e53e3e;
+        }
+        
+        .account-id {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+        
+        .account-risk {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .view-btn {
+            padding: 10px 20px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .view-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .view-btn:hover {
+            border-color: #667eea;
+        }
+        
+        .view-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .view-toggle:hover .view-btn:not(.active) {
+            border-color: #667eea;
+        }
+        
+        /* Category Tabs */
+        .category-tabs {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 15px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.5);
+            overflow-x: auto;
+        }
+        
+        .tabs-scroll {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            min-width: max-content;
+        }
+        
+        .category-tab {
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background: white;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .category-tab:hover {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            transform: translateY(-2px);
+            border-color: #cbd5e0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .category-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .tab-badge {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            min-width: 24px;
+            text-align: center;
+        }
+        
+        .category-tab.active .tab-badge {
+            background: rgba(255,255,255,0.3);
+            color: white;
+        }
+        
+        .category-info {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        
+        .category-info h2 {
+            color: #2d3748;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .category-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .category-stat {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-color, #667eea);
+            text-align: center;
+        }
+        
+        .category-stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+        
+        .category-stat-label {
+            font-size: 0.8rem;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 AWS Cloud Security Posture Management</h1>
+            <p class="subtitle">Comprehensive security posture across AWS services with MITRE ATT&CK mapping</p>
+        </header>
+        
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <button class="view-btn" onclick="switchView('executive')" id="executive-view-btn">
+                👔 Executive View
+            </button>
+            <button class="view-btn active" onclick="switchView('engineer')" id="engineer-view-btn">
+                🔧 Engineer View
+            </button>
+        </div>
+        
+        <!-- Category Tabs -->
+        <div class="category-tabs" id="category-tabs-container">
+            <div class="tabs-scroll">
+                <div class="category-tab active" onclick="switchCategoryTab('all')" id="cat-tab-all">
+                    🌐 All <span class="tab-badge" id="cat-count-all">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('vectordb')" id="cat-tab-vectordb">
+                    🗄️ Vector DB <span class="tab-badge" id="cat-count-vectordb">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('zerotrust')" id="cat-tab-zerotrust">
+                    🛡️ Zero Trust <span class="tab-badge" id="cat-count-zerotrust">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('identity')" id="cat-tab-identity">
+                    👤 Identity <span class="tab-badge" id="cat-count-identity">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('modelhost')" id="cat-tab-modelhost">
+                    🤖 ML Models <span class="tab-badge" id="cat-count-modelhost">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('compliance')" id="cat-tab-compliance">
+                    ✅ Compliance <span class="tab-badge" id="cat-count-compliance">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('zta')" id="cat-tab-zta">
+                    🔐 Zero Trust Arch <span class="tab-badge" id="cat-count-zta">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('iac')" id="cat-tab-iac">
+                    📦 IaC/Terraform <span class="tab-badge" id="cat-count-iac">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('aisupply')" id="cat-tab-aisupply">
+                    🔗 AI Supply Chain <span class="tab-badge" id="cat-count-aisupply">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('maestro')" id="cat-tab-maestro">
+                    🎭 Maestro <span class="tab-badge" id="cat-count-maestro">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('llm')" id="cat-tab-llm">
+                    🧠 OWASP LLM <span class="tab-badge" id="cat-count-llm">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('memory')" id="cat-tab-memory">
+                    💾 Memory <span class="tab-badge" id="cat-count-memory">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('license')" id="cat-tab-license">
+                    📜 Licenses <span class="tab-badge" id="cat-count-license">0</span>
+                </div>
+                <div class="category-tab" onclick="switchCategoryTab('aws')" id="cat-tab-aws">
+                    ☁️ AWS Core <span class="tab-badge" id="cat-count-aws">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Category Information Panel -->
+        <div class="category-info" id="category-info">
+            <h2 id="category-title">📊 All Security Findings</h2>
+            <div class="category-stats-grid" id="category-stats">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+        
+        <!-- Executive View Content -->
+        <div id="executive-view" style="display: none;">
+            <!-- Risk Score -->
+            <div class="risk-score-card">
+                <div class="risk-score-label">Overall Risk Score</div>
+                <div class="risk-score-value" id="overall-risk-score">--</div>
+                <div class="risk-score-trend" id="risk-trend">
+                    <span class="trend-indicator trend-down">
+                        <span>↓</span>
+                        <span>12% improvement from last month</span>
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Executive Summary -->
+            <div class="executive-summary">
+                <h2 style="margin-bottom: 20px;">📊 Security Posture Summary</h2>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-value" style="color: #c53030;" id="exec-critical">0</div>
+                        <div class="summary-label">Critical Risks</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" style="color: #c05621;" id="exec-high">0</div>
+                        <div class="summary-label">High Risks</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" style="color: #667eea;" id="exec-services">0</div>
+                        <div class="summary-label">Services Monitored</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" style="color: #38a169;" id="exec-compliance">0%</div>
+                        <div class="summary-label">Compliance Score</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Pillars -->
+            <div class="section-header">
+                <h2>🏛️ Security Posture Pillars</h2>
+            </div>
+            
+            <div class="pillars-grid" id="pillars-grid">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            
+            <!-- Account Breakdown -->
+            <div class="section-header">
+                <h2>🏢 Account Risk Breakdown</h2>
+            </div>
+            
+            <div class="account-breakdown" id="account-breakdown">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Engineer View Content (shown by default) -->
+        <div id="engineer-view" style="display: block;">
+        
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card" style="--card-color-1: #667eea; --card-color-2: #764ba2;">
+                <h3><span class="stat-icon">📊</span>Total Findings</h3>
+                <div class="stat-value" id="total-findings">-</div>
+                <div class="stat-trend" id="total-trend">All security findings</div>
+            </div>
+            <div class="stat-card" style="--card-color-1: #f56565; --card-color-2: #c53030;">
+                <h3><span class="stat-icon">🚨</span>Critical</h3>
+                <div class="stat-value" style="color: #c53030;" id="critical-count">-</div>
+                <div class="stat-trend" id="critical-percent">-</div>
+            </div>
+            <div class="stat-card" style="--card-color-1: #ed8936; --card-color-2: #c05621;">
+                <h3><span class="stat-icon">⚠️</span>High</h3>
+                <div class="stat-value" style="color: #c05621;" id="high-count">-</div>
+                <div class="stat-trend" id="high-percent">-</div>
+            </div>
+            <div class="stat-card" style="--card-color-1: #ecc94b; --card-color-2: #d69e2e;">
+                <h3><span class="stat-icon">⚡</span>Medium</h3>
+                <div class="stat-value" style="color: #d69e2e;" id="medium-count">-</div>
+                <div class="stat-trend" id="medium-percent">-</div>
+            </div>
+            <div class="stat-card" style="--card-color-1: #48bb78; --card-color-2: #38a169;">
+                <h3><span class="stat-icon">✓</span>Low</h3>
+                <div class="stat-value" style="color: #38a169;" id="low-count">-</div>
+                <div class="stat-trend" id="low-percent">-</div>
+            </div>
+            <div class="stat-card" style="--card-color-1: #4299e1; --card-color-2: #3182ce;">
+                <h3><span class="stat-icon">☁️</span>Services</h3>
+                <div class="stat-value" style="color: #3182ce;" id="services-count">-</div>
+                <div class="stat-trend">AWS services affected</div>
+            </div>
+            <div class="stat-card" style="--card-color-1: #9f7aea; --card-color-2: #805ad5;">
+                <h3><span class="stat-icon">🌍</span>Regions</h3>
+                <div class="stat-value" style="color: #805ad5;" id="regions-count">-</div>
+                <div class="stat-trend">AWS regions</div>
+            </div>
+            <div class="stat-card" style="--card-color-1: #f687b3; --card-color-2: #d53f8c;">
+                <h3><span class="stat-icon">⛔</span>Non-Compliant</h3>
+                <div class="stat-value" style="color: #d53f8c;" id="noncompliant-count">-</div>
+                <div class="stat-trend" id="noncompliant-percent">-</div>
+            </div>
+        </div>
+        
+        <!-- Additional Insights Section -->
+        <div class="section-header">
+            <h2>💡 Key Security Insights</h2>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card" style="--card-color-1: #38b2ac; --card-color-2: #319795;">
+                <h3><span class="stat-icon">🤖</span>AI/ML Security</h3>
+                <div class="stat-value" style="color: #234e52;" id="ai-findings">0</div>
+                <div class="stat-trend" id="ai-trend">Bedrock, SageMaker issues</div>
+            </div>
+            <div class="stat-card" style="--card-color-1: #4c51bf; --card-color-2: #434190;">
+                <h3><span class="stat-icon">🐳</span>Container Security</h3>
+                <div class="stat-value" style="color: #3c366b;" id="container-findings">0</div>
+                <div class="stat-trend" id="container-trend">EKS, ECS vulnerabilities</div>
+            </div>
+            <div class="stat-card" style="--card-color-1: #e53e3e; --card-color-2: #c53030;">
+                <h3><span class="stat-icon">🌐</span>Network Exposure</h3>
+                <div class="stat-value" style="color: #742a2a;" id="network-findings">0</div>
+                <div class="stat-trend" id="network-trend">Public endpoints, open SGs</div>
+            </div>
+            <div class="stat-card" style="--card-color-1: #38a169; --card-color-2: #2f855a;">
+                <h3><span class="stat-icon">🔐</span>Data Protection</h3>
+                <div class="stat-value" style="color: #22543d;" id="data-score">--</div>
+                <div class="stat-trend">Encryption & access score</div>
+            </div>
+            <div class="stat-card" style="--card-color-1: #ed64a6; --card-color-2: #d53f8c;">
+                <h3><span class="stat-icon">🔑</span>IAM Issues</h3>
+                <div class="stat-value" style="color: #702459;" id="iam-findings">0</div>
+                <div class="stat-trend" id="iam-trend">Excessive permissions</div>
+            </div>
+            <div class="stat-card" style="--card-color-1: #f6ad55; --card-color-2: #dd6b20;">
+                <h3><span class="stat-icon">⚡</span>High Availability</h3>
+                <div class="stat-value" style="color: #7c2d12;" id="ha-findings">0</div>
+                <div class="stat-trend" id="ha-trend">Multi-AZ, DR gaps</div>
+            </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="section-header">
+            <h2>📈 Analytics & Insights</h2>
+        </div>
+        
+        <div class="charts-section">
+            <div class="chart-card">
+                <h3>Severity Distribution</h3>
+                <div class="chart-container">
+                    <canvas id="severityChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3>Top 10 Affected Services</h3>
+                <div class="chart-container">
+                    <canvas id="servicesChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3>Findings by Region</h3>
+                <div class="chart-container">
+                    <canvas id="regionChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3>Compliance Status</h3>
+                <div class="chart-container">
+                    <canvas id="complianceChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Advanced Analytics -->
+        <div class="section-header">
+            <h2>🎯 Resource Analytics</h2>
+        </div>
+        
+        <div class="analytics-grid" id="resource-analytics">
+            <!-- Will be populated by JavaScript -->
+        </div>
+        
+        <!-- Services Breakdown -->
+        <div class="section-header">
+            <h2>🔧 AWS Services Overview</h2>
+        </div>
+        
+        <div class="services-grid" id="services-grid">
+            <!-- Will be populated by JavaScript -->
+        </div>
+        
+        <!-- Major Issues Section (hidden by default) -->
+        <div class="major-issues-section" id="major-issues-section">
+            <div class="major-issues-header">
+                <div class="major-issues-title" id="major-issues-title">
+                    <span>📋</span>
+                    <span>Major Issues</span>
+                </div>
+                <button class="close-issues" onclick="closeMajorIssues()">✕ Close</button>
+            </div>
+            <div class="issues-list" id="issues-list">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="section-header">
+            <h2>🔍 Security Findings</h2>
+        </div>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <label>Severity</label>
+                <select id="severity-filter">
+                    <option value="">All Severities</option>
+                    <option value="CRITICAL">Critical</option>
+                    <option value="HIGH">High</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="LOW">Low</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Region</label>
+                <select id="region-filter">
+                    <option value="">All Regions</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Service</label>
+                <select id="service-filter">
+                    <option value="">All Services</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Compliance</label>
+                <select id="compliance-filter">
+                    <option value="">All Compliance</option>
+                    <option value="PASSED">Passed</option>
+                    <option value="FAILED">Failed</option>
+                    <option value="WARNING">Warning</option>
+                    <option value="NOT_AVAILABLE">Not Available</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Items per page</label>
+                <select id="items-per-page">
+                    <option value="10">10</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="all">All</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Search</label>
+                <input type="text" id="search-input" placeholder="Search findings...">
+            </div>
+        </div>
+        
+        <!-- Category Tabs -->
+        <div class="tabs-container">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('all')" id="tab-all">
+                    <span class="tab-icon">📊</span>
+                    <span>All Findings</span>
+                    <span class="tab-count" id="count-all">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('ai-ml')" id="tab-ai-ml">
+                    <span class="tab-icon">🤖</span>
+                    <span>AI/ML Security</span>
+                    <span class="tab-count" id="count-ai-ml">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('bedrock')" id="tab-bedrock">
+                    <span class="tab-icon">🧠</span>
+                    <span>Bedrock/LLM</span>
+                    <span class="tab-count" id="count-bedrock">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('sagemaker')" id="tab-sagemaker">
+                    <span class="tab-icon">🔬</span>
+                    <span>SageMaker</span>
+                    <span class="tab-count" id="count-sagemaker">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('container')" id="tab-container">
+                    <span class="tab-icon">🐳</span>
+                    <span>Containers</span>
+                    <span class="tab-count" id="count-container">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('iam')" id="tab-iam">
+                    <span class="tab-icon">🔑</span>
+                    <span>IAM & Access</span>
+                    <span class="tab-count" id="count-iam">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('network')" id="tab-network">
+                    <span class="tab-icon">🌐</span>
+                    <span>Network</span>
+                    <span class="tab-count" id="count-network">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('data')" id="tab-data">
+                    <span class="tab-icon">🔐</span>
+                    <span>Data Security</span>
+                    <span class="tab-count" id="count-data">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Debug Info -->
+        <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 8px; font-family: monospace;">
+            <strong>🐛 Debug Info:</strong><br>
+            <span id="debug-info">Loading...</span>
+        </div>
+        
+        <div class="findings-container" id="findings-container">
+            <div class="loading">Loading findings...</div>
+        </div>
+        
+        </div><!-- End Engineer View -->
+    </div><!-- End Container -->
+    
+    <script>
+        let allFindings = [];
+        let filteredFindings = [];
+        let charts = {};
+        let currentPage = 1;
+        let itemsPerPage = 25;
+        
+        // Helper function to extract service name
+        function getServiceName(generatorId) {
+            if (generatorId.includes('macie')) return 'Macie';
+            if (generatorId.includes('inspector')) return 'Inspector';
+            if (generatorId.includes('ecr')) return 'ECR';
+            if (generatorId.includes('guardduty')) return 'GuardDuty';
+            if (generatorId.includes('/EKS.')) return 'EKS';
+            if (generatorId.includes('/ECS.')) return 'ECS';
+            if (generatorId.includes('/KMS.')) return 'KMS';
+            if (generatorId.includes('/S3.')) return 'S3';
+            if (generatorId.includes('/RDS.')) return 'RDS';
+            if (generatorId.includes('/EC2.')) return 'EC2';
+            if (generatorId.includes('/IAM.')) return 'IAM';
+            if (generatorId.includes('/Lambda.')) return 'Lambda';
+            if (generatorId.includes('/SecretsManager.')) return 'Secrets Manager';
+            if (generatorId.includes('bedrock')) return 'Bedrock';
+            if (generatorId.includes('sagemaker')) return 'SageMaker';
+            // For advanced-security-analyzer (our custom findings), return 'Security Hub'
+            if (generatorId.includes('advanced-security-analyzer')) return 'Security Hub';
+            return 'Security Hub';  // Default for all other findings
+        }
+        
+        // Get service icon
+        function getServiceIcon(service) {
+            const icons = {
+                'S3': '🪣',
+                'EC2': '🖥️',
+                'RDS': '🗄️',
+                'IAM': '👤',
+                'Lambda': 'λ',
+                'GuardDuty': '🛡️',
+                'EKS': '☸️',
+                'ECS': '📦',
+                'ECR': '🐳',
+                'Inspector': '🔍',
+                'Macie': '🔐',
+                'KMS': '🔑',
+                'Secrets Manager': '🔒',
+                'Security Hub': '🔒',
+                'Bedrock': '🤖',
+                'SageMaker': '📊'
+            };
+            return icons[service] || '☁️';
+        }
+        
+        // Current active tab
+        let currentTab = 'all';
+        let currentCategoryTab = 'all';
+        
+        // Category mapping for new findings
+        const categoryDefinitions = {
+            'vectordb': { prefix: 'vectordb-', name: '🗄️ Vector Database Protection', desc: 'Security findings for vector databases (OpenSearch, Pinecone, Weaviate, etc.)' },
+            'zerotrust': { prefix: 'zerotrust-', name: '🛡️ Zero Trust Segmentation', desc: 'Network segmentation and microsegmentation issues' },
+            'identity': { prefix: 'idp-', name: '👤 Identity-Based Perimeter', desc: 'Identity provider and authentication security' },
+            'modelhost': { prefix: 'modelhost-', name: '🤖 Secure Model Hosting', desc: 'ML model deployment and hosting security' },
+            'compliance': { prefix: 'compliance-', name: '✅ ISO/SOC2/NIST Compliance', desc: 'Regulatory and framework compliance findings' },
+            'zta': { prefix: 'zta-', name: '🔐 Zero Trust Architecture', desc: 'Zero trust architecture implementation gaps' },
+            'iac': { prefix: 'iac-', name: '📦 Terraform/IaC Security', desc: 'Infrastructure as Code security issues' },
+            'aisupply': { prefix: 'aisupply-', name: '🔗 AI Supply Chain Security', desc: 'AI/ML supply chain vulnerabilities' },
+            'maestro': { prefix: 'maestro-', name: '🎭 Maestro Threat Model', desc: 'Multimodal AI security threats' },
+            'llm': { prefix: 'llm-', name: '🧠 OWASP Top 10 for LLM', desc: 'Large Language Model specific vulnerabilities' },
+            'memory': { prefix: 'memarch-', name: '💾 Memory Architecture Attacks', desc: 'Memory-based attacks on AI systems' },
+            'license': { prefix: 'license-', name: '📜 Software License Compliance', desc: 'Open source license violations (GPL, MIT, Apache, BSD)' },
+            'aws': { prefix: 'other', name: '☁️ AWS Core Services', desc: 'Traditional AWS service security findings' }
+        };
+        
+        // Switch between category tabs
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update tab UI
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // Apply filters with tab
+            applyFilters();
+        }
+        
+        // Switch category tabs (new functionality)
+        function switchCategoryTab(category) {
+            currentCategoryTab = category;
+            
+            // Update tab UI
+            document.querySelectorAll('.category-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(`cat-tab-${category}`).classList.add('active');
+            
+            // Update category info panel
+            updateCategoryInfo(category);
+            
+            // Apply filters
+            applyFilters();
+        }
+        
+        // Update category information panel
+        function updateCategoryInfo(category) {
+            const titleEl = document.getElementById('category-title');
+            const statsEl = document.getElementById('category-stats');
+            
+            if (category === 'all') {
+                titleEl.innerHTML = '📊 All Security Findings';
+            } else {
+                const catDef = categoryDefinitions[category];
+                if (catDef) {
+                    titleEl.innerHTML = `${catDef.name}<br><small style="font-size: 0.9rem; color: #718096; font-weight: 400;">${catDef.desc}</small>`;
+                }
+            }
+            
+            // Calculate category stats
+            const categoryFindings = allFindings.filter(f => matchesCategoryTab(f, category));
+            const stats = {
+                total: categoryFindings.length,
+                critical: categoryFindings.filter(f => f.detail.findings[0].Severity.Label === 'CRITICAL').length,
+                high: categoryFindings.filter(f => f.detail.findings[0].Severity.Label === 'HIGH').length,
+                medium: categoryFindings.filter(f => f.detail.findings[0].Severity.Label === 'MEDIUM').length,
+                low: categoryFindings.filter(f => f.detail.findings[0].Severity.Label === 'LOW').length
+            };
+            
+            statsEl.innerHTML = `
+                <div class="category-stat" style="--accent-color: #667eea;">
+                    <div class="category-stat-value">${stats.total}</div>
+                    <div class="category-stat-label">Total</div>
+                </div>
+                <div class="category-stat" style="--accent-color: #e53e3e;">
+                    <div class="category-stat-value">${stats.critical}</div>
+                    <div class="category-stat-label">Critical</div>
+                </div>
+                <div class="category-stat" style="--accent-color: #dd6b20;">
+                    <div class="category-stat-value">${stats.high}</div>
+                    <div class="category-stat-label">High</div>
+                </div>
+                <div class="category-stat" style="--accent-color: #d69e2e;">
+                    <div class="category-stat-value">${stats.medium}</div>
+                    <div class="category-stat-label">Medium</div>
+                </div>
+                <div class="category-stat" style="--accent-color: #38a169;">
+                    <div class="category-stat-value">${stats.low}</div>
+                    <div class="category-stat-label">Low</div>
+                </div>
+            `;
+        }
+        
+        // Check if finding matches category tab
+        function matchesCategoryTab(finding, category) {
+            if (category === 'all') return true;
+            
+            const id = finding.id;
+            const catDef = categoryDefinitions[category];
+            
+            if (!catDef) return false;
+            
+            if (catDef.prefix === 'other') {
+                // AWS core - findings that don't match any new category
+                return !Object.keys(categoryDefinitions).some(key => {
+                    const cat = categoryDefinitions[key];
+                    return cat.prefix !== 'other' && id.startsWith(cat.prefix);
+                });
+            }
+            
+            return id.startsWith(catDef.prefix);
+        }
+        
+        // Update category tab counts
+        function updateCategoryTabCounts() {
+            const categories = ['all', 'vectordb', 'zerotrust', 'identity', 'modelhost', 'compliance', 
+                                'zta', 'iac', 'aisupply', 'maestro', 'llm', 'memory', 'license', 'aws'];
+            
+            categories.forEach(cat => {
+                const count = allFindings.filter(f => matchesCategoryTab(f, cat)).length;
+                const countEl = document.getElementById(`cat-count-${cat}`);
+                if (countEl) {
+                    countEl.textContent = count;
+                }
+            });
+        }
+        
+        // Check if finding matches tab category
+        function matchesTabCategory(finding, tabName) {
+            if (tabName === 'all') return true;
+            
+            const f = finding.detail.findings[0];
+            const title = f.Title.toLowerCase();
+            const description = f.Description.toLowerCase();
+            const service = getServiceName(f.GeneratorId).toLowerCase();
+            
+            switch(tabName) {
+                case 'ai-ml':
+                    return service.includes('bedrock') || service.includes('sagemaker') || 
+                           title.includes('ai') || title.includes('ml') || title.includes('model') ||
+                           title.includes('llm') || title.includes('clarify') || description.includes('training') ||
+                           description.includes('machine learning') || description.includes('artificial intelligence');
+                
+                case 'bedrock':
+                    return service.includes('bedrock') || title.includes('bedrock') || 
+                           title.includes('llm') || title.includes('guardrails') || 
+                           description.includes('bedrock') || description.includes('prompt injection') ||
+                           title.includes('jailbreak');
+                
+                case 'sagemaker':
+                    return service.includes('sagemaker') || title.includes('sagemaker') || 
+                           title.includes('clarify') || title.includes('model monitor') ||
+                           title.includes('endpoint') || description.includes('sagemaker');
+                
+                case 'container':
+                    return service.includes('eks') || service.includes('ecs') || service.includes('ecr') ||
+                           title.includes('container') || title.includes('kubernetes') || title.includes('pod') ||
+                           title.includes('docker') || description.includes('container');
+                
+                case 'iam':
+                    return service.includes('iam') || title.includes('iam') || title.includes('permission') ||
+                           title.includes('policy') || title.includes('role') || title.includes('access') ||
+                           description.includes('privilege') || description.includes('wildcard');
+                
+                case 'network':
+                    return title.includes('public') || title.includes('0.0.0.0') || title.includes('network') ||
+                           title.includes('security group') || title.includes('endpoint') || title.includes('ssh') ||
+                           description.includes('publicly accessible') || description.includes('internet') ||
+                           title.includes('vpc') || title.includes('subnet');
+                
+                case 'data':
+                    return title.includes('encrypt') || title.includes('kms') || title.includes('s3') ||
+                           title.includes('pii') || title.includes('macie') || description.includes('unencrypted') ||
+                           description.includes('data leak') || service.includes('macie') || service.includes('kms') ||
+                           title.includes('secret');
+                
+                default:
+                    return true;
+            }
+        }
+        
+        // Update tab counts
+        function updateTabCounts() {
+            const tabs = ['all', 'ai-ml', 'bedrock', 'sagemaker', 'container', 'iam', 'network', 'data'];
+            
+            tabs.forEach(tab => {
+                const count = allFindings.filter(f => matchesTabCategory(f, tab)).length;
+                const countEl = document.getElementById(`count-${tab}`);
+                if (countEl) {
+                    countEl.textContent = count;
+                }
+            });
+        }
+        
+        // Load findings
+        async function loadFindings() {
+            try {
+                const response = await fetch('security_findings_all.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                allFindings = await response.json();
+                filteredFindings = allFindings;
+                
+                populateFilters();
+                updateTabCounts();
+                updateCategoryTabCounts();
+                updateCategoryInfo('all');
+                updateStats();
+                calculateRiskScore();
+                populateSecurityPillars();
+                populateAccountBreakdown();
+                createCharts();
+                updateResourceAnalytics();
+                populateServicesGrid();
+                renderFindings();
+            } catch (error) {
+                console.error('Error loading findings:', error);
+                document.getElementById('findings-container').innerHTML = 
+                    `<div class="no-results">Error loading findings: ${error.message}<br>Make sure security_findings_all.json exists and is valid JSON.</div>`;
+            }
+        }
+        
+        function populateFilters() {
+            // Get unique regions
+            const regions = [...new Set(allFindings.map(f => f.detail.findings[0].Region))].sort();
+            const regionFilter = document.getElementById('region-filter');
+            regions.forEach(region => {
+                const option = document.createElement('option');
+                option.value = region;
+                option.textContent = region;
+                regionFilter.appendChild(option);
+            });
+            
+            // Get unique services
+            const services = [...new Set(allFindings.map(f => {
+                return getServiceName(f.detail.findings[0].GeneratorId);
+            }))].sort();
+            const serviceFilter = document.getElementById('service-filter');
+            services.forEach(service => {
+                const option = document.createElement('option');
+                option.value = service;
+                option.textContent = service;
+                serviceFilter.appendChild(option);
+            });
+        }
+        
+        function updateStats() {
+            const summary = {
+                total: filteredFindings.length,
+                critical: 0,
+                high: 0,
+                medium: 0,
+                low: 0,
+                noncompliant: 0,
+                services: new Set(),
+                regions: new Set()
+            };
+            
+            filteredFindings.forEach(f => {
+                const severity = f.detail.findings[0].Severity.Label;
+                if (severity === 'CRITICAL') summary.critical++;
+                if (severity === 'HIGH') summary.high++;
+                if (severity === 'MEDIUM') summary.medium++;
+                if (severity === 'LOW') summary.low++;
+                
+                const compliance = f.detail.findings[0].Compliance.Status || f.detail.findings[0].Compliance.status || 'UNKNOWN';
+                if (compliance === 'NON_COMPLIANT') summary.noncompliant++;
+                
+                const service = getServiceName(f.detail.findings[0].GeneratorId);
+                summary.services.add(service);
+                summary.regions.add(f.detail.findings[0].Region);
+            });
+            
+            document.getElementById('total-findings').textContent = summary.total;
+            document.getElementById('critical-count').textContent = summary.critical;
+            document.getElementById('high-count').textContent = summary.high;
+            document.getElementById('medium-count').textContent = summary.medium;
+            document.getElementById('low-count').textContent = summary.low;
+            document.getElementById('services-count').textContent = summary.services.size;
+            document.getElementById('regions-count').textContent = summary.regions.size;
+            document.getElementById('noncompliant-count').textContent = summary.noncompliant;
+            
+            // Update percentages
+            if (summary.total > 0) {
+                document.getElementById('critical-percent').textContent = 
+                    `${((summary.critical / summary.total) * 100).toFixed(1)}% of total`;
+                document.getElementById('high-percent').textContent = 
+                    `${((summary.high / summary.total) * 100).toFixed(1)}% of total`;
+                document.getElementById('medium-percent').textContent = 
+                    `${((summary.medium / summary.total) * 100).toFixed(1)}% of total`;
+                document.getElementById('low-percent').textContent = 
+                    `${((summary.low / summary.total) * 100).toFixed(1)}% of total`;
+                document.getElementById('noncompliant-percent').textContent = 
+                    `${((summary.noncompliant / summary.total) * 100).toFixed(1)}% of total`;
+            }
+            
+            // Update Additional Insights Cards
+            const insights = {
+                ai: 0,
+                container: 0,
+                network: 0,
+                iam: 0,
+                ha: 0
+            };
+            
+            filteredFindings.forEach(f => {
+                const finding = f.detail.findings[0];
+                const title = finding.Title.toLowerCase();
+                const desc = finding.Description.toLowerCase();
+                const service = getServiceName(finding.GeneratorId).toLowerCase();
+                const types = finding.Types ? finding.Types.join(' ').toLowerCase() : '';
+                
+                // AI/ML Security
+                if (service.includes('bedrock') || service.includes('sagemaker') || 
+                    title.includes('ai') || title.includes('ml') || title.includes('model') ||
+                    title.includes('llm') || title.includes('clarify') || desc.includes('training')) {
+                    insights.ai++;
+                }
+                
+                // Container Security
+                if (service.includes('eks') || service.includes('ecs') || service.includes('ecr') ||
+                    title.includes('container') || title.includes('kubernetes') || title.includes('pod') ||
+                    title.includes('docker') || desc.includes('container')) {
+                    insights.container++;
+                }
+                
+                // Network Exposure
+                if (title.includes('public') || title.includes('0.0.0.0') || title.includes('network') ||
+                    title.includes('security group') || title.includes('endpoint') || title.includes('ssh') ||
+                    desc.includes('publicly accessible') || desc.includes('internet')) {
+                    insights.network++;
+                }
+                
+                // IAM Issues
+                if (service.includes('iam') || title.includes('iam') || title.includes('permission') ||
+                    title.includes('policy') || title.includes('role') || title.includes('access') ||
+                    desc.includes('privilege') || desc.includes('wildcard')) {
+                    insights.iam++;
+                }
+                
+                // High Availability
+                if (title.includes('multi-az') || title.includes('availability') || title.includes('replica') ||
+                    title.includes('backup') || title.includes('cross-region') || title.includes('failover') ||
+                    desc.includes('disaster recovery') || desc.includes('high availability')) {
+                    insights.ha++;
+                }
+            });
+            
+            document.getElementById('ai-findings').textContent = insights.ai;
+            document.getElementById('container-findings').textContent = insights.container;
+            document.getElementById('network-findings').textContent = insights.network;
+            document.getElementById('iam-findings').textContent = insights.iam;
+            document.getElementById('ha-findings').textContent = insights.ha;
+            
+            // Update trends
+            document.getElementById('ai-trend').textContent = 
+                insights.ai > 0 ? `${insights.ai} model & LLM issues` : 'No AI/ML issues';
+            document.getElementById('container-trend').textContent = 
+                insights.container > 0 ? `${insights.container} container risks` : 'No container issues';
+            document.getElementById('network-trend').textContent = 
+                insights.network > 0 ? `${insights.network} exposure points` : 'No network issues';
+            document.getElementById('iam-trend').textContent = 
+                insights.iam > 0 ? `${insights.iam} permission issues` : 'No IAM issues';
+            document.getElementById('ha-trend').textContent = 
+                insights.ha > 0 ? `${insights.ha} resilience gaps` : 'No HA issues';
+            
+            // Calculate Data Protection Score (inverse of data-related issues)
+            const dataIssues = filteredFindings.filter(f => {
+                const title = f.detail.findings[0].Title.toLowerCase();
+                const desc = f.detail.findings[0].Description.toLowerCase();
+                return title.includes('encrypt') || title.includes('kms') || title.includes('s3') ||
+                       title.includes('pii') || title.includes('macie') || desc.includes('unencrypted') ||
+                       desc.includes('data leak');
+            }).length;
+            
+            const dataScore = Math.max(0, 100 - (dataIssues * 5));
+            document.getElementById('data-score').textContent = `${dataScore}%`;
+            document.getElementById('data-score').parentElement.style.color = 
+                dataScore >= 80 ? '#22543d' : dataScore >= 60 ? '#d69e2e' : '#c53030';
+        }
+        
+        function createCharts() {
+            // Severity Distribution Pie Chart
+            const severityData = {
+                critical: 0, high: 0, medium: 0, low: 0
+            };
+            
+            filteredFindings.forEach(f => {
+                const severity = f.detail.findings[0].Severity.Label;
+                if (severity === 'CRITICAL') severityData.critical++;
+                else if (severity === 'HIGH') severityData.high++;
+                else if (severity === 'MEDIUM') severityData.medium++;
+                else if (severity === 'LOW') severityData.low++;
+            });
+            
+            if (charts.severity) charts.severity.destroy();
+            charts.severity = new Chart(document.getElementById('severityChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Critical', 'High', 'Medium', 'Low'],
+                    datasets: [{
+                        data: [severityData.critical, severityData.high, severityData.medium, severityData.low],
+                        backgroundColor: [
+                            'rgba(197, 48, 48, 0.9)',
+                            'rgba(192, 86, 33, 0.9)',
+                            'rgba(214, 158, 46, 0.9)',
+                            'rgba(56, 161, 105, 0.9)'
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#fff',
+                        hoverOffset: 15,
+                        hoverBorderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 12, weight: 'bold' },
+                                padding: 15,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            cornerRadius: 8
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+            
+            // Services Bar Chart
+            const serviceMap = {};
+            filteredFindings.forEach(f => {
+                const service = getServiceName(f.detail.findings[0].GeneratorId);
+                serviceMap[service] = (serviceMap[service] || 0) + 1;
+            });
+            
+            const topServices = Object.entries(serviceMap)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            if (charts.services) charts.services.destroy();
+            const serviceColors = topServices.map((_, i) => {
+                const hue = (i * 30) % 360;
+                return `hsla(${hue}, 70%, 60%, 0.85)`;
+            });
+            
+            charts.services = new Chart(document.getElementById('servicesChart'), {
+                type: 'bar',
+                data: {
+                    labels: topServices.map(s => s[0]),
+                    datasets: [{
+                        label: 'Findings Count',
+                        data: topServices.map(s => s[1]),
+                        backgroundColor: serviceColors,
+                        borderColor: serviceColors.map(c => c.replace('0.85', '1')),
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        hoverBackgroundColor: serviceColors.map(c => c.replace('0.85', '0.95'))
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                            ticks: { font: { weight: 'bold' } }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { font: { weight: 'bold', size: 11 } }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+            
+            // Region Chart
+            const regionMap = {};
+            filteredFindings.forEach(f => {
+                const region = f.detail.findings[0].Region;
+                regionMap[region] = (regionMap[region] || 0) + 1;
+            });
+            
+            const regions = Object.entries(regionMap).sort((a, b) => b[1] - a[1]);
+            
+            if (charts.regions) charts.regions.destroy();
+            const regionColors = regions.map((_, i) => {
+                const colors = [
+                    'rgba(102, 126, 234, 0.85)',
+                    'rgba(159, 122, 234, 0.85)',
+                    'rgba(237, 100, 166, 0.85)',
+                    'rgba(246, 173, 85, 0.85)',
+                    'rgba(56, 178, 172, 0.85)',
+                    'rgba(72, 187, 120, 0.85)',
+                    'rgba(66, 153, 225, 0.85)',
+                    'rgba(237, 137, 54, 0.85)'
+                ];
+                return colors[i % colors.length];
+            });
+            
+            charts.regions = new Chart(document.getElementById('regionChart'), {
+                type: 'bar',
+                data: {
+                    labels: regions.map(r => r[0]),
+                    datasets: [{
+                        label: 'Findings',
+                        data: regions.map(r => r[1]),
+                        backgroundColor: regionColors,
+                        borderColor: regionColors.map(c => c.replace('0.85', '1')),
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        hoverBackgroundColor: regionColors.map(c => c.replace('0.85', '0.95'))
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                            ticks: { font: { weight: 'bold' } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { weight: 'bold', size: 10 } }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+            
+            // Compliance Chart
+            const complianceMap = {};
+            filteredFindings.forEach(f => {
+                const status = f.detail.findings[0].Compliance.Status || f.detail.findings[0].Compliance.status || 'UNKNOWN';
+                complianceMap[status] = (complianceMap[status] || 0) + 1;
+            });
+            
+            if (charts.compliance) charts.compliance.destroy();
+            charts.compliance = new Chart(document.getElementById('complianceChart'), {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(complianceMap),
+                    datasets: [{
+                        data: Object.values(complianceMap),
+                        backgroundColor: [
+                            'rgba(229, 62, 62, 0.9)',
+                            'rgba(237, 137, 54, 0.9)',
+                            'rgba(72, 187, 120, 0.9)',
+                            'rgba(66, 153, 225, 0.9)'
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#fff',
+                        hoverOffset: 12,
+                        hoverBorderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 12, weight: 'bold' },
+                                padding: 15,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            cornerRadius: 8
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+        
+        function updateResourceAnalytics() {
+            const resourceTypes = {};
+            const accountIds = new Set();
+            
+            filteredFindings.forEach(f => {
+                const detail = f.detail.findings[0];
+                const resourceType = detail.Resources[0].Type;
+                resourceTypes[resourceType] = (resourceTypes[resourceType] || 0) + 1;
+                accountIds.add(detail.AwsAccountId);
+            });
+            
+            const topResources = Object.entries(resourceTypes)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6);
+            
+            const colors = [
+                ['#667eea', '#764ba2'],
+                ['#f093fb', '#f5576c'],
+                ['#4facfe', '#00f2fe'],
+                ['#43e97b', '#38f9d7'],
+                ['#fa709a', '#fee140'],
+                ['#30cfd0', '#330867']
+            ];
+            
+            const container = document.getElementById('resource-analytics');
+            container.innerHTML = topResources.map((resource, idx) => `
+                <div class="analytics-card" style="--card-bg-1: ${colors[idx][0]}; --card-bg-2: ${colors[idx][1]};">
+                    <h4>${resource[0].replace('Aws', '').replace(/([A-Z])/g, ' $1').trim()}</h4>
+                    <div class="analytics-value">${resource[1]}</div>
+                </div>
+            `).join('');
+            
+            // Add account count card
+            container.innerHTML += `
+                <div class="analytics-card" style="--card-bg-1: #fc466b; --card-bg-2: #3f5efb;">
+                    <h4>AWS Accounts</h4>
+                    <div class="analytics-value">${accountIds.size}</div>
+                </div>
+            `;
+        }
+        
+        function applyFilters() {
+            const severityFilter = document.getElementById('severity-filter').value;
+            const regionFilter = document.getElementById('region-filter').value;
+            const serviceFilter = document.getElementById('service-filter').value;
+            const complianceFilter = document.getElementById('compliance-filter').value;
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            
+            filteredFindings = allFindings.filter(finding => {
+                const detail = finding.detail.findings[0];
+                const service = getServiceName(detail.GeneratorId);
+                
+                // Check category tab filter (new system)
+                if (!matchesCategoryTab(finding, currentCategoryTab)) return false;
+                
+                // Check old tab filter (AI/ML, Bedrock, etc.)
+                if (!matchesTabCategory(finding, currentTab)) return false;
+                
+                // Check dropdown filters
+                if (severityFilter && detail.Severity.Label !== severityFilter) return false;
+                if (regionFilter && detail.Region !== regionFilter) return false;
+                if (serviceFilter && service !== serviceFilter) return false;
+                
+                // Check compliance filter
+                if (complianceFilter) {
+                    const complianceStatus = detail.Compliance.Status || detail.Compliance.status || 'NOT_AVAILABLE';
+                    if (complianceStatus !== complianceFilter) return false;
+                }
+                
+                if (searchTerm && !detail.Title.toLowerCase().includes(searchTerm) && 
+                    !detail.Description.toLowerCase().includes(searchTerm)) return false;
+                
+                return true;
+            });
+            
+            updateStats();
+            createCharts();
+            updateResourceAnalytics();
+            populateServicesGrid();
+            renderFindings();
+            closeMajorIssues();
+        }
+        
+        function renderFindings() {
+            const container = document.getElementById('findings-container');
+            
+            console.log(`=== renderFindings called ===`);
+            console.log(`filteredFindings.length: ${filteredFindings.length}`);
+            console.log(`itemsPerPage: ${itemsPerPage}`);
+            console.log(`currentPage: ${currentPage}`);
+            
+            if (filteredFindings.length === 0) {
+                container.innerHTML = '<div class="no-results">No findings match your filters</div>';
+                document.getElementById('debug-info').innerHTML = 
+                    `Total: ${allFindings.length} | Filtered: 0 | Showing: 0`;
+                return;
+            }
+            
+            // Calculate pagination
+            const totalPages = itemsPerPage === 'all' ? 1 : Math.ceil(filteredFindings.length / itemsPerPage);
+            const startIndex = itemsPerPage === 'all' ? 0 : (currentPage - 1) * itemsPerPage;
+            const endIndex = itemsPerPage === 'all' ? filteredFindings.length : startIndex + itemsPerPage;
+            const paginatedFindings = filteredFindings.slice(startIndex, endIndex);
+            
+            console.log(`startIndex: ${startIndex}, endIndex: ${endIndex}`);
+            console.log(`paginatedFindings.length: ${paginatedFindings.length}`);
+            
+            // Update debug info
+            document.getElementById('debug-info').innerHTML = 
+                `Total Findings: ${allFindings.length} | ` +
+                `After Filters: ${filteredFindings.length} | ` +
+                `Items Per Page: ${itemsPerPage} | ` +
+                `Current Page: ${currentPage}/${totalPages} | ` +
+                `Displaying: ${paginatedFindings.length} (${startIndex + 1}-${Math.min(endIndex, filteredFindings.length)})`;
+            
+            // Render findings
+            const findingsHTML = paginatedFindings.map(finding => {
+                const detail = finding.detail.findings[0];
+                const severity = detail.Severity.Label.toLowerCase();
+                const complianceStatus = detail.Compliance.Status || detail.Compliance.status || 'UNKNOWN';
+                const compliance = complianceStatus.toLowerCase().replace('_', '');
+                
+                return `
+                    <div class="finding-card">
+                        <div class="finding-header">
+                            <div class="finding-title">${detail.Title}</div>
+                            <div class="badges">
+                                <span class="badge severity-${severity}">${detail.Severity.Label}</span>
+                                <span class="badge compliance-${compliance}">${complianceStatus}</span>
+                            </div>
+                        </div>
+                        <div class="finding-body">
+                            <p class="finding-description">${detail.Description}</p>
+                            <div class="finding-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Resource Type</span>
+                                    <span class="detail-value">${detail.Resources[0].Type}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Region</span>
+                                    <span class="detail-value">${detail.Region}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Account ID</span>
+                                    <span class="detail-value">${detail.AwsAccountId}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Workflow Status</span>
+                                    <span class="detail-value">${detail.Workflow ? (detail.Workflow.Status || detail.Workflow.status || 'NEW') : 'NEW'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Created At</span>
+                                    <span class="detail-value">${new Date(detail.CreatedAt).toLocaleDateString()}</span>
+                                </div>
+                                <div class="detail-item" style="grid-column: 1 / -1;">
+                                    <span class="detail-label">Resource ID</span>
+                                    <span class="resource-badge">${detail.Resources[0].Id}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Render pagination controls
+            const paginationHTML = itemsPerPage !== 'all' ? `
+                <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding: 20px;">
+                    <button onclick="changePage(1)" ${currentPage === 1 ? 'disabled' : ''} 
+                        style="padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; background: white; border-radius: 4px;">
+                        ⏮ First
+                    </button>
+                    <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}
+                        style="padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; background: white; border-radius: 4px;">
+                        ← Prev
+                    </button>
+                    <span style="padding: 8px 16px;">
+                        Page ${currentPage} of ${totalPages} (Showing ${startIndex + 1}-${Math.min(endIndex, filteredFindings.length)} of ${filteredFindings.length})
+                    </span>
+                    <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}
+                        style="padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; background: white; border-radius: 4px;">
+                        Next →
+                    </button>
+                    <button onclick="changePage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}
+                        style="padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; background: white; border-radius: 4px;">
+                        Last ⏭
+                    </button>
+                </div>
+            ` : `
+                <div style="text-align: center; margin-top: 20px; padding: 20px; color: #666;">
+                    Showing all ${filteredFindings.length} findings
+                </div>
+            `;
+            
+            container.innerHTML = findingsHTML + paginationHTML;
+        }
+        
+        // Populate services grid
+        function populateServicesGrid() {
+            const serviceMap = {};
+            
+            // Analyze all findings
+            filteredFindings.forEach(f => {
+                const detail = f.detail.findings[0];
+                const service = getServiceName(detail.GeneratorId);
+                
+                if (!serviceMap[service]) {
+                    serviceMap[service] = {
+                        total: 0,
+                        critical: 0,
+                        high: 0,
+                        medium: 0,
+                        low: 0,
+                        findings: []
+                    };
+                }
+                
+                serviceMap[service].total++;
+                const severity = detail.Severity.Label;
+                if (severity === 'CRITICAL') serviceMap[service].critical++;
+                else if (severity === 'HIGH') serviceMap[service].high++;
+                else if (severity === 'MEDIUM') serviceMap[service].medium++;
+                else if (severity === 'LOW') serviceMap[service].low++;
+                
+                serviceMap[service].findings.push(f);
+            });
+            
+            // Sort services by total findings
+            const sortedServices = Object.entries(serviceMap).sort((a, b) => b[1].total - a[1].total);
+            
+            // Render service cards
+            const container = document.getElementById('services-grid');
+            container.innerHTML = sortedServices.map(([service, data]) => `
+                <div class="service-card" onclick="showMajorIssues('${service}')" data-service="${service}">
+                    <div class="service-name">
+                        <span class="service-icon">${getServiceIcon(service)}</span>
+                        <span>${service}</span>
+                    </div>
+                    <div class="service-stats">
+                        <div class="service-stat">
+                            <span class="service-stat-label">Total</span>
+                            <span class="service-stat-value">${data.total}</span>
+                        </div>
+                        ${data.critical > 0 ? `
+                        <div class="service-stat">
+                            <span class="service-stat-label">Critical</span>
+                            <span class="service-stat-value critical">${data.critical}</span>
+                        </div>
+                        ` : ''}
+                        ${data.high > 0 ? `
+                        <div class="service-stat">
+                            <span class="service-stat-label">High</span>
+                            <span class="service-stat-value high">${data.high}</span>
+                        </div>
+                        ` : ''}
+                        ${data.medium > 0 ? `
+                        <div class="service-stat">
+                            <span class="service-stat-label">Medium</span>
+                            <span class="service-stat-value medium">${data.medium}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Show major issues for a service
+        function showMajorIssues(serviceName) {
+            // Remove active class from all cards
+            document.querySelectorAll('.service-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            // Add active class to clicked card
+            const clickedCard = document.querySelector(`[data-service="${serviceName}"]`);
+            if (clickedCard) clickedCard.classList.add('active');
+            
+            // Get findings for this service
+            const serviceFindings = filteredFindings.filter(f => {
+                return getServiceName(f.detail.findings[0].GeneratorId) === serviceName;
+            });
+            
+            // Sort by severity (Critical > High > Medium > Low)
+            const severityOrder = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3 };
+            serviceFindings.sort((a, b) => {
+                return severityOrder[a.detail.findings[0].Severity.Label] - 
+                       severityOrder[b.detail.findings[0].Severity.Label];
+            });
+            
+            // Update title
+            document.getElementById('major-issues-title').innerHTML = `
+                <span>${getServiceIcon(serviceName)}</span>
+                <span>Major Issues - ${serviceName}</span>
+            `;
+            
+            // Render issues
+            const issuesList = document.getElementById('issues-list');
+            issuesList.innerHTML = serviceFindings.map(finding => {
+                const detail = finding.detail.findings[0];
+                const severity = detail.Severity.Label.toLowerCase();
+                const mitre = getMitreTactic(finding);
+                const remediation = getRemediation(finding);
+                
+                return `
+                    <div class="issue-item ${severity}">
+                        <div class="issue-header">
+                            <div class="issue-title">${detail.Title}</div>
+                            <span class="issue-severity badge severity-${severity}">${detail.Severity.Label}</span>
+                        </div>
+                        <div class="issue-description">${detail.Description}</div>
+                        <div style="margin: 10px 0;">
+                            <span class="mitre-badge">MITRE ATT&CK: ${mitre}</span>
+                        </div>
+                        <div class="issue-meta">
+                            <div class="issue-meta-item">
+                                <span>📍</span>
+                                <span>${detail.Region}</span>
+                            </div>
+                            <div class="issue-meta-item">
+                                <span>🏷️</span>
+                                <span>${detail.Resources[0].Type}</span>
+                            </div>
+                            <div class="issue-meta-item">
+                                <span>⚠️</span>
+                                <span>${detail.Compliance.Status || detail.Compliance.status || 'UNKNOWN'}</span>
+                            </div>
+                            <div class="issue-meta-item">
+                                <span>📅</span>
+                                <span>${new Date(detail.CreatedAt).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                        <div class="remediation-section">
+                            <div class="remediation-title">
+                                <span>🔧</span>
+                                <span>Recommended Fix</span>
+                            </div>
+                            <div class="remediation-steps">${remediation.description}</div>
+                            <div class="code-block">${remediation.cli}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Show the section and scroll to it
+            const section = document.getElementById('major-issues-section');
+            section.classList.add('visible');
+            setTimeout(() => {
+                section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+        
+        // Close major issues section
+        function closeMajorIssues() {
+            document.getElementById('major-issues-section').classList.remove('visible');
+            document.querySelectorAll('.service-card').forEach(card => {
+                card.classList.remove('active');
+            });
+        }
+        
+        // Switch between Executive and Engineer views
+        function switchView(view) {
+            const executiveView = document.getElementById('executive-view');
+            const engineerView = document.getElementById('engineer-view');
+            const executiveBtn = document.getElementById('executive-view-btn');
+            const engineerBtn = document.getElementById('engineer-view-btn');
+            
+            if (view === 'executive') {
+                executiveView.style.display = 'block';
+                engineerView.style.display = 'none';
+                executiveBtn.classList.add('active');
+                engineerBtn.classList.remove('active');
+            } else {
+                executiveView.style.display = 'none';
+                engineerView.style.display = 'block';
+                executiveBtn.classList.remove('active');
+                engineerBtn.classList.add('active');
+            }
+        }
+        
+        // Calculate overall risk score based on severity, exposure, and impact
+        function calculateRiskScore() {
+            let riskScore = 0;
+            let maxScore = filteredFindings.length * 100;
+            
+            filteredFindings.forEach(f => {
+                const detail = f.detail.findings[0];
+                const severity = detail.Severity.Label;
+                const compliance = detail.Compliance.Status || detail.Compliance.status || 'UNKNOWN';
+                const resourceType = detail.Resources[0].Type;
+                
+                // Severity weight
+                let severityWeight = 0;
+                if (severity === 'CRITICAL') severityWeight = 100;
+                else if (severity === 'HIGH') severityWeight = 75;
+                else if (severity === 'MEDIUM') severityWeight = 50;
+                else if (severity === 'LOW') severityWeight = 25;
+                
+                // Impact multiplier (data services get higher weight)
+                let impactMultiplier = 1.0;
+                if (resourceType.includes('S3') || resourceType.includes('Rds') || 
+                    resourceType.includes('Kms') || resourceType.includes('Secrets')) {
+                    impactMultiplier = 1.5;
+                }
+                
+                // Compliance multiplier
+                let complianceMultiplier = 1.0;
+                if (compliance === 'NON_COMPLIANT') complianceMultiplier = 1.3;
+                
+                riskScore += severityWeight * impactMultiplier * complianceMultiplier;
+            });
+            
+            // Normalize to 0-100 scale
+            const normalizedScore = maxScore > 0 ? Math.min(100, Math.round((riskScore / maxScore) * 100)) : 0;
+            
+            document.getElementById('overall-risk-score').textContent = normalizedScore;
+            
+            // Update executive summary
+            const critical = filteredFindings.filter(f => f.detail.findings[0].Severity.Label === 'CRITICAL').length;
+            const high = filteredFindings.filter(f => f.detail.findings[0].Severity.Label === 'HIGH').length;
+            const services = new Set(filteredFindings.map(f => getServiceName(f.detail.findings[0].GeneratorId))).size;
+            const compliant = filteredFindings.filter(f => {
+                const compStatus = f.detail.findings[0].Compliance.Status || f.detail.findings[0].Compliance.status || 'UNKNOWN';
+                return compStatus !== 'NON_COMPLIANT';
+            }).length;
+            const complianceScore = filteredFindings.length > 0 ? Math.round((compliant / filteredFindings.length) * 100) : 100;
+            
+            document.getElementById('exec-critical').textContent = critical;
+            document.getElementById('exec-high').textContent = high;
+            document.getElementById('exec-services').textContent = services;
+            document.getElementById('exec-compliance').textContent = complianceScore + '%';
+        }
+        
+        // Map findings to MITRE ATT&CK tactics
+        function getMitreTactic(finding) {
+            const detail = finding.detail.findings[0];
+            const title = detail.Title.toLowerCase();
+            const description = detail.Description.toLowerCase();
+            
+            if (title.includes('public') || description.includes('0.0.0.0/0') || 
+                description.includes('publicly accessible')) {
+                return 'Initial Access';
+            }
+            if (title.includes('iam') || title.includes('permission') || 
+                title.includes('role') || description.includes('privilege')) {
+                return 'Privilege Escalation';
+            }
+            if (title.includes('encryption') || title.includes('kms') || 
+                title.includes('unencrypted')) {
+                return 'Defense Evasion';
+            }
+            if (title.includes('credentials') || title.includes('keys') || 
+                title.includes('secrets')) {
+                return 'Credential Access';
+            }
+            if (title.includes('exfiltration') || title.includes('s3') || 
+                description.includes('sensitive data')) {
+                return 'Exfiltration';
+            }
+            if (title.includes('logging') || title.includes('monitoring')) {
+                return 'Defense Evasion';
+            }
+            return 'Impact';
+        }
+        
+        // Get remediation guidance
+        function getRemediation(finding) {
+            const detail = finding.detail.findings[0];
+            const generatorId = detail.GeneratorId;
+            
+            if (generatorId.includes('S3.8')) {
+                return {
+                    description: 'Enable S3 Block Public Access at account level',
+                    cli: 'aws s3control put-public-access-block --account-id 123456789012 --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true'
+                };
+            }
+            if (generatorId.includes('KMS.1')) {
+                return {
+                    description: 'Enable automatic key rotation for KMS customer master keys',
+                    cli: 'aws kms enable-key-rotation --key-id <key-id>'
+                };
+            }
+            if (generatorId.includes('EKS.1')) {
+                return {
+                    description: 'Enable secrets encryption for EKS cluster using AWS KMS',
+                    cli: 'aws eks associate-encryption-config --cluster-name <cluster> --encryption-config resources=secrets,provider={keyArn=<kms-key-arn>}'
+                };
+            }
+            if (generatorId.includes('IAM')) {
+                return {
+                    description: 'Enable MFA for IAM users and restrict permissions following least privilege',
+                    cli: 'aws iam enable-mfa-device --user-name <username> --serial-number <mfa-arn> --authentication-code1 <code1> --authentication-code2 <code2>'
+                };
+            }
+            if (generatorId.includes('macie')) {
+                return {
+                    description: 'Enable S3 encryption and restrict bucket access using bucket policies',
+                    cli: 'aws s3api put-bucket-encryption --bucket <bucket-name> --server-side-encryption-configuration \'{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"aws:kms","KMSMasterKeyID":"<kms-key-id>"}}]}\''
+                };
+            }
+            return {
+                description: 'Review finding details and apply security best practices',
+                cli: 'aws securityhub get-findings --filters \'{"Id":[{"Value":"' + finding.id + '","Comparison":"EQUALS"}]}\''
+            };
+        }
+        
+        // Categorize findings into security pillars
+        function getSecurityPillar(finding) {
+            const detail = finding.detail.findings[0];
+            const generatorId = detail.GeneratorId;
+            const resourceType = detail.Resources[0].Type;
+            
+            if (generatorId.includes('IAM') || detail.Title.toLowerCase().includes('iam') ||
+                detail.Title.toLowerCase().includes('permission') || detail.Title.toLowerCase().includes('mfa')) {
+                return 'Identity & Access';
+            }
+            if (generatorId.includes('macie') || detail.Title.toLowerCase().includes('pii') ||
+                detail.Title.toLowerCase().includes('sensitive data') || detail.Title.toLowerCase().includes('hipaa') ||
+                resourceType.includes('S3') && detail.Title.toLowerCase().includes('encryption')) {
+                return 'Data Security';
+            }
+            if (detail.Title.toLowerCase().includes('public') || detail.Title.toLowerCase().includes('0.0.0.0') ||
+                detail.Title.toLowerCase().includes('security group') || generatorId.includes('inspector/network')) {
+                return 'Network Exposure';
+            }
+            if (generatorId.includes('EKS') || generatorId.includes('ECS') || generatorId.includes('ECR') ||
+                generatorId.includes('EC2') || generatorId.includes('inspector')) {
+                return 'Compute & Container';
+            }
+            return 'Compliance & Governance';
+        }
+        
+        // Populate security pillars
+        function populateSecurityPillars() {
+            const pillars = {
+                'Identity & Access': { icon: '👤', color: '#e53e3e', findings: [] },
+                'Network Exposure': { icon: '🌐', color: '#dd6b20', findings: [] },
+                'Data Security': { icon: '🔐', color: '#d69e2e', findings: [] },
+                'Compute & Container': { icon: '🖥️', color: '#3182ce', findings: [] },
+                'Compliance & Governance': { icon: '📋', color: '#805ad5', findings: [] }
+            };
+            
+            filteredFindings.forEach(f => {
+                const pillar = getSecurityPillar(f);
+                if (pillars[pillar]) {
+                    pillars[pillar].findings.push(f);
+                }
+            });
+            
+            const container = document.getElementById('pillars-grid');
+            container.innerHTML = Object.entries(pillars).map(([name, data]) => {
+                const critical = data.findings.filter(f => f.detail.findings[0].Severity.Label === 'CRITICAL').length;
+                const high = data.findings.filter(f => f.detail.findings[0].Severity.Label === 'HIGH').length;
+                const riskScore = (critical * 10 + high * 5);
+                
+                return `
+                    <div class="pillar-card" style="--pillar-color: ${data.color};" onclick="showPillarIssues('${name}')">
+                        <div class="pillar-header">
+                            <span class="pillar-icon">${data.icon}</span>
+                            <span class="pillar-name">${name}</span>
+                        </div>
+                        <div class="pillar-risk-score">${riskScore}</div>
+                        <div class="pillar-findings">
+                            ${data.findings.length} findings
+                            ${critical > 0 ? `| ${critical} critical` : ''}
+                            ${high > 0 ? `| ${high} high` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Show issues for a specific pillar
+        function showPillarIssues(pillarName) {
+            const pillarFindings = filteredFindings.filter(f => getSecurityPillar(f) === pillarName);
+            
+            document.querySelectorAll('.pillar-card').forEach(card => card.classList.remove('active'));
+            
+            const severityOrder = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3 };
+            pillarFindings.sort((a, b) => {
+                return severityOrder[a.detail.findings[0].Severity.Label] - 
+                       severityOrder[b.detail.findings[0].Severity.Label];
+            });
+            
+            document.getElementById('major-issues-title').innerHTML = `
+                <span>🏛️</span>
+                <span>Security Pillar: ${pillarName}</span>
+            `;
+            
+            const issuesList = document.getElementById('issues-list');
+            issuesList.innerHTML = pillarFindings.map(finding => {
+                const detail = finding.detail.findings[0];
+                const severity = detail.Severity.Label.toLowerCase();
+                const mitre = getMitreTactic(finding);
+                const remediation = getRemediation(finding);
+                
+                return `
+                    <div class="issue-item ${severity}">
+                        <div class="issue-header">
+                            <div class="issue-title">${detail.Title}</div>
+                            <span class="issue-severity badge severity-${severity}">${detail.Severity.Label}</span>
+                        </div>
+                        <div class="issue-description">${detail.Description}</div>
+                        <div style="margin: 10px 0;">
+                            <span class="mitre-badge">MITRE: ${mitre}</span>
+                        </div>
+                        <div class="issue-meta">
+                            <div class="issue-meta-item"><span>📍</span><span>${detail.Region}</span></div>
+                            <div class="issue-meta-item"><span>🏷️</span><span>${detail.Resources[0].Type}</span></div>
+                            <div class="issue-meta-item"><span>⚠️</span><span>${detail.Compliance.Status || detail.Compliance.status || 'UNKNOWN'}</span></div>
+                        </div>
+                        <div class="remediation-section">
+                            <div class="remediation-title">
+                                <span>🔧</span>
+                                <span>Recommended Fix</span>
+                            </div>
+                            <div class="remediation-steps">${remediation.description}</div>
+                            <div class="code-block">${remediation.cli}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            const section = document.getElementById('major-issues-section');
+            section.classList.add('visible');
+            setTimeout(() => {
+                section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+        
+        // Populate account breakdown
+        function populateAccountBreakdown() {
+            const accountMap = {};
+            
+            filteredFindings.forEach(f => {
+                const accountId = f.detail.findings[0].AwsAccountId;
+                if (!accountMap[accountId]) {
+                    accountMap[accountId] = {
+                        findings: 0,
+                        critical: 0,
+                        high: 0,
+                        riskScore: 0
+                    };
+                }
+                accountMap[accountId].findings++;
+                const severity = f.detail.findings[0].Severity.Label;
+                if (severity === 'CRITICAL') accountMap[accountId].critical++;
+                if (severity === 'HIGH') accountMap[accountId].high++;
+            });
+            
+            // Calculate risk scores
+            Object.keys(accountMap).forEach(accountId => {
+                const data = accountMap[accountId];
+                data.riskScore = (data.critical * 10) + (data.high * 5) + (data.findings * 1);
+            });
+            
+            const container = document.getElementById('account-breakdown');
+            container.innerHTML = Object.entries(accountMap)
+                .sort((a, b) => b[1].riskScore - a[1].riskScore)
+                .map(([accountId, data]) => {
+                    const isProduction = data.critical > 2 || data.findings > 10;
+                    return `
+                        <div class="account-card ${isProduction ? 'production' : ''}">
+                            <div class="account-id">Account: ${accountId}</div>
+                            <div class="account-risk" style="color: ${data.critical > 0 ? '#c53030' : '#4a5568'};">
+                                Risk: ${data.riskScore}
+                            </div>
+                            <div style="font-size: 0.875rem; color: #718096; margin-top: 8px;">
+                                ${data.findings} findings | ${data.critical} critical | ${data.high} high
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+        }
+        
+        // Pagination functions
+        function changePage(page) {
+            const totalPages = itemsPerPage === 'all' ? 1 : Math.ceil(filteredFindings.length / itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderFindings();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function changeItemsPerPage() {
+            const value = document.getElementById('items-per-page').value;
+            itemsPerPage = value === 'all' ? 'all' : parseInt(value);
+            currentPage = 1; // Reset to first page
+            console.log(`Items per page changed to: ${itemsPerPage}`);
+            console.log(`Total filtered findings: ${filteredFindings.length}`);
+            console.log(`All findings: ${allFindings.length}`);
+            renderFindings();
+        }
+        
+        // Event listeners
+        function initEventListeners() {
+            document.getElementById('severity-filter').addEventListener('change', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+            document.getElementById('region-filter').addEventListener('change', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+            document.getElementById('service-filter').addEventListener('change', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+            document.getElementById('compliance-filter').addEventListener('change', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+            document.getElementById('search-input').addEventListener('input', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+            
+            const itemsPerPageEl = document.getElementById('items-per-page');
+            if (itemsPerPageEl) {
+                // Initialize itemsPerPage from dropdown value
+                const initialValue = itemsPerPageEl.value;
+                itemsPerPage = initialValue === 'all' ? 'all' : parseInt(initialValue) || 25;
+                console.log(`Items per page initialized to: ${itemsPerPage}`);
+                
+                itemsPerPageEl.addEventListener('change', changeItemsPerPage);
+                console.log('Items per page listener attached');
+            } else {
+                console.error('items-per-page element not found!');
+            }
+        }
+        
+        // Initialize
+        initEventListeners();
+        loadFindings();
+    </script>
+</body>
+</html>

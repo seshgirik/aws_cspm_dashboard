@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AWS Security - Ultimate Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); background-size: 400% 400%; animation: gradient 20s ease infinite; padding: 20px; min-height: 100vh; }
+        @keyframes gradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        .container { max-width: 1800px; margin: 0 auto; }
+        header { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); margin-bottom: 30px; }
+        h1 { font-size: 3rem; background: linear-gradient(135deg, #667eea, #764ba2, #f093fb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; }
+        .quick-actions { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 30px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-secondary { background: white; border: 2px solid #e2e8f0; color: #4a5568; }
+        .btn:hover { transform: translateY(-2px); }
+        .filters-panel { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
+        .filter-group { display: flex; flex-direction: column; gap: 8px; }
+        .filter-label { font-size: 0.85rem; color: #4a5568; font-weight: 600; }
+        select, input { padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem; }
+        select:focus, input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .tabs { display: flex; gap: 10px; flex-wrap: wrap; background: white; padding: 15px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .tab { padding: 12px 20px; border-radius: 10px; background: #f7fafc; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .stat-value { font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .chart-card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+        .findings-container { display: grid; gap: 20px; }
+        .finding-card { background: white; border-radius: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); overflow: hidden; transition: all 0.3s; }
+        .finding-card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+        .finding-header { padding: 25px; border-bottom: 2px solid #e2e8f0; }
+        .finding-title { font-size: 1.2rem; font-weight: 700; color: #1a202c; }
+        .badges { display: flex; gap: 10px; margin-top: 10px; }
+        .badge { padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+        .severity-CRITICAL { background: linear-gradient(135deg, #fed7d7, #fc8181); color: #742a2a; }
+        .severity-HIGH { background: linear-gradient(135deg, #feebc8, #f6ad55); color: #7c2d12; }
+        .severity-MEDIUM { background: linear-gradient(135deg, #fefcbf, #faf089); color: #744210; }
+        .severity-LOW { background: linear-gradient(135deg, #c6f6d5, #9ae6b4); color: #22543d; }
+        .finding-body { padding: 25px; }
+        .pagination { display: flex; justify-content: space-between; padding: 20px; background: white; border-radius: 12px; margin-top: 20px; }
+        .page-btn { padding: 8px 16px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; }
+        .page-btn.active { background: #667eea; color: white; border-color: #667eea; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-shield-alt"></i> AWS Security Command Center</h1>
+            <p style="color: #718096; font-size: 1.1rem;">Ultimate Analytics Dashboard with Advanced Controls</p>
+        </header>
+        
+        <div class="quick-actions">
+            <button class="btn btn-primary" onclick="exportJSON()"><i class="fas fa-download"></i> Export JSON</button>
+            <button class="btn btn-primary" onclick="exportCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>
+            <button class="btn btn-secondary" onclick="refreshData()"><i class="fas fa-sync"></i> Refresh</button>
+            <button class="btn btn-secondary" onclick="printReport()"><i class="fas fa-print"></i> Print</button>
+            <button class="btn btn-secondary" onclick="resetFilters()"><i class="fas fa-undo"></i> Reset Filters</button>
+        </div>
+        
+        <div class="filters-panel">
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-sliders-h"></i> Advanced Filters & Controls</h3>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label"><i class="fas fa-exclamation-triangle"></i> Severity</label>
+                    <select id="severity-filter" onchange="applyFilters()">
+                        <option value="">All Severities</option>
+                        <option value="CRITICAL">Critical</option>
+                        <option value="HIGH">High</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="LOW">Low</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label"><i class="fas fa-globe"></i> Region</label>
+                    <select id="region-filter" onchange="applyFilters()"></select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label"><i class="fas fa-calendar-alt"></i> Date From</label>
+                    <input type="date" id="date-from" onchange="applyFilters()">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label"><i class="fas fa-calendar-check"></i> Date To</label>
+                    <input type="date" id="date-to" onchange="applyFilters()">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label"><i class="fas fa-clipboard-check"></i> Compliance</label>
+                    <select id="compliance-filter" onchange="applyFilters()">
+                        <option value="">All Frameworks</option>
+                        <option value="HIPAA">HIPAA</option>
+                        <option value="GDPR">GDPR</option>
+                        <option value="SOC 2">SOC 2</option>
+                        <option value="NIST">NIST</option>
+                        <option value="ISO">ISO 27001</option>
+                        <option value="PCI">PCI-DSS</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label"><i class="fas fa-search"></i> Search</label>
+                    <input type="text" id="search-filter" placeholder="Search..." oninput="applyFilters()">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label"><i class="fas fa-sort"></i> Sort By</label>
+                    <select id="sort-filter" onchange="applyFilters()">
+                        <option value="severity-desc">Severity (High-Low)</option>
+                        <option value="severity-asc">Severity (Low-High)</option>
+                        <option value="date-desc">Date (Newest)</option>
+                        <option value="date-asc">Date (Oldest)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label"><i class="fas fa-list"></i> Items Per Page</label>
+                    <select id="items-per-page" onchange="changePageSize()">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tabs" id="category-tabs"></div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="charts-grid">
+            <div class="chart-card"><canvas id="severity-chart" height="200"></canvas></div>
+            <div class="chart-card"><canvas id="category-chart" height="200"></canvas></div>
+        </div>
+        <div class="findings-container" id="findings-container"></div>
+        <div class="pagination" id="pagination"></div>
+    </div>
+    
+    <script>
+        // Version 2.0 - Fixed Items Per Page pagination - Dec 2 2025
+        let allFindings = [], filteredFindings = [], currentPage = 1, itemsPerPage = 25, currentCategory = 'all';
+        const categories = {
+            vectordb: 'vectordb-', zerotrust: 'zerotrust-', identity: 'idp-', modelhost: 'modelhost-',
+            compliance: 'compliance-', zta: 'zta-', iac: 'iac-', aisupply: 'aisupply-',
+            maestro: 'maestro-', llm: 'llm-', memory: 'memarch-', license: 'license-'
+        };
+        
+        async function loadFindings() {
+            const res = await fetch('security_findings_all.json');
+            allFindings = await res.json();
+            initFilters();
+            renderTabs();
+            applyFilters();
+            createCharts();
+        }
+        
+        function initFilters() {
+            const regions = [...new Set(allFindings.map(f => f.detail.findings[0].Region))];
+            document.getElementById('region-filter').innerHTML = '<option value="">All Regions</option>' +
+                regions.map(r => `<option value="${r}">${r}</option>`).join('');
+            
+            // Initialize itemsPerPage from dropdown value
+            const itemsPerPageSelect = document.getElementById('items-per-page');
+            if (itemsPerPageSelect) {
+                itemsPerPage = parseInt(itemsPerPageSelect.value) || 25;
+                console.log('initFilters: itemsPerPage initialized to', itemsPerPage, 'from dropdown value:', itemsPerPageSelect.value);
+            } else {
+                console.error('items-per-page select element not found!');
+            }
+        }
+        
+        function renderTabs() {
+            const tabs = document.getElementById('category-tabs');
+            tabs.innerHTML = `<div class="tab active" onclick="switchCategory('all')">🌐 All (${allFindings.length})</div>` +
+                Object.entries({vectordb:'🗄️ VectorDB', zerotrust:'🛡️ ZeroTrust', identity:'👤 Identity', modelhost:'🤖 Models',
+                    compliance:'✅ Compliance', zta:'🔐 ZTA', iac:'📦 IaC', aisupply:'🔗 Supply', maestro:'🎭 Maestro',
+                    llm:'🧠 LLM', memory:'💾 Memory', license:'📜 License', aws:'☁️ AWS'})
+                    .map(([k,v]) => {
+                        const count = allFindings.filter(f => matchesCat(f, k)).length;
+                        return `<div class="tab" onclick="switchCategory('${k}')">${v} (${count})</div>`;
+                    }).join('');
+        }
+        
+        function matchesCat(f, cat) {
+            if (cat === 'all') return true;
+            if (cat === 'aws') return !Object.values(categories).some(p => f.id.startsWith(p));
+            return f.id.startsWith(categories[cat] || '');
+        }
+        
+        function switchCategory(cat) {
+            currentCategory = cat;
+            currentPage = 1;
+            document.querySelectorAll('.tab').forEach((t, i) => {
+                t.classList.toggle('active', (i === 0 && cat === 'all') || t.textContent.includes(cat));
+            });
+            applyFilters();
+        }
+        
+        function applyFilters() {
+            const sev = document.getElementById('severity-filter').value;
+            const reg = document.getElementById('region-filter').value;
+            const comp = document.getElementById('compliance-filter').value;
+            const search = document.getElementById('search-filter').value.toLowerCase();
+            const dateFrom = document.getElementById('date-from').value ? new Date(document.getElementById('date-from').value) : null;
+            const dateTo = document.getElementById('date-to').value ? new Date(document.getElementById('date-to').value) : null;
+            const sortBy = document.getElementById('sort-filter').value;
+            
+            filteredFindings = allFindings.filter(f => {
+                const finding = f.detail.findings[0];
+                if (!matchesCat(f, currentCategory)) return false;
+                if (sev && finding.Severity.Label !== sev) return false;
+                if (reg && finding.Region !== reg) return false;
+                if (comp && !(finding.Compliance?.RelatedRequirements || []).some(r => r.includes(comp))) return false;
+                if (search && !finding.Title.toLowerCase().includes(search) && !finding.Description.toLowerCase().includes(search)) return false;
+                const fDate = new Date(finding.CreatedAt);
+                if (dateFrom && fDate < dateFrom) return false;
+                if (dateTo && fDate > dateTo) return false;
+                return true;
+            });
+            
+            // Sort
+            const sevOrder = {'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1};
+            filteredFindings.sort((a, b) => {
+                const af = a.detail.findings[0], bf = b.detail.findings[0];
+                if (sortBy === 'severity-desc') return sevOrder[bf.Severity.Label] - sevOrder[af.Severity.Label];
+                if (sortBy === 'severity-asc') return sevOrder[af.Severity.Label] - sevOrder[bf.Severity.Label];
+                if (sortBy === 'date-desc') return new Date(bf.CreatedAt) - new Date(af.CreatedAt);
+                return new Date(af.CreatedAt) - new Date(bf.CreatedAt);
+            });
+            
+            updateStats();
+            renderFindings();
+            renderPagination();
+        }
+        
+        function updateStats() {
+            const stats = {
+                total: filteredFindings.length,
+                critical: filteredFindings.filter(f => f.detail.findings[0].Severity.Label === 'CRITICAL').length,
+                high: filteredFindings.filter(f => f.detail.findings[0].Severity.Label === 'HIGH').length,
+                medium: filteredFindings.filter(f => f.detail.findings[0].Severity.Label === 'MEDIUM').length,
+                low: filteredFindings.filter(f => f.detail.findings[0].Severity.Label === 'LOW').length
+            };
+            
+            document.getElementById('stats-grid').innerHTML = `
+                <div class="stat-card"><div class="stat-value">${stats.total}</div><div>Total Findings</div></div>
+                <div class="stat-card"><div class="stat-value" style="color:#e53e3e">${stats.critical}</div><div>Critical</div></div>
+                <div class="stat-card"><div class="stat-value" style="color:#dd6b20">${stats.high}</div><div>High</div></div>
+                <div class="stat-card"><div class="stat-value" style="color:#d69e2e">${stats.medium}</div><div>Medium</div></div>
+                <div class="stat-card"><div class="stat-value" style="color:#38a169">${stats.low}</div><div>Low</div></div>
+            `;
+        }
+        
+        function renderFindings() {
+            console.log('renderFindings called - itemsPerPage:', itemsPerPage, 'currentPage:', currentPage, 'filteredFindings.length:', filteredFindings.length);
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const page = filteredFindings.slice(start, end);
+            console.log('Rendering items from', start, 'to', end, '- page.length:', page.length);
+            
+            document.getElementById('findings-container').innerHTML = page.map(f => {
+                const finding = f.detail.findings[0];
+                return `
+                    <div class="finding-card">
+                        <div class="finding-header">
+                            <div class="finding-title">${finding.Title}</div>
+                            <div class="badges">
+                                <span class="badge severity-${finding.Severity.Label}">${finding.Severity.Label}</span>
+                            </div>
+                        </div>
+                        <div class="finding-body">
+                            <p style="margin-bottom:15px;color:#4a5568;"><strong>ID:</strong> ${finding.Id} | <strong>Region:</strong> ${finding.Region}</p>
+                            <p style="color:#4a5568;line-height:1.6;">${finding.Description.substring(0, 300)}...</p>
+                            <div style="margin-top:15px;display:flex;gap:8px;flex-wrap:wrap;">
+                                ${(finding.Compliance?.RelatedRequirements || []).slice(0, 4).map(r => 
+                                    `<span style="background:#edf2f7;padding:4px 10px;border-radius:12px;font-size:0.75rem;">${r}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredFindings.length / itemsPerPage);
+            const btns = [];
+            for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+                btns.push(`<button class="page-btn ${i===currentPage?'active':''}" onclick="goToPage(${i})">${i}</button>`);
+            }
+            document.getElementById('pagination').innerHTML = `
+                <div>Showing ${(currentPage-1)*itemsPerPage+1}-${Math.min(currentPage*itemsPerPage, filteredFindings.length)} of ${filteredFindings.length}</div>
+                <div style="display:flex;gap:10px;">${btns.join('')}</div>
+            `;
+        }
+        
+        function goToPage(page) { currentPage = page; renderFindings(); renderPagination(); }
+        function changePageSize() { 
+            const newValue = parseInt(document.getElementById('items-per-page').value);
+            console.log('changePageSize called - changing from', itemsPerPage, 'to', newValue);
+            itemsPerPage = newValue;
+            currentPage = 1;
+            applyFilters();
+        }
+        function resetFilters() { 
+            document.querySelectorAll('select, input').forEach(e => {
+                // Don't reset items-per-page dropdown
+                if (e.id !== 'items-per-page') {
+                    e.value = '';
+                }
+            }); 
+            currentCategory = 'all'; 
+            applyFilters(); 
+        }
+        function refreshData() { location.reload(); }
+        function printReport() { window.print(); }
+        
+        function exportJSON() {
+            const data = JSON.stringify(filteredFindings, null, 2);
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `findings-${new Date().toISOString()}.json`;
+            a.click();
+        }
+        
+        function exportCSV() {
+            const headers = ['ID', 'Title', 'Severity', 'Region', 'Created', 'Description'];
+            const rows = filteredFindings.map(f => {
+                const finding = f.detail.findings[0];
+                return [
+                    finding.Id,
+                    `"${finding.Title.replace(/"/g, '""')}"`,
+                    finding.Severity.Label,
+                    finding.Region,
+                    finding.CreatedAt,
+                    `"${finding.Description.substring(0, 200).replace(/"/g, '""')}"`
+                ].join(',');
+            });
+            const csv = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `findings-${new Date().toISOString()}.csv`;
+            a.click();
+        }
+        
+        function createCharts() {
+            const sevData = {
+                labels: ['Critical', 'High', 'Medium', 'Low'],
+                datasets: [{
+                    data: [
+                        allFindings.filter(f => f.detail.findings[0].Severity.Label === 'CRITICAL').length,
+                        allFindings.filter(f => f.detail.findings[0].Severity.Label === 'HIGH').length,
+                        allFindings.filter(f => f.detail.findings[0].Severity.Label === 'MEDIUM').length,
+                        allFindings.filter(f => f.detail.findings[0].Severity.Label === 'LOW').length
+                    ],
+                    backgroundColor: ['#e53e3e', '#dd6b20', '#d69e2e', '#38a169']
+                }]
+            };
+            new Chart(document.getElementById('severity-chart'), {
+                type: 'doughnut',
+                data: sevData,
+                options: {plugins: {legend: {position: 'bottom'}}}
+            });
+            
+            const catData = Object.entries(categories).map(([k, v]) => ({
+                name: k,
+                count: allFindings.filter(f => f.id.startsWith(v)).length
+            }));
+            new Chart(document.getElementById('category-chart'), {
+                type: 'bar',
+                data: {
+                    labels: catData.map(c => c.name),
+                    datasets: [{data: catData.map(c => c.count), backgroundColor: '#667eea'}]
+                },
+                options: {plugins: {legend: {display: false}}}
+            });
+        }
+        
+        loadFindings();
+    </script>
+</body>
+</html>

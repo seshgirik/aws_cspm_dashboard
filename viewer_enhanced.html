@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Security Findings - Advanced Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #667eea 75%, #764ba2 100%);
+            background-size: 400% 400%;
+            animation: gradient 20s ease infinite;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 3rem;
+            margin-bottom: 15px;
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+        
+        .subtitle {
+            color: #718096;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        /* Tab Navigation */
+        .tabs-container {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 10px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.5);
+            overflow-x: auto;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            min-width: max-content;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background: white;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab:hover {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            transform: translateY(-2px);
+            border-color: #cbd5e0;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .tab-badge {
+            background: rgba(255,255,255,0.3);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .tab.active .tab-badge {
+            background: rgba(255,255,255,0.3);
+            color: white;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-color, #667eea);
+        }
+        
+        .stat-card h3 {
+            color: #4a5568;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+        
+        .stat-trend {
+            font-size: 0.75rem;
+            color: #718096;
+        }
+        
+        /* Filters */
+        .filters {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .filter-group label {
+            font-size: 0.875rem;
+            color: #4a5568;
+            font-weight: 600;
+        }
+        
+        select, input {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            background: white;
+            color: #2d3748;
+            transition: all 0.3s ease;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Findings Container */
+        .findings-container {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .finding-card {
+            background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .finding-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+        }
+        
+        .finding-header {
+            padding: 25px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 20px;
+        }
+        
+        .finding-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1a202c;
+            flex: 1;
+        }
+        
+        .badges {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .severity-CRITICAL {
+            background: linear-gradient(135deg, #fed7d7 0%, #fc8181 100%);
+            color: #742a2a;
+            box-shadow: 0 2px 10px rgba(197, 48, 48, 0.3);
+        }
+        
+        .severity-HIGH {
+            background: linear-gradient(135deg, #feebc8 0%, #f6ad55 100%);
+            color: #7c2d12;
+            box-shadow: 0 2px 10px rgba(192, 86, 33, 0.3);
+        }
+        
+        .severity-MEDIUM {
+            background: linear-gradient(135deg, #fefcbf 0%, #faf089 100%);
+            color: #744210;
+            box-shadow: 0 2px 10px rgba(151, 90, 22, 0.3);
+        }
+        
+        .severity-LOW {
+            background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
+            color: #22543d;
+            box-shadow: 0 2px 10px rgba(39, 103, 73, 0.3);
+        }
+        
+        .category-badge {
+            background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%);
+            color: #234e52;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .finding-body {
+            padding: 25px;
+        }
+        
+        .finding-section {
+            margin-bottom: 20px;
+        }
+        
+        .finding-section h4 {
+            color: #2d3748;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .finding-section p {
+            color: #4a5568;
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+        
+        .compliance-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .compliance-tag {
+            background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #4a5568;
+            font-weight: 600;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+            font-size: 1.2rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        /* Category Summary */
+        .category-summary {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        
+        .category-summary h2 {
+            color: #2d3748;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .summary-item {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-color, #667eea);
+        }
+        
+        .summary-item h4 {
+            font-size: 0.85rem;
+            color: #4a5568;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .summary-item .count {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #2d3748;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 AWS Security Findings Dashboard</h1>
+            <p class="subtitle">Advanced Analytics & Comprehensive Vulnerability Management</p>
+        </header>
+        
+        <!-- Category Tabs -->
+        <div class="tabs-container">
+            <div class="tabs" id="tabs">
+                <div class="tab active" onclick="switchTab('all')" id="tab-all">
+                    🌐 All Findings <span class="tab-badge" id="count-all">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('vectordb')" id="tab-vectordb">
+                    🗄️ Vector DB <span class="tab-badge" id="count-vectordb">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('zerotrust')" id="tab-zerotrust">
+                    🛡️ Zero Trust <span class="tab-badge" id="count-zerotrust">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('identity')" id="tab-identity">
+                    👤 Identity <span class="tab-badge" id="count-identity">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('modelhost')" id="tab-modelhost">
+                    🤖 Model Hosting <span class="tab-badge" id="count-modelhost">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('compliance')" id="tab-compliance">
+                    ✅ Compliance <span class="tab-badge" id="count-compliance">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('iac')" id="tab-iac">
+                    📦 IaC/Terraform <span class="tab-badge" id="count-iac">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('aisupply')" id="tab-aisupply">
+                    🔗 AI Supply Chain <span class="tab-badge" id="count-aisupply">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('maestro')" id="tab-maestro">
+                    🎭 Maestro Threats <span class="tab-badge" id="count-maestro">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('llm')" id="tab-llm">
+                    🧠 OWASP LLM <span class="tab-badge" id="count-llm">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('memory')" id="tab-memory">
+                    💾 Memory Attacks <span class="tab-badge" id="count-memory">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('license')" id="tab-license">
+                    📜 Licenses <span class="tab-badge" id="count-license">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('aws')" id="tab-aws">
+                    ☁️ AWS Core <span class="tab-badge" id="count-aws">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Category Summary -->
+        <div class="category-summary" id="category-summary">
+            <h2 id="category-title">📊 All Security Findings</h2>
+            <div class="summary-grid" id="summary-grid">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+        
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card" style="--accent-color: #667eea;">
+                <h3>Total Findings</h3>
+                <div class="stat-value" id="total-findings">0</div>
+                <div class="stat-trend">Across all categories</div>
+            </div>
+            <div class="stat-card" style="--accent-color: #e53e3e;">
+                <h3>🔴 Critical</h3>
+                <div class="stat-value" id="critical-count">0</div>
+                <div class="stat-trend" id="critical-percent">0%</div>
+            </div>
+            <div class="stat-card" style="--accent-color: #dd6b20;">
+                <h3>🟠 High</h3>
+                <div class="stat-value" id="high-count">0</div>
+                <div class="stat-trend" id="high-percent">0%</div>
+            </div>
+            <div class="stat-card" style="--accent-color: #d69e2e;">
+                <h3>🟡 Medium</h3>
+                <div class="stat-value" id="medium-count">0</div>
+                <div class="stat-trend" id="medium-percent">0%</div>
+            </div>
+            <div class="stat-card" style="--accent-color: #38a169;">
+                <h3>🟢 Low</h3>
+                <div class="stat-value" id="low-count">0</div>
+                <div class="stat-trend" id="low-percent">0%</div>
+            </div>
+            <div class="stat-card" style="--accent-color: #805ad5;">
+                <h3>Regions</h3>
+                <div class="stat-value" id="regions-count">0</div>
+                <div class="stat-trend">AWS regions covered</div>
+            </div>
+        </div>
+        
+        <!-- Filters -->
+        <div class="filters">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label for="severity-filter">Severity</label>
+                    <select id="severity-filter" onchange="applyFilters()">
+                        <option value="">All Severities</option>
+                        <option value="CRITICAL">Critical</option>
+                        <option value="HIGH">High</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="LOW">Low</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="region-filter">Region</label>
+                    <select id="region-filter" onchange="applyFilters()">
+                        <option value="">All Regions</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="search-filter">Search</label>
+                    <input type="text" id="search-filter" placeholder="Search findings..." oninput="applyFilters()">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Findings Container -->
+        <div class="findings-container" id="findings-container">
+            <!-- Dynamically populated -->
+        </div>
+    </div>
+    
+    <script>
+        let allFindings = [];
+        let filteredFindings = [];
+        let currentTab = 'all';
+        
+        // Category mapping
+        const categoryMap = {
+            'vectordb': { prefix: 'vectordb-', name: '🗄️ Vector Database Protection', icon: '🗄️' },
+            'zerotrust': { prefix: 'zerotrust-', name: '🛡️ Zero Trust Segmentation', icon: '🛡️' },
+            'identity': { prefix: 'idp-', name: '👤 Identity-Based Perimeter', icon: '👤' },
+            'modelhost': { prefix: 'modelhost-', name: '🤖 Secure Model Hosting', icon: '🤖' },
+            'compliance': { prefix: 'compliance-', name: '✅ ISO/SOC2/NIST Compliance', icon: '✅' },
+            'zta': { prefix: 'zta-', name: '🔐 Zero Trust Architecture', icon: '🔐' },
+            'iac': { prefix: 'iac-', name: '📦 Terraform/IaC Security', icon: '📦' },
+            'aisupply': { prefix: 'aisupply-', name: '🔗 AI Supply Chain Security', icon: '🔗' },
+            'maestro': { prefix: 'maestro-', name: '🎭 Maestro Threat Model', icon: '🎭' },
+            'llm': { prefix: 'llm-', name: '🧠 OWASP Top 10 for LLM', icon: '🧠' },
+            'memory': { prefix: 'memarch-', name: '💾 Memory Architecture Attacks', icon: '💾' },
+            'license': { prefix: 'license-', name: '📜 Software License Compliance', icon: '📜' },
+            'aws': { prefix: 'other', name: '☁️ AWS Core Services', icon: '☁️' }
+        };
+        
+        // Switch tabs
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update tab UI
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // Update category title
+            if (tabName === 'all') {
+                document.getElementById('category-title').innerHTML = '📊 All Security Findings';
+            } else {
+                const category = categoryMap[tabName];
+                if (category) {
+                    document.getElementById('category-title').innerHTML = `${category.icon} ${category.name}`;
+                }
+            }
+            
+            applyFilters();
+        }
+        
+        // Check if finding matches tab category
+        function matchesTabCategory(finding, tabName) {
+            if (tabName === 'all') return true;
+            
+            const id = finding.id;
+            const category = categoryMap[tabName];
+            
+            if (!category) return false;
+            
+            if (category.prefix === 'other') {
+                // AWS core - findings that don't match any new category
+                return !Object.keys(categoryMap).some(key => {
+                    const cat = categoryMap[key];
+                    return cat.prefix !== 'other' && id.startsWith(cat.prefix);
+                });
+            }
+            
+            return id.startsWith(category.prefix);
+        }
+        
+        // Get category for finding
+        function getCategoryForFinding(finding) {
+            const id = finding.id;
+            
+            for (const [key, category] of Object.entries(categoryMap)) {
+                if (category.prefix !== 'other' && id.startsWith(category.prefix)) {
+                    return category.name;
+                }
+            }
+            
+            return '☁️ AWS Core Services';
+        }
+        
+        // Update tab counts
+        function updateTabCounts() {
+            const tabs = ['all', 'vectordb', 'zerotrust', 'identity', 'modelhost', 'compliance', 
+                          'zta', 'iac', 'aisupply', 'maestro', 'llm', 'memory', 'license', 'aws'];
+            
+            tabs.forEach(tab => {
+                const count = allFindings.filter(f => matchesTabCategory(f, tab)).length;
+                const countEl = document.getElementById(`count-${tab}`);
+                if (countEl) {
+                    countEl.textContent = count;
+                }
+            });
+        }
+        
+        // Update category summary
+        function updateCategorySummary() {
+            const summary = {
+                total: filteredFindings.length,
+                critical: 0,
+                high: 0,
+                medium: 0,
+                low: 0
+            };
+            
+            filteredFindings.forEach(f => {
+                const severity = f.detail.findings[0].Severity.Label;
+                summary[severity.toLowerCase()]++;
+            });
+            
+            const summaryGrid = document.getElementById('summary-grid');
+            summaryGrid.innerHTML = `
+                <div class="summary-item" style="--accent-color: #667eea;">
+                    <h4>Total</h4>
+                    <div class="count">${summary.total}</div>
+                </div>
+                <div class="summary-item" style="--accent-color: #e53e3e;">
+                    <h4>Critical</h4>
+                    <div class="count">${summary.critical}</div>
+                </div>
+                <div class="summary-item" style="--accent-color: #dd6b20;">
+                    <h4>High</h4>
+                    <div class="count">${summary.high}</div>
+                </div>
+                <div class="summary-item" style="--accent-color: #d69e2e;">
+                    <h4>Medium</h4>
+                    <div class="count">${summary.medium}</div>
+                </div>
+                <div class="summary-item" style="--accent-color: #38a169;">
+                    <h4>Low</h4>
+                    <div class="count">${summary.low}</div>
+                </div>
+            `;
+        }
+        
+        // Load findings
+        async function loadFindings() {
+            try {
+                const response = await fetch('security_findings_all.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                allFindings = await response.json();
+                filteredFindings = allFindings;
+                
+                populateFilters();
+                updateTabCounts();
+                updateStats();
+                updateCategorySummary();
+                renderFindings();
+            } catch (error) {
+                console.error('Error loading findings:', error);
+                document.getElementById('findings-container').innerHTML = 
+                    `<div class="no-results">❌ Error loading findings: ${error.message}<br>Make sure security_findings_all.json exists and is valid JSON.</div>`;
+            }
+        }
+        
+        function populateFilters() {
+            // Get unique regions
+            const regions = [...new Set(allFindings.map(f => f.detail.findings[0].Region))].sort();
+            const regionFilter = document.getElementById('region-filter');
+            regions.forEach(region => {
+                const option = document.createElement('option');
+                option.value = region;
+                option.textContent = region;
+                regionFilter.appendChild(option);
+            });
+        }
+        
+        function updateStats() {
+            const summary = {
+                total: filteredFindings.length,
+                critical: 0,
+                high: 0,
+                medium: 0,
+                low: 0,
+                regions: new Set()
+            };
+            
+            filteredFindings.forEach(f => {
+                const severity = f.detail.findings[0].Severity.Label;
+                summary[severity.toLowerCase()]++;
+                summary.regions.add(f.detail.findings[0].Region);
+            });
+            
+            document.getElementById('total-findings').textContent = summary.total;
+            document.getElementById('critical-count').textContent = summary.critical;
+            document.getElementById('high-count').textContent = summary.high;
+            document.getElementById('medium-count').textContent = summary.medium;
+            document.getElementById('low-count').textContent = summary.low;
+            document.getElementById('regions-count').textContent = summary.regions.size;
+            
+            // Update percentages
+            if (summary.total > 0) {
+                document.getElementById('critical-percent').textContent = 
+                    `${((summary.critical / summary.total) * 100).toFixed(1)}% of findings`;
+                document.getElementById('high-percent').textContent = 
+                    `${((summary.high / summary.total) * 100).toFixed(1)}% of findings`;
+                document.getElementById('medium-percent').textContent = 
+                    `${((summary.medium / summary.total) * 100).toFixed(1)}% of findings`;
+                document.getElementById('low-percent').textContent = 
+                    `${((summary.low / summary.total) * 100).toFixed(1)}% of findings`;
+            }
+        }
+        
+        function applyFilters() {
+            const severity = document.getElementById('severity-filter').value;
+            const region = document.getElementById('region-filter').value;
+            const search = document.getElementById('search-filter').value.toLowerCase();
+            
+            filteredFindings = allFindings.filter(f => {
+                const finding = f.detail.findings[0];
+                
+                // Tab filter
+                if (!matchesTabCategory(f, currentTab)) return false;
+                
+                // Severity filter
+                if (severity && finding.Severity.Label !== severity) return false;
+                
+                // Region filter
+                if (region && finding.Region !== region) return false;
+                
+                // Search filter
+                if (search) {
+                    const title = finding.Title.toLowerCase();
+                    const desc = finding.Description.toLowerCase();
+                    if (!title.includes(search) && !desc.includes(search)) return false;
+                }
+                
+                return true;
+            });
+            
+            updateStats();
+            updateCategorySummary();
+            renderFindings();
+        }
+        
+        function renderFindings() {
+            const container = document.getElementById('findings-container');
+            
+            if (filteredFindings.length === 0) {
+                container.innerHTML = '<div class="no-results">No findings match your filters. Try adjusting your criteria.</div>';
+                return;
+            }
+            
+            container.innerHTML = filteredFindings.map(f => {
+                const finding = f.detail.findings[0];
+                const category = getCategoryForFinding(f);
+                
+                return `
+                    <div class="finding-card">
+                        <div class="finding-header">
+                            <div class="finding-title">${finding.Title}</div>
+                            <div class="badges">
+                                <span class="badge severity-${finding.Severity.Label}">${finding.Severity.Label}</span>
+                                <span class="category-badge">${category}</span>
+                            </div>
+                        </div>
+                        <div class="finding-body">
+                            <div class="finding-section">
+                                <h4>📋 Description</h4>
+                                <p>${finding.Description.substring(0, 400)}${finding.Description.length > 400 ? '...' : ''}</p>
+                            </div>
+                            <div class="finding-section">
+                                <h4>🔧 Remediation</h4>
+                                <p>${finding.Remediation.Recommendation.Text.substring(0, 400)}${finding.Remediation.Recommendation.Text.length > 400 ? '...' : ''}</p>
+                            </div>
+                            <div class="finding-section">
+                                <h4>✅ Compliance Requirements</h4>
+                                <div class="compliance-tags">
+                                    ${(finding.Compliance.RelatedRequirements || []).map(req => 
+                                        `<span class="compliance-tag">${req}</span>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                            <div class="finding-section">
+                                <h4>📍 Details</h4>
+                                <p><strong>ID:</strong> ${finding.Id} | <strong>Region:</strong> ${finding.Region} | <strong>Created:</strong> ${finding.CreatedAt}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Initialize
+        loadFindings();
+    </script>
+</body>
+</html>

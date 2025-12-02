@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "llm-security": {
+      "command": "python3",
+      "args": ["llm-security-mcp-server.py"],
+      "cwd": "/Users/sekondav/CascadeProjects/aws-security-sample-data",
+      "env": {},
+      "description": "LLM Security Analysis MCP Server - provides tools for detecting jailbreaks, analyzing prompts, and querying security findings"
+    }
+  }
+}

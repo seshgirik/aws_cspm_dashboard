@@ -1,0 +1,352 @@
+[
+  {
+    "id": "bedrock-guardrails-001-applyguardrail-api-not-used",
+    "detail": {
+      "findings": [
+        {
+          "SchemaVersion": "2018-10-08",
+          "Id": "bedrock-guardrails-001",
+          "ProductArn": "arn:aws:securityhub:us-east-1:123456789012:product/aws/securityhub",
+          "GeneratorId": "bedrock-security-control/Bedrock.1",
+          "AwsAccountId": "123456789012",
+          "Types": ["AI-ML Security/API Integration"],
+          "CreatedAt": "2025-12-02T05:45:00Z",
+          "UpdatedAt": "2025-12-02T05:45:00Z",
+          "Severity": {"Label": "CRITICAL"},
+          "Region": "us-east-1",
+          "Title": "Bedrock ApplyGuardrail API Not Implemented - No Content Validation",
+          "Description": "Lambda functions invoking Bedrock models without using ApplyGuardrail API for content validation. Current architecture: Lambda -> InvokeModel (direct) -> Response to user. Missing: Lambda -> ApplyGuardrail API (validate input) -> InvokeModel -> ApplyGuardrail API (validate output) -> S3 logging -> SQS for async processing -> QuickSight metrics. Analysis: 15 Lambda functions process 50,000+ requests/day, 0% use ApplyGuardrail API, No pre-invocation content validation, No post-invocation output filtering. Demo scenario: Finance chatbot should block healthcare topics (HIPAA compliance) but currently allows medical advice queries, mixing financial and healthcare guidance inappropriately. Architecture gap: No guardrail layer between user input and model invocation, Missing output sanitization before returning responses, No audit trail in S3 for compliance.",
+          "Remediation": {
+            "Recommendation": {
+              "Text": "Implement ApplyGuardrail API integration: 1) INPUT VALIDATION: Lambda receives user prompt -> Call bedrock.apply_guardrail(source='INPUT', content=user_prompt, guardrailIdentifier='finance-chatbot-guardrail') -> If action='GUARDRAIL_INTERVENED': Log intervention to S3, Return blocked message to user, Send metric to CloudWatch. If action='NONE': Proceed to InvokeModel. 2) OUTPUT VALIDATION: After InvokeModel response -> Call bedrock.apply_guardrail(source='OUTPUT', content=model_response, guardrailIdentifier='finance-chatbot-guardrail') -> If intervened: Block response, log to S3. 3) ASYNC PROCESSING: Send guardrail events to SQS, Lambda consumer processes events, Store results in S3 for QuickSight analysis. 4) DENIED TOPICS: Configure healthcare topic blocking for finance chatbot: 'Do not provide medical advice, diagnoses, or treatment recommendations', Tune iteratively based on CloudWatch metrics. Example code: response = bedrock_runtime.apply_guardrail(guardrailIdentifier='arn:aws:bedrock:us-east-1:123456789012:guardrail/finance-bot', guardrailVersion='1', source='INPUT', content=[{'text': {'text': user_input}}]). Monitor: guardrailInterventionAction, assessments[].topicPolicy.topics (blocked topics), assessments[].contentPolicy.filters (triggered filters).",
+              "Url": "https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_ApplyGuardrail.html"
+            }
+          },
+          "Resources": [{
+            "Type": "AwsLambdaFunction",
+            "Id": "arn:aws:lambda:us-east-1:123456789012:function:finance-chatbot-handler"
+          }],
+          "Compliance": {
+            "Status": "FAILED",
+            "RelatedRequirements": ["OWASP LLM/LLM02", "API Security", "Content Validation"]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "bedrock-guardrails-002-pii-redaction-missing",
+    "detail": {
+      "findings": [
+        {
+          "SchemaVersion": "2018-10-08",
+          "Id": "bedrock-guardrails-002",
+          "ProductArn": "arn:aws:securityhub:us-east-1:123456789012:product/aws/securityhub",
+          "GeneratorId": "bedrock-security-control/Bedrock.2",
+          "AwsAccountId": "123456789012",
+          "Types": ["Data Protection/PII Handling"],
+          "CreatedAt": "2025-12-02T05:45:00Z",
+          "UpdatedAt": "2025-12-02T05:45:00Z",
+          "Severity": {"Label": "CRITICAL"},
+          "Region": "us-east-1",
+          "Title": "Bedrock PII Redaction Disabled - SSN and Sensitive Data Exposure",
+          "Description": "Lambda-based Bedrock application processing PII without ApplyGuardrail API sensitive information filters. Architecture: API Gateway -> Lambda -> Bedrock InvokeModel -> Response (unfiltered). Missing: S3 audit logs, SQS event processing, QuickSight PII detection dashboards. Demo scenario: Finance chatbot user enters SSN (123-45-6789) in query, Model processes and potentially memorizes SSN, Response includes unredacted SSN, No CloudWatch alert triggered. PII types unprotected: Social Security Numbers (SSN), Credit card numbers, Driver's license numbers, Phone numbers, Email addresses. Iterative tuning needed: Configure PII filters with ANONYMIZE action for SSN pattern [XXX-XX-XXXX], Test with sample SSNs, Monitor CloudWatch metrics for detection rate, Refine regex patterns based on false positives/negatives. Current state: 0 PII filters configured in guardrails, Lambda functions have no PII validation logic, S3 logs contain raw PII data, QuickSight dashboards don't track PII exposure incidents. GDPR Article 32, HIPAA 164.312 violations. OWASP LLM06 (Sensitive Information Disclosure).",
+          "Remediation": {
+            "Recommendation": {
+              "Text": "Implement PII protection architecture: 1) LAMBDA INTEGRATION: Update Lambda to call ApplyGuardrail API before and after model invocation. Code: pii_check = bedrock.apply_guardrail(source='INPUT', content=user_input, guardrailIdentifier='pii-protection-guardrail', guardrailVersion='1'). Check for pii_check['assessments'][0]['sensitiveInformationPolicy']['piiEntities'] - blocked types include SSN, CREDIT_CARD, PHONE. 2) GUARDRAIL CONFIG: Configure sensitive information filters: SSN (US_SOCIAL_SECURITY_NUMBER) with ANONYMIZE action, Credit cards (CREDIT_DEBIT_CARD_NUMBER), Driver's licenses (US_DRIVER_LICENSE), Email addresses (EMAIL_ADDRESS), Phone numbers (PHONE_NUMBER). 3) S3 AUDIT TRAIL: Log all PII detections to S3: s3://guardrails-audit/pii-detections/{year}/{month}/{day}/. Include: timestamp, user_id, pii_types_detected, action_taken (ANONYMIZED/BLOCKED), original_text_hash. 4) SQS PROCESSING: Send PII detection events to SQS queue, Lambda consumer aggregates metrics, Generates compliance reports. 5) QUICKSIGHT DASHBOARDS: Create visualization: PII detection trends over time, Most common PII types detected, SSN exposure incidents, Compliance metrics (% of requests filtered). 6) ITERATIVE TUNING: Week 1: Enable SSN detection, monitor false positives. Week 2: Add credit card detection. Week 3: Tune regex patterns based on CloudWatch metrics. Week 4: Production rollout with full PII suite. CLOUDWATCH METRICS: BedrockGuardrails_PIIDetected (Count), BedrockGuardrails_SSNBlocked (Count), BedrockGuardrails_GuardrailIntervention (by PII type).",
+              "Url": "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-pii.html"
+            }
+          },
+          "Resources": [{
+            "Type": "AwsBedrockModel",
+            "Id": "arn:aws:bedrock:us-east-1:123456789012:foundation-model/amazon.titan-text-express-v1"
+          }],
+          "Compliance": {
+            "Status": "FAILED",
+            "RelatedRequirements": ["GDPR/Article 32", "HIPAA/164.312", "PCI DSS/3.4", "OWASP LLM/LLM06"]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "bedrock-guardrails-003-prompt-injection-vulnerable",
+    "detail": {
+      "findings": [
+        {
+          "SchemaVersion": "2018-10-08",
+          "Id": "bedrock-guardrails-003",
+          "ProductArn": "arn:aws:securityhub:us-east-1:123456789012:product/aws/securityhub",
+          "GeneratorId": "bedrock-security-control/Bedrock.3",
+          "AwsAccountId": "123456789012",
+          "Types": ["LLM Security/Prompt Injection"],
+          "CreatedAt": "2025-12-02T05:45:00Z",
+          "UpdatedAt": "2025-12-02T05:45:00Z",
+          "Severity": {"Label": "CRITICAL"},
+          "Region": "us-east-1",
+          "Title": "Prompt Attack Detection Not Enabled - Jailbreaking Vulnerable",
+          "Description": "Bedrock applications vulnerable to prompt injection. Testing revealed: 85% jailbreak success rate (17/20), 92% prompt injection bypass (23/25), system prompts leaked in 12 cases. LLMJacking incident: Exposed API keys led to $46K unauthorized usage in 48 hours. OWASP LLM01 (#1 critical risk).",
+          "Remediation": {
+            "Recommendation": {
+              "Text": "Enable prompt attack detection in Guardrails. Configure jailbreak detection (HIGH threshold). Implement input validation, rate limiting. Rotate API keys, use Secrets Manager. Set cost alerts. Regular red teaming.",
+              "Url": "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-prompt-attack.html"
+            }
+          },
+          "Resources": [{
+            "Type": "AwsBedrockModel",
+            "Id": "arn:aws:bedrock:us-east-1:123456789012:foundation-model/anthropic.claude-instant-v1"
+          }],
+          "Compliance": {
+            "Status": "FAILED",
+            "RelatedRequirements": ["OWASP LLM/LLM01", "NIST AI RMF"]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "bedrock-guardrails-004-denied-topics-missing",
+    "detail": {
+      "findings": [
+        {
+          "SchemaVersion": "2018-10-08",
+          "Id": "bedrock-guardrails-004",
+          "ProductArn": "arn:aws:securityhub:us-east-1:123456789012:product/aws/securityhub",
+          "GeneratorId": "bedrock-security-control/Bedrock.4",
+          "AwsAccountId": "123456789012",
+          "Types": ["Content Policy/Topic Filtering"],
+          "CreatedAt": "2025-12-02T05:45:00Z",
+          "UpdatedAt": "2025-12-02T05:45:00Z",
+          "Severity": {"Label": "HIGH"},
+          "Region": "us-east-1",
+          "Title": "Denied Topics Not Configured - Healthcare Queries in Finance Chatbot",
+          "Description": "Finance chatbot Lambda function lacks denied topics configuration via ApplyGuardrail API. Demo scenario illustrating iterative tuning: ITERATION 1 (Current): User asks finance bot: 'What are symptoms of high blood pressure?' Bot provides medical advice (inappropriate for finance context). ITERATION 2 (After tuning): Configure denied topic: 'Healthcare and Medical Advice' with definition: 'Do not provide medical diagnoses, treatment recommendations, or health-related guidance'. Test with healthcare queries, Monitor CloudWatch metric: BedrockGuardrails_TopicPolicyViolation. ITERATION 3 (Refinement): User asks: 'Does my health insurance cover financial planning?' Initially blocked (false positive due to 'health' keyword). Refine topic definition to allow health insurance financial questions. Re-test, adjust sensitivity. Architecture gaps: Lambda calls InvokeModel without topic validation, No S3 logging of topic violations, SQS queue not configured for intervention events, QuickSight dashboard missing topic blocking analytics. Current mixing of domains: Finance chatbot answering medical, legal, political questions, No business policy enforcement, 230+ inappropriate cross-domain responses logged in past 30 days.",
+          "Remediation": {
+            "Recommendation": {
+              "Text": "Implement denied topics with iterative tuning: 1) LAMBDA APPLYGUARDRAIL: Add topic validation: topic_check = bedrock.apply_guardrail(source='INPUT', content=user_query, guardrailIdentifier='finance-chatbot-guardrail'). Check: topic_check['assessments'][0]['topicPolicy']['topics'] for blocked topics. 2) GUARDRAIL CONFIGURATION: Create finance-chatbot-guardrail with denied topics: Healthcare/Medical (HIGH sensitivity): 'Do not provide medical diagnoses, symptoms analysis, treatment plans, medication advice, or health-related guidance. Only discuss health insurance financial aspects.' Legal Advice (HIGH): 'Do not provide legal counsel, interpret laws, or recommend legal actions.' Political Content (MEDIUM): 'Avoid political opinions, partisan discussions, or policy recommendations.' Competitor Products (LOW): 'Do not compare or recommend competitor financial products.' 3) ITERATIVE TUNING PROCESS: Week 1: Deploy healthcare topic block, collect CloudWatch metrics, analyze false positives in QuickSight. Week 2: Refine topic definition based on blocked queries stored in S3, adjust sensitivity threshold. Week 3: Add legal advice blocking, monitor intervention rate. Week 4: Fine-tune all topics based on SQS event analysis. 4) S3 AUDIT STORAGE: s3://guardrails-audit/denied-topics/{date}/ stores: original_query, blocked_topic, intervention_reason, user_context. 5) SQS EVENT PROCESSING: Send topic interventions to SQS, Lambda aggregates patterns, Identifies areas needing refinement. 6) QUICKSIGHT DASHBOARDS: Topic blocking trends, Most frequently blocked topics, False positive analysis, Refinement effectiveness over iterations. 7) FALLBACK RESPONSES: Healthcare: 'I'm a financial advisor chatbot. For medical questions, please consult healthcare professionals.' Legal: 'I cannot provide legal advice. Please consult a qualified attorney.' CLOUDWATCH MONITORING: BedrockGuardrails_TopicBlocked (by topic name), BedrockGuardrails_InterventionRate (trend), Custom metric: FalsePositiveRate (requires manual review).",
+              "Url": "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-topics.html"
+            }
+          },
+          "Resources": [{
+            "Type": "AwsBedrockGuardrail",
+            "Id": "arn:aws:bedrock:us-east-1:123456789012:guardrail/customer-service"
+          }],
+          "Compliance": {
+            "Status": "FAILED",
+            "RelatedRequirements": ["Responsible AI", "Business Policy"]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "bedrock-guardrails-005-contextual-grounding-disabled",
+    "detail": {
+      "findings": [
+        {
+          "SchemaVersion": "2018-10-08",
+          "Id": "bedrock-guardrails-005",
+          "ProductArn": "arn:aws:securityhub:us-east-1:123456789012:product/aws/securityhub",
+          "GeneratorId": "bedrock-security-control/Bedrock.5",
+          "AwsAccountId": "123456789012",
+          "Types": ["LLM Quality/Hallucination Prevention"],
+          "CreatedAt": "2025-12-02T05:45:00Z",
+          "UpdatedAt": "2025-12-02T05:45:00Z",
+          "Severity": {"Label": "HIGH"},
+          "Region": "us-east-1",
+          "Title": "Contextual Grounding Check Disabled - Hallucination Risk",
+          "Description": "RAG application without grounding validation. Hallucination rate: 34% of responses contain fabricated content. Real incident: Model fabricated extended warranty terms not in documentation, customer made purchase decision on false info, legal liability. OWASP LLM09 (Overreliance).",
+          "Remediation": {
+            "Recommendation": {
+              "Text": "Enable contextual grounding in Guardrails. Set threshold 0.7-0.8 for critical apps. Validate RAG responses against source documents. Block low-grounding responses. Include source citations. Monitor accuracy metrics.",
+              "Url": "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-grounding.html"
+            }
+          },
+          "Resources": [{
+            "Type": "AwsBedrockApplication",
+            "Id": "arn:aws:bedrock:us-east-1:123456789012:application/product-support-rag"
+          }],
+          "Compliance": {
+            "Status": "FAILED",
+            "RelatedRequirements": ["OWASP LLM/LLM09", "Quality Assurance"]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "bedrock-guardrails-006-word-filters-not-set",
+    "detail": {
+      "findings": [
+        {
+          "SchemaVersion": "2018-10-08",
+          "Id": "bedrock-guardrails-006",
+          "ProductArn": "arn:aws:securityhub:us-east-1:123456789012:product/aws/securityhub",
+          "GeneratorId": "bedrock-security-control/Bedrock.6",
+          "AwsAccountId": "123456789012",
+          "Types": ["Content Safety/Profanity Filtering"],
+          "CreatedAt": "2025-12-02T05:45:00Z",
+          "UpdatedAt": "2025-12-02T05:45:00Z",
+          "Severity": {"Label": "MEDIUM"},
+          "Region": "us-east-1",
+          "Title": "Word Filters Not Configured - Brand Safety Risk",
+          "Description": "No custom word filters or profanity lists configured. Enterprise chatbot allows: Competitor brand names in responses, Internal code names/confidential project names, Inappropriate slang and profanity. Brand guideline violations detected in 12% of customer-facing responses.",
+          "Remediation": {
+            "Recommendation": {
+              "Text": "Configure word filters: Block competitor names, Confidential project code names, Profanity and inappropriate terms. Use managed profanity lists + custom blocked words. Test filter effectiveness. Regular policy updates.",
+              "Url": "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-word-filters.html"
+            }
+          },
+          "Resources": [{
+            "Type": "AwsBedrockGuardrail",
+            "Id": "arn:aws:bedrock:us-east-1:123456789012:guardrail/enterprise-chatbot"
+          }],
+          "Compliance": {
+            "Status": "FAILED",
+            "RelatedRequirements": ["Brand Guidelines", "Corporate Policy"]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "bedrock-guardrails-007-no-monitoring",
+    "detail": {
+      "findings": [
+        {
+          "SchemaVersion": "2018-10-08",
+          "Id": "bedrock-guardrails-007",
+          "ProductArn": "arn:aws:securityhub:us-east-1:123456789012:product/aws/securityhub",
+          "GeneratorId": "bedrock-security-control/Bedrock.7",
+          "AwsAccountId": "123456789012",
+          "Types": ["Monitoring/Observability"],
+          "CreatedAt": "2025-12-02T05:45:00Z",
+          "UpdatedAt": "2025-12-02T05:45:00Z",
+          "Severity": {"Label": "HIGH"},
+          "Region": "us-east-1",
+          "Title": "Guardrails CloudWatch Monitoring Missing - No Intervention Analytics",
+          "Description": "Comprehensive monitoring architecture not implemented for guardrail interventions. Missing components: CloudWatch metrics not configured for ApplyGuardrail API responses, S3 audit logs not created for intervention events, SQS event stream not feeding Lambda processors, QuickSight dashboards not visualizing guardrail effectiveness. Current blind spots: Cannot track how many prompts blocked per hour, No visibility into which guardrail policies trigger most, Unable to measure false positive rates for iterative tuning, No alerting when guardrails bypassed or unusual patterns detected. Continuous refinement blocked: No metrics to drive policy improvements, Cannot A/B test guardrail configurations, Missing feedback loop for tuning healthcare topic blocks in finance chatbot, No data for compliance reporting (SOC 2 CC7.2 requires monitoring). Production environment risks: Guardrails may be silently failing, Attackers could be bypassing policies undetected, Cost optimization impossible without usage metrics, Cannot prove regulatory compliance without audit logs.",
+          "Remediation": {
+            "Recommendation": {
+              "Text": "Build comprehensive monitoring architecture: 1) LAMBDA CLOUDWATCH INTEGRATION: After each ApplyGuardrail call, publish custom metrics: cloudwatch.put_metric_data(Namespace='BedrockGuardrails', MetricName='GuardrailIntervention', Value=1 if intervened else 0, Dimensions=[{'Name':'GuardrailId','Value':'finance-chatbot'},{'Name':'PolicyType','Value':'TopicPolicy'}]). Capture: intervention_action (GUARDRAIL_INTERVENED/NONE), triggered_policies (content, topic, PII, word), processing_latency_ms. 2) S3 AUDIT TRAIL: Store intervention details: s3://guardrails-monitoring/interventions/{yyyy}/{mm}/{dd}/{timestamp}-{request_id}.json. Include: user_query, model_response (if generated), guardrail_assessment_full, action_taken, timestamp. Enable S3 Select for ad-hoc analysis. 3) SQS EVENT STREAM: Lambda publishes to SQS queue for async processing: {event_type: 'guardrail_intervention', guardrail_id: 'finance-chatbot', policy: 'healthcare_topic_blocked', query_hash: 'abc123', timestamp: '2025-12-02T05:45:00Z'}. Consumer Lambda: Aggregates hourly statistics, Identifies trending attack patterns, Flags potential false positives. 4) QUICKSIGHT DASHBOARDS: Create visualizations: Guardrail Intervention Rate (line chart over time), Top Blocked Topics (bar chart), PII Detection Heatmap (by type and hour), Content Filter Triggers (pie chart by category), Latency Impact Analysis (guardrail overhead), Iterative Tuning Effectiveness (before/after refinement comparisons). Data source: Athena queries on S3 audit logs. 5) CLOUDWATCH ALARMS: High intervention rate: >100 blocks/hour (potential attack), Zero interventions: guardrail may be disabled, Latency spike: >500ms guardrail processing, PII detection surge: compliance review needed. SNS notifications to security team. 6) CONTINUOUS REFINEMENT LOOP: Weekly review QuickSight metrics, Identify false positives in S3 logs, Adjust guardrail configurations, Deploy new version, Measure improvement in CloudWatch, Document changes in version control. METRICS TO TRACK: BedrockGuardrails_TotalInvocations, BedrockGuardrails_InterventionRate (%), BedrockGuardrails_PolicyTypeDistribution, BedrockGuardrails_LatencyP50/P95/P99, BedrockGuardrails_CostPerIntervention, Custom_FalsePositiveRate (from manual review), Custom_TuningIterations (version tracking).",
+              "Url": "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-monitoring.html"
+            }
+          },
+          "Resources": [{
+            "Type": "AwsBedrockGuardrail",
+            "Id": "arn:aws:bedrock:us-east-1:123456789012:guardrail/production-guardrail"
+          }],
+          "Compliance": {
+            "Status": "FAILED",
+            "RelatedRequirements": ["SOC 2/CC7.2", "Security Monitoring"]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "bedrock-guardrails-008-streaming-unprotected",
+    "detail": {
+      "findings": [
+        {
+          "SchemaVersion": "2018-10-08",
+          "Id": "bedrock-guardrails-008",
+          "ProductArn": "arn:aws:securityhub:us-east-1:123456789012:product/aws/securityhub",
+          "GeneratorId": "bedrock-security-control/Bedrock.8",
+          "AwsAccountId": "123456789012",
+          "Types": ["LLM Security/Streaming Response"],
+          "CreatedAt": "2025-12-02T05:45:00Z",
+          "UpdatedAt": "2025-12-02T05:45:00Z",
+          "Severity": {"Label": "HIGH"},
+          "Region": "us-east-1",
+          "Title": "Streaming Responses Without Guardrails - Real-time Filter Bypass",
+          "Description": "Bedrock streaming API (InvokeModelWithResponseStream) used without guardrails. Real-time responses bypass content filtering. Harmful content can reach users before detection. Analysis: 15,000+ streaming invocations/day, 0% have guardrails applied, PII exposure in real-time streams, No ability to stop harmful content mid-stream.",
+          "Remediation": {
+            "Recommendation": {
+              "Text": "Enable guardrails for streaming: Configure guardrails with streaming support enabled. Use InvokeModelWithResponseStream with GuardrailIdentifier. Implement circuit breaker to stop harmful streams. Real-time content monitoring. Buffer validation where latency acceptable.",
+              "Url": "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-streaming.html"
+            }
+          },
+          "Resources": [{
+            "Type": "AwsBedrockModel",
+            "Id": "arn:aws:bedrock:us-east-1:123456789012:foundation-model/anthropic.claude-v2"
+          }],
+          "Compliance": {
+            "Status": "FAILED",
+            "RelatedRequirements": ["Real-time Safety", "Content Moderation"]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "bedrock-guardrails-009-multiple-models-unprotected",
+    "detail": {
+      "findings": [
+        {
+          "SchemaVersion": "2018-10-08",
+          "Id": "bedrock-guardrails-009",
+          "ProductArn": "arn:aws:securityhub:us-east-1:123456789012:product/aws/securityhub",
+          "GeneratorId": "bedrock-security-control/Bedrock.9",
+          "AwsAccountId": "123456789012",
+          "Types": ["Security Governance/Policy Enforcement"],
+          "CreatedAt": "2025-12-02T05:45:00Z",
+          "UpdatedAt": "2025-12-02T05:45:00Z",
+          "Severity": {"Label": "CRITICAL"},
+          "Region": "us-east-1",
+          "Title": "Multiple Foundation Models Without Consistent Guardrails",
+          "Description": "Inconsistent guardrail application across foundation models. Inventory: 5 Claude models (2 with guardrails), 3 Titan models (0 with guardrails), 2 Llama models (0 with guardrails), 3 Cohere models (1 with guardrails). Security posture varies by model. Attackers targeting unprotected models.",
+          "Remediation": {
+            "Recommendation": {
+              "Text": "Standardize guardrails: Create organization-wide guardrail baseline. Apply to ALL foundation models. Use SCPs to enforce guardrail requirements. Automated compliance scanning. Centralized guardrail management. Regular audits of model usage.",
+              "Url": "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-best-practices.html"
+            }
+          },
+          "Resources": [{
+            "Type": "AwsAccount",
+            "Id": "arn:aws:iam::123456789012:root"
+          }],
+          "Compliance": {
+            "Status": "FAILED",
+            "RelatedRequirements": ["Security Baseline", "Policy Consistency"]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "bedrock-guardrails-010-cost-monitoring-missing",
+    "detail": {
+      "findings": [
+        {
+          "SchemaVersion": "2018-10-08",
+          "Id": "bedrock-guardrails-010",
+          "ProductArn": "arn:aws:securityhub:us-east-1:123456789012:product/aws/securityhub",
+          "GeneratorId": "bedrock-security-control/Bedrock.10",
+          "AwsAccountId": "123456789012",
+          "Types": ["Cost Security/LLMJacking Prevention"],
+          "CreatedAt": "2025-12-02T05:45:00Z",
+          "UpdatedAt": "2025-12-02T05:45:00Z",
+          "Severity": {"Label": "CRITICAL"},
+          "Region": "us-east-1",
+          "Title": "No Cost Monitoring for Bedrock - LLMJacking Risk",
+          "Description": "No cost alerts configured for Bedrock usage. LLMJacking attack vector: Exposed API keys lead to unauthorized model usage, resource exhaustion, financial DoS. Historical incident: $46K consumption in 48 hours from compromised credentials. Current state: No budget alerts, No anomaly detection, No usage baselines, API keys in GitHub repos (secret scanning not enabled).",
+          "Remediation": {
+            "Recommendation": {
+              "Text": "Implement cost protection: AWS Budgets alerts (daily/weekly thresholds), CloudWatch anomaly detection for usage spikes, Rate limiting per API key/user, Secret scanning in code repositories, API key rotation policy (30 days), Cost allocation tags, Usage quotas per application. Emergency response: Automated key revocation on anomaly, Circuit breakers for cost thresholds.",
+              "Url": "https://docs.aws.amazon.com/bedrock/latest/userguide/security-best-practices.html"
+            }
+          },
+          "Resources": [{
+            "Type": "AwsBedrockAccount",
+            "Id": "arn:aws:bedrock:us-east-1:123456789012:account"
+          }],
+          "Compliance": {
+            "Status": "FAILED",
+            "RelatedRequirements": ["Cost Management", "LLMJacking Prevention", "Financial Controls"]
+          }
+        }
+      ]
+    }
+  }
+]

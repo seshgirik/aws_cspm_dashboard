@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Security Findings - Visual Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .severity-critical { background: linear-gradient(135deg, #fc5c7d 0%, #6a82fb 100%); }
+        .severity-high { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .severity-medium { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .severity-low { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        
+        .finding-section {
+            margin: 50px 0;
+            padding: 30px;
+            background: #f7fafc;
+            border-radius: 16px;
+            border-left: 6px solid #667eea;
+        }
+        
+        .finding-title {
+            font-size: 1.8rem;
+            color: #2d3748;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .finding-subtitle {
+            color: #718096;
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+        }
+        
+        .diagram-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .diagram-box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .diagram-box.problem {
+            border-color: #fc8181;
+            background: #fff5f5;
+        }
+        
+        .diagram-box.solution {
+            border-color: #68d391;
+            background: #f0fff4;
+        }
+        
+        .box-header {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .flow-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .flow-item {
+            background: white;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+        }
+        
+        .flow-item::after {
+            content: "↓";
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+            color: #4a5568;
+        }
+        
+        .flow-item:last-child::after {
+            display: none;
+        }
+        
+        .flow-item.danger { border-color: #fc8181; background: #fff5f5; }
+        .flow-item.warning { border-color: #f6ad55; background: #fffaf0; }
+        .flow-item.success { border-color: #68d391; background: #f0fff4; }
+        .flow-item.info { border-color: #63b3ed; background: #ebf8ff; }
+        
+        .impact-list {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0;
+        }
+        
+        .impact-list li {
+            margin: 10px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        
+        .impact-list li::before {
+            content: "⚠️";
+            position: absolute;
+            left: 0;
+        }
+        
+        .solution-list li::before {
+            content: "✅";
+        }
+        
+        .code-snippet {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .comparison-table th {
+            background: #4a5568;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        
+        .comparison-table td {
+            padding: 12px 15px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f7fafc;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        .badge-critical { background: #fed7d7; color: #c53030; }
+        .badge-high { background: #feebc8; color: #c05621; }
+        .badge-medium { background: #bee3f8; color: #2c5282; }
+        
+        .attack-path {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .attack-step {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+        }
+        
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+        
+        @media (max-width: 968px) {
+            .diagram-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ AWS Security Findings - Visual Analysis</h1>
+        <p style="text-align: center; color: #718096; font-size: 1.1rem; margin-bottom: 30px;">
+            Comprehensive visual breakdown of 374 security findings across your AWS environment
+        </p>
+        
+        <!-- STATISTICS SUMMARY -->
+        <div class="stats-summary">
+            <div class="stat-card severity-critical">
+                <div class="stat-number">109</div>
+                <div class="stat-label">CRITICAL</div>
+            </div>
+            <div class="stat-card severity-high">
+                <div class="stat-number">170</div>
+                <div class="stat-label">HIGH</div>
+            </div>
+            <div class="stat-card severity-medium">
+                <div class="stat-number">80</div>
+                <div class="stat-label">MEDIUM</div>
+            </div>
+            <div class="stat-card severity-low">
+                <div class="stat-number">15</div>
+                <div class="stat-label">LOW</div>
+            </div>
+        </div>
+
+        <!-- FINDING 1: PUBLIC RDS EXPOSURE -->
+        <div class="finding-section">
+            <div class="finding-title">
+                🔴 Critical: RDS Database Publicly Accessible
+                <span class="badge badge-critical">CRITICAL</span>
+            </div>
+            <div class="finding-subtitle">
+                RDS instances exposed to the internet (0.0.0.0/0) allow anyone to attempt connections
+            </div>
+            
+            <div class="diagram-grid">
+                <div class="diagram-box problem">
+                    <div class="box-header">❌ Current Problem</div>
+                    <div class="flow-vertical">
+                        <div class="flow-item danger">
+                            <strong>RDS Instance</strong><br/>
+                            Database: prod-customer-db<br/>
+                            Port: 3306 (MySQL)
+                        </div>
+                        <div class="flow-item danger">
+                            <strong>Security Group</strong><br/>
+                            Inbound: 0.0.0.0/0 → Port 3306<br/>
+                            ⚠️ ALLOWS ENTIRE INTERNET
+                        </div>
+                        <div class="flow-item danger">
+                            <strong>Public Accessibility</strong><br/>
+                            ✓ Publicly Accessible = TRUE<br/>
+                            🌐 Internet-facing endpoint
+                        </div>
+                        <div class="flow-item danger">
+                            <strong>Attack Surface</strong><br/>
+                            • Brute force attacks<br/>
+                            • SQL injection attempts<br/>
+                            • Data exfiltration risk
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="diagram-box solution">
+                    <div class="box-header">✅ Recommended Solution</div>
+                    <div class="flow-vertical">
+                        <div class="flow-item success">
+                            <strong>RDS Instance</strong><br/>
+                            Database: prod-customer-db<br/>
+                            Private subnet only
+                        </div>
+                        <div class="flow-item success">
+                            <strong>Security Group</strong><br/>
+                            Inbound: 10.0.0.0/16 → Port 3306<br/>
+                            ✓ VPC CIDR only
+                        </div>
+                        <div class="flow-item success">
+                            <strong>Public Accessibility</strong><br/>
+                            ✗ Publicly Accessible = FALSE<br/>
+                            🔒 Private endpoint only
+                        </div>
+                        <div class="flow-item success">
+                            <strong>Access Pattern</strong><br/>
+                            • Application tier only<br/>
+                            • Via VPN for admins<br/>
+                            • Zero internet exposure
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="attack-path">
+                <h3 style="margin-bottom: 15px;">🎯 Attack Path (Current State)</h3>
+                <div class="attack-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <strong>Discovery:</strong> Attacker scans AWS IP ranges, finds public RDS endpoint at 
+                        <code>prod-customer-db.c123abc.us-east-1.rds.amazonaws.com:3306</code>
+                    </div>
+                </div>
+                <div class="attack-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <strong>Reconnaissance:</strong> Banner grabbing reveals MySQL 8.0.28, no rate limiting detected
+                    </div>
+                </div>
+                <div class="attack-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <strong>Exploitation:</strong> Brute force attack with common credentials (admin/admin, root/password)
+                        - 10,000 attempts per hour
+                    </div>
+                </div>
+                <div class="attack-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <strong>Impact:</strong> If credentials compromised → Full database access, data exfiltration,
+                        ransomware deployment, compliance violation (GDPR, HIPAA)
+                    </div>
+                </div>
+            </div>
+            
+            <div class="code-snippet">
+<span style="color: #68d391;"># Fix: Make RDS Private</span>
+aws rds modify-db-instance \
+  --db-instance-identifier prod-customer-db \
+  --no-publicly-accessible \
+  --vpc-security-group-ids sg-private-only
+
+<span style="color: #68d391;"># Update Security Group</span>
+aws ec2 revoke-security-group-ingress \
+  --group-id sg-123abc \
+  --protocol tcp --port 3306 \
+  --cidr 0.0.0.0/0
+
+aws ec2 authorize-security-group-ingress \
+  --group-id sg-123abc \
+  --protocol tcp --port 3306 \
+  --source-group sg-application-tier
+            </div>
+        </div>
+
+        <!-- FINDING 2: UNRESTRICTED SECURITY GROUP -->
+        <div class="finding-section">
+            <div class="finding-title">
+                🔴 Critical: Security Group Allows Unrestricted Access
+                <span class="badge badge-critical">CRITICAL</span>
+            </div>
+            <div class="finding-subtitle">
+                Security group allows 0.0.0.0/0 access to RDP (3389), SSH (22), or management ports
+            </div>
+            
+            <div class="diagram-grid">
+                <div class="diagram-box problem">
+                    <div class="box-header">❌ Dangerous Configuration</div>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Protocol</th>
+                                <th>Port</th>
+                                <th>Source</th>
+                                <th>Risk</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background: #fff5f5;">
+                                <td>RDP</td>
+                                <td>3389</td>
+                                <td><strong>0.0.0.0/0</strong></td>
+                                <td>❌ CRITICAL</td>
+                            </tr>
+                            <tr style="background: #fff5f5;">
+                                <td>SSH</td>
+                                <td>22</td>
+                                <td><strong>0.0.0.0/0</strong></td>
+                                <td>❌ CRITICAL</td>
+                            </tr>
+                            <tr style="background: #fff5f5;">
+                                <td>HTTP</td>
+                                <td>80</td>
+                                <td><strong>0.0.0.0/0</strong></td>
+                                <td>⚠️ Review needed</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <ul class="impact-list">
+                        <li>Exposed to 4.3 billion IPv4 addresses</li>
+                        <li>Constant brute force attempts</li>
+                        <li>Bot scanning and exploitation</li>
+                        <li>Credential stuffing attacks</li>
+                    </ul>
+                </div>
+                
+                <div class="diagram-box solution">
+                    <div class="box-header">✅ Secure Configuration</div>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Protocol</th>
+                                <th>Port</th>
+                                <th>Source</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background: #f0fff4;">
+                                <td>RDP</td>
+                                <td>3389</td>
+                                <td><strong>VPN: 10.0.0.0/16</strong></td>
+                                <td>✅ SECURE</td>
+                            </tr>
+                            <tr style="background: #f0fff4;">
+                                <td>SSH</td>
+                                <td>22</td>
+                                <td><strong>Bastion: sg-bastion</strong></td>
+                                <td>✅ SECURE</td>
+                            </tr>
+                            <tr style="background: #f0fff4;">
+                                <td>HTTP</td>
+                                <td>80</td>
+                                <td><strong>ALB: sg-alb</strong></td>
+                                <td>✅ SECURE</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <ul class="impact-list solution-list">
+                        <li>Restricted to corporate network</li>
+                        <li>Bastion host for admin access</li>
+                        <li>Load balancer for web traffic</li>
+                        <li>Zero direct internet exposure</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div style="background: #fff5f5; padding: 20px; border-radius: 8px; border-left: 4px solid #fc8181; margin: 20px 0;">
+                <h3 style="color: #c53030; margin-bottom: 10px;">⚡ Real-World Impact</h3>
+                <p><strong>Case Study:</strong> In 2023, attackers exploited publicly accessible RDP ports to deploy ransomware across 50+ organizations. Average breach cost: <strong>$4.5M per incident</strong>.</p>
+                <p style="margin-top: 10px;"><strong>Time to Exploit:</strong> Automated scanners find open ports in <strong>&lt;1 hour</strong> after exposure. Brute force success within <strong>24-72 hours</strong> on weak passwords.</p>
+            </div>
+        </div>
+
+        <!-- FINDING 3: IAM OVERPRIVILEGES -->
+        <div class="finding-section">
+            <div class="finding-title">
+                🟠 High: IAM Policy Grants Full Administrative Privileges
+                <span class="badge badge-high">HIGH</span>
+            </div>
+            <div class="finding-subtitle">
+                IAM roles/users with AdministratorAccess or overly permissive policies
+            </div>
+            
+            <div class="diagram-grid">
+                <div class="diagram-box problem">
+                    <div class="box-header">❌ Overprivileged IAM Policy</div>
+                    <div class="code-snippet">
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": "*",       <span style="color: #fc8181;">← ALL ACTIONS!</span>
+    "Resource": "*"      <span style="color: #fc8181;">← ALL RESOURCES!</span>
+  }]
+}
+                    </div>
+                    <ul class="impact-list">
+                        <li><strong>Full AWS Control:</strong> Delete any resource, modify security</li>
+                        <li><strong>Data Access:</strong> Read all S3 buckets, RDS databases</li>
+                        <li><strong>Privilege Escalation:</strong> Create new admin users</li>
+                        <li><strong>No Audit Trail:</strong> Can disable CloudTrail logging</li>
+                    </ul>
+                </div>
+                
+                <div class="diagram-box solution">
+                    <div class="box-header">✅ Least Privilege IAM Policy</div>
+                    <div class="code-snippet">
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "s3:GetObject",           <span style="color: #68d391;">← Specific actions</span>
+      "s3:PutObject"
+    ],
+    "Resource": [
+      "arn:aws:s3:::app-bucket/*"  <span style="color: #68d391;">← Specific resource</span>
+    ],
+    "Condition": {
+      "StringEquals": {
+        "aws:RequestedRegion": "us-east-1"
+      }
+    }
+  }]
+}
+                    </div>
+                    <ul class="impact-list solution-list">
+                        <li><strong>Minimal Permissions:</strong> Only what's needed for job function</li>
+                        <li><strong>Scoped Resources:</strong> Specific buckets/resources only</li>
+                        <li><strong>Conditions:</strong> Time-based, IP-based, MFA required</li>
+                        <li><strong>Audit Safe:</strong> Cannot disable security controls</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div style="background: #fffaf0; padding: 20px; border-radius: 8px; border-left: 4px solid #f6ad55; margin: 20px 0;">
+                <h3 style="color: #c05621; margin-bottom: 10px;">📊 By the Numbers</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 15px;">
+                    <div>
+                        <div style="font-size: 2rem; font-weight: bold; color: #c05621;">80%</div>
+                        <div>of breaches involve misuse of privileged credentials</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 2rem; font-weight: bold; color: #c05621;">200+</div>
+                        <div>AWS actions in typical "*" policy</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 2rem; font-weight: bold; color: #c05621;">5%</div>
+                        <div>of permissions actually needed on average</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FINDING 4: UNENCRYPTED DATA -->
+        <div class="finding-section">
+            <div class="finding-title">
+                🟡 Medium: Data at Rest Not Encrypted
+                <span class="badge badge-medium">MEDIUM</span>
+            </div>
+            <div class="finding-subtitle">
+                EBS volumes, RDS instances, or S3 buckets without encryption
+            </div>
+            
+            <div class="diagram-grid">
+                <div class="diagram-box problem">
+                    <div class="box-header">❌ Unencrypted Storage</div>
+                    <div class="flow-vertical">
+                        <div class="flow-item warning">
+                            <strong>EBS Volume</strong><br/>
+                            Encrypted: ❌ NO<br/>
+                            Size: 500 GB<br/>
+                            Contains: Customer PII
+                        </div>
+                        <div class="flow-item warning">
+                            <strong>Risk Scenarios</strong><br/>
+                            • Snapshot shared accidentally<br/>
+                            • Backup media lost/stolen<br/>
+                            • Insider threat access
+                        </div>
+                        <div class="flow-item danger">
+                            <strong>Compliance Impact</strong><br/>
+                            ❌ GDPR Article 32<br/>
+                            ❌ HIPAA §164.312(a)(2)(iv)<br/>
+                            ❌ PCI DSS Requirement 3.4
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="diagram-box solution">
+                    <div class="box-header">✅ Encrypted Storage</div>
+                    <div class="flow-vertical">
+                        <div class="flow-item success">
+                            <strong>EBS Volume</strong><br/>
+                            Encrypted: ✅ YES<br/>
+                            KMS Key: Customer-managed<br/>
+                            Rotation: Enabled
+                        </div>
+                        <div class="flow-item success">
+                            <strong>Protection</strong><br/>
+                            • Data encrypted at rest<br/>
+                            • Automated key rotation<br/>
+                            • CloudTrail audit logging
+                        </div>
+                        <div class="flow-item success">
+                            <strong>Compliance</strong><br/>
+                            ✅ GDPR compliant<br/>
+                            ✅ HIPAA compliant<br/>
+                            ✅ PCI DSS compliant
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="code-snippet">
+<span style="color: #68d391;"># Enable EBS Encryption by Default</span>
+aws ec2 enable-ebs-encryption-by-default --region us-east-1
+
+<span style="color: #68d391;"># Encrypt Existing Volume (requires snapshot & restore)</span>
+aws ec2 create-snapshot --volume-id vol-123abc --description "Pre-encryption backup"
+aws ec2 copy-snapshot --source-snapshot-id snap-123abc --encrypted \
+  --kms-key-id arn:aws:kms:us-east-1:123456789012:key/abc123
+
+<span style="color: #68d391;"># Enable RDS Encryption</span>
+aws rds modify-db-instance --db-instance-identifier prod-db \
+  --storage-encrypted --kms-key-id arn:aws:kms:us-east-1:123456789012:key/abc123
+            </div>
+        </div>
+
+        <!-- FINDING 5: CLOUDTRAIL DISABLED -->
+        <div class="finding-section">
+            <div class="finding-title">
+                🟠 High: CloudTrail Not Enabled in All Regions
+                <span class="badge badge-high">HIGH</span>
+            </div>
+            <div class="finding-subtitle">
+                Missing audit logs prevent detection and investigation of security incidents
+            </div>
+            
+            <div class="diagram-grid">
+                <div class="diagram-box problem">
+                    <div class="box-header">❌ Logging Gaps</div>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                            <div style="background: #f0fff4; padding: 15px; border-radius: 8px; border: 2px solid #68d391;">
+                                <strong>us-east-1</strong><br/>✅ Enabled
+                            </div>
+                            <div style="background: #fff5f5; padding: 15px; border-radius: 8px; border: 2px solid #fc8181;">
+                                <strong>us-west-2</strong><br/>❌ Disabled
+                            </div>
+                            <div style="background: #fff5f5; padding: 15px; border-radius: 8px; border: 2px solid #fc8181;">
+                                <strong>eu-west-1</strong><br/>❌ Disabled
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="impact-list">
+                        <li><strong>Blind Spots:</strong> No visibility into API activity in 2 regions</li>
+                        <li><strong>Incident Response:</strong> Cannot investigate breaches</li>
+                        <li><strong>Compliance:</strong> Fails audit requirements</li>
+                        <li><strong>Attribution:</strong> Unknown who made changes</li>
+                    </ul>
+                </div>
+                
+                <div class="diagram-box solution">
+                    <div class="box-header">✅ Complete Logging</div>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                            <div style="background: #f0fff4; padding: 15px; border-radius: 8px; border: 2px solid #68d391;">
+                                <strong>us-east-1</strong><br/>✅ Enabled
+                            </div>
+                            <div style="background: #f0fff4; padding: 15px; border-radius: 8px; border: 2px solid #68d391;">
+                                <strong>us-west-2</strong><br/>✅ Enabled
+                            </div>
+                            <div style="background: #f0fff4; padding: 15px; border-radius: 8px; border: 2px solid #68d391;">
+                                <strong>eu-west-1</strong><br/>✅ Enabled
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="impact-list solution-list">
+                        <li><strong>Complete Visibility:</strong> All API calls logged</li>
+                        <li><strong>Forensics Ready:</strong> Full investigation capability</li>
+                        <li><strong>Compliance:</strong> Meets audit requirements</li>
+                        <li><strong>Alerting:</strong> Real-time security monitoring</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="code-snippet">
+<span style="color: #68d391;"># Create Multi-Region CloudTrail</span>
+aws cloudtrail create-trail \
+  --name organization-trail \
+  --s3-bucket-name aws-cloudtrail-logs-123456789012 \
+  --is-multi-region-trail \
+  --enable-log-file-validation
+
+<span style="color: #68d391;"># Start Logging</span>
+aws cloudtrail start-logging --name organization-trail
+
+<span style="color: #68d391;"># Verify Status</span>
+aws cloudtrail get-trail-status --name organization-trail
+            </div>
+        </div>
+
+        <!-- FINDING 6: AI/ML SECURITY -->
+        <div class="finding-section">
+            <div class="finding-title">
+                🟠 High: LLM Without Guardrails or Rate Limiting
+                <span class="badge badge-high">HIGH</span>
+            </div>
+            <div class="finding-subtitle">
+                AI/ML endpoints exposed without protection against prompt injection, jailbreaks, or DoS
+            </div>
+            
+            <div class="diagram-grid">
+                <div class="diagram-box problem">
+                    <div class="box-header">❌ Unprotected LLM Endpoint</div>
+                    <div class="flow-vertical">
+                        <div class="flow-item danger">
+                            <strong>API Endpoint</strong><br/>
+                            https://api.example.com/chat<br/>
+                            Authentication: API Key only
+                        </div>
+                        <div class="flow-item danger">
+                            <strong>Vulnerabilities</strong><br/>
+                            ❌ No input validation<br/>
+                            ❌ No rate limiting<br/>
+                            ❌ No content filtering
+                        </div>
+                        <div class="flow-item danger">
+                            <strong>Attack Vectors</strong><br/>
+                            • Prompt injection<br/>
+                            • Jailbreak attempts<br/>
+                            • Resource exhaustion<br/>
+                            • Data exfiltration via prompts
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="diagram-box solution">
+                    <div class="box-header">✅ Protected LLM Architecture</div>
+                    <div class="flow-vertical">
+                        <div class="flow-item success">
+                            <strong>WAF + API Gateway</strong><br/>
+                            Rate Limit: 100 req/min<br/>
+                            IP throttling enabled
+                        </div>
+                        <div class="flow-item success">
+                            <strong>Bedrock Guardrails</strong><br/>
+                            ✅ Content filtering<br/>
+                            ✅ PII detection/redaction<br/>
+                            ✅ Prompt validation
+                        </div>
+                        <div class="flow-item success">
+                            <strong>Monitoring</strong><br/>
+                            • CloudWatch metrics<br/>
+                            • Anomaly detection<br/>
+                            • Security alerts<br/>
+                            • Audit logging
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: #fff5f5; padding: 20px; border-radius: 8px; border-left: 4px solid #fc8181; margin: 20px 0;">
+                <h3 style="color: #c53030; margin-bottom: 10px;">🎯 OWASP Top 10 for LLMs</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                    <div>
+                        <strong>LLM01:</strong> Prompt Injection<br/>
+                        <strong>LLM02:</strong> Insecure Output Handling<br/>
+                        <strong>LLM03:</strong> Training Data Poisoning<br/>
+                        <strong>LLM04:</strong> Model Denial of Service<br/>
+                        <strong>LLM05:</strong> Supply Chain Vulnerabilities
+                    </div>
+                    <div>
+                        <strong>LLM06:</strong> Sensitive Information Disclosure<br/>
+                        <strong>LLM07:</strong> Insecure Plugin Design<br/>
+                        <strong>LLM08:</strong> Excessive Agency<br/>
+                        <strong>LLM09:</strong> Overreliance<br/>
+                        <strong>LLM10:</strong> Model Theft
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUMMARY AND NEXT STEPS -->
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; border-radius: 16px; margin: 40px 0;">
+            <h2 style="font-size: 2rem; margin-bottom: 20px;">🎯 Recommended Action Plan</h2>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 30px;">
+                <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px;">
+                    <h3 style="font-size: 1.3rem; margin-bottom: 10px;">🚨 Immediate (24h)</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin: 8px 0;">✓ Disable public RDS access</li>
+                        <li style="margin: 8px 0;">✓ Restrict security groups</li>
+                        <li style="margin: 8px 0;">✓ Enable CloudTrail</li>
+                        <li style="margin: 8px 0;">✓ Review admin IAM policies</li>
+                    </ul>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px;">
+                    <h3 style="font-size: 1.3rem; margin-bottom: 10px;">⚡ Short-term (1 week)</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin: 8px 0;">✓ Enable encryption at rest</li>
+                        <li style="margin: 8px 0;">✓ Implement least privilege IAM</li>
+                        <li style="margin: 8px 0;">✓ Deploy Bedrock guardrails</li>
+                        <li style="margin: 8px 0;">✓ Enable KMS key rotation</li>
+                    </ul>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px;">
+                    <h3 style="font-size: 1.3rem; margin-bottom: 10px;">📅 Long-term (1 month)</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin: 8px 0;">✓ Implement WAF rules</li>
+                        <li style="margin: 8px 0;">✓ Set up Security Hub</li>
+                        <li style="margin: 8px 0;">✓ Deploy GuardDuty</li>
+                        <li style="margin: 8px 0;">✓ Automate compliance checks</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; padding: 30px; background: #f7fafc; border-radius: 12px;">
+            <h3 style="color: #2d3748; font-size: 1.5rem; margin-bottom: 15px;">📊 Impact Summary</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto;">
+                <div>
+                    <div style="font-size: 2rem; font-weight: bold; color: #667eea;">279</div>
+                    <div style="color: #718096;">Critical + High Findings</div>
+                </div>
+                <div>
+                    <div style="font-size: 2rem; font-weight: bold; color: #667eea;">82</div>
+                    <div style="color: #718096;">AI/ML Security Issues</div>
+                </div>
+                <div>
+                    <div style="font-size: 2rem; font-weight: bold; color: #667eea;">21</div>
+                    <div style="color: #718096;">Public Exposure Risks</div>
+                </div>
+                <div>
+                    <div style="font-size: 2rem; font-weight: bold; color: #667eea;">51</div>
+                    <div style="color: #718096;">Encryption Gaps</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

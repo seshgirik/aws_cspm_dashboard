@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Security Dashboard - Visual Analysis Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.9;
+        }
+        
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 12px;
+        }
+        
+        .card-description {
+            color: #718096;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .card-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        .badge-findings {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .badge-analysis {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+        
+        .badge-viewer {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+        
+        .stats {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            margin: 40px 0;
+            color: white;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ AWS Security Dashboard</h1>
+            <p class="subtitle">Visual Analysis & Interactive Viewers</p>
+        </div>
+        
+        <div class="stats">
+            <h2 style="margin-bottom: 20px; font-size: 1.5rem;">📊 Security Posture Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">374</div>
+                    <div class="stat-label">Total Findings</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">109</div>
+                    <div class="stat-label">Critical</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">170</div>
+                    <div class="stat-label">High</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">82</div>
+                    <div class="stat-label">AI/ML Security</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">51</div>
+                    <div class="stat-label">Encryption Gaps</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cards-grid">
+            <!-- Interactive Viewers -->
+            <a href="viewer_ultimate.html" class="card">
+                <div class="card-icon">📊</div>
+                <div class="card-title">Ultimate Analytics Dashboard</div>
+                <div class="card-description">
+                    Interactive dashboard with advanced filtering, sorting, and pagination. View security findings with STRIDE and MITRE ATT&CK threat modeling.
+                </div>
+                <div class="card-meta">
+                    <span class="badge badge-viewer">Interactive</span>
+                    <span class="badge badge-analysis">374 Findings</span>
+                </div>
+            </a>
+            
+            <a href="viewer.html" class="card">
+                <div class="card-icon">📈</div>
+                <div class="card-title">Analytics Dashboard</div>
+                <div class="card-description">
+                    Comprehensive analytics with charts, graphs, and detailed finding breakdown. Includes severity distribution and compliance tracking.
+                </div>
+                <div class="card-meta">
+                    <span class="badge badge-viewer">Interactive</span>
+                    <span class="badge badge-analysis">Real-time</span>
+                </div>
+            </a>
+            
+            <a href="viewer_enhanced.html" class="card">
+                <div class="card-icon">🔍</div>
+                <div class="card-title">Enhanced Dashboard</div>
+                <div class="card-description">
+                    Enhanced viewer with advanced search capabilities and detailed finding inspection. Perfect for deep-dive analysis.
+                </div>
+                <div class="card-meta">
+                    <span class="badge badge-viewer">Interactive</span>
+                    <span class="badge badge-analysis">Deep Dive</span>
+                </div>
+            </a>
+            
+            <!-- Visual Analysis Pages -->
+            <a href="security_findings_visual_analysis.html" class="card">
+                <div class="card-icon">🎯</div>
+                <div class="card-title">Security Findings - Visual Analysis</div>
+                <div class="card-description">
+                    Comprehensive visual breakdown of top security issues including public exposure, IAM overprivileges, encryption gaps, and AI/ML security.
+                </div>
+                <div class="card-meta">
+                    <span class="badge badge-findings">Top 6 Issues</span>
+                    <span class="badge badge-analysis">Visual Diagrams</span>
+                </div>
+            </a>
+            
+            <a href="symmetric_vs_asymmetric_signatures.html" class="card">
+                <div class="card-icon">🔐</div>
+                <div class="card-title">Symmetric vs Asymmetric Keys</div>
+                <div class="card-description">
+                    Deep-dive into why symmetric keys are problematic for digital signatures. Includes flow diagrams, attack scenarios, and AWS KMS implementation.
+                </div>
+                <div class="card-meta">
+                    <span class="badge badge-findings">MEDIUM</span>
+                    <span class="badge badge-analysis">Cryptography</span>
+                </div>
+            </a>
+            
+            <!-- Additional Resources -->
+            <a href="bedrock_security_flow.html" class="card">
+                <div class="card-icon">🤖</div>
+                <div class="card-title">Bedrock Security Flow</div>
+                <div class="card-description">
+                    AWS Bedrock security architecture and guardrails implementation. Visual guide to AI/ML security best practices.
+                </div>
+                <div class="card-meta">
+                    <span class="badge badge-analysis">AI/ML</span>
+                    <span class="badge badge-viewer">Architecture</span>
+                </div>
+            </a>
+        </div>
+        
+        <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 16px; padding: 30px; margin: 40px 0; color: white; text-align: center;">
+            <h2 style="margin-bottom: 15px; font-size: 1.5rem;">📁 Data Sources</h2>
+            <p style="opacity: 0.9; line-height: 1.8;">
+                <strong>security_findings_all.json</strong> - 374 findings with STRIDE & MITRE ATT&CK threat models<br/>
+                <strong>bedrock_guardrails_findings.json</strong> - AI/ML specific security findings<br/>
+                <strong>findings_by_date/</strong> - Historical findings organized by date
+            </p>
+        </div>
+        
+        <div style="text-align: center; color: white; margin-top: 50px; opacity: 0.8;">
+            <p>🔒 AWS CSPM Dashboard | Security Findings Analysis & Threat Modeling</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                Repository: <a href="https://github.com/seshgirik/aws_cspm_dashboard" style="color: white; text-decoration: underline;">github.com/seshgirik/aws_cspm_dashboard</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

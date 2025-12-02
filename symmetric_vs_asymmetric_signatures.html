@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symmetric vs Asymmetric Key Signatures - Visual Explanation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+        
+        .alert {
+            background: #fff5f5;
+            border-left: 4px solid #fc8181;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        
+        .alert-title {
+            font-weight: bold;
+            color: #c53030;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .section {
+            margin: 40px 0;
+        }
+        
+        .section-title {
+            font-size: 1.8rem;
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        .badge-problem {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .badge-solution {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+        
+        .diagram-container {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px 0;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .flow-box {
+            background: white;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 20px;
+            min-width: 180px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .flow-box.aws {
+            background: #ff9900;
+            color: white;
+            border-color: #ff9900;
+        }
+        
+        .flow-box.key {
+            background: #805ad5;
+            color: white;
+            border-color: #805ad5;
+        }
+        
+        .flow-box.public-key {
+            background: #48bb78;
+            color: white;
+            border-color: #48bb78;
+        }
+        
+        .flow-box.private-key {
+            background: #e53e3e;
+            color: white;
+            border-color: #e53e3e;
+        }
+        
+        .flow-box.artifact {
+            background: #4299e1;
+            color: white;
+            border-color: #4299e1;
+        }
+        
+        .flow-title {
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+        
+        .flow-desc {
+            font-size: 0.85rem;
+            opacity: 0.95;
+        }
+        
+        .arrow {
+            font-size: 2rem;
+            color: #4a5568;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .comparison-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 25px;
+        }
+        
+        .comparison-card.problem {
+            border-color: #fc8181;
+            background: #fff5f5;
+        }
+        
+        .comparison-card.solution {
+            border-color: #68d391;
+            background: #f0fff4;
+        }
+        
+        .card-header {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .icon {
+            font-size: 1.5rem;
+        }
+        
+        .pros-cons {
+            margin: 15px 0;
+        }
+        
+        .pros-cons-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .pros-cons ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+        
+        .pros-cons li {
+            margin: 8px 0;
+            display: flex;
+            align-items: start;
+            gap: 8px;
+        }
+        
+        .pros-cons li:before {
+            content: "•";
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .pro li:before {
+            color: #48bb78;
+        }
+        
+        .con li:before {
+            color: #f56565;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .code-comment {
+            color: #68d391;
+        }
+        
+        .recommendation {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+        }
+        
+        .recommendation h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .recommendation ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .recommendation li {
+            margin: 10px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .recommendation li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            color: #68d391;
+        }
+        
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .flow-diagram {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Symmetric vs Asymmetric Key Signatures</h1>
+        <p class="subtitle">Understanding the Security Finding: Why Symmetric Keys Are Problematic for Digital Signatures</p>
+        
+        <div class="alert">
+            <div class="alert-title">⚠️ Security Finding - MEDIUM Severity</div>
+            <p><strong>Issue:</strong> Organization uses symmetric KMS keys for code signing and digital signatures requiring online AWS connectivity for each signature verification.</p>
+            <p><strong>Impact:</strong> Creates single point of failure, defeats offline verification, introduces latency and availability risks.</p>
+        </div>
+
+        <!-- SYMMETRIC KEY APPROACH (THE PROBLEM) -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="icon">❌</span>
+                Symmetric Key Signatures (The Problem)
+                <span class="badge badge-problem">CURRENT APPROACH</span>
+            </h2>
+            
+            <div class="diagram-container">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #c53030;">🔴 Signing with Symmetric Key</h3>
+                <div class="flow-diagram">
+                    <div class="flow-box artifact">
+                        <div class="flow-title">Software Artifact</div>
+                        <div class="flow-desc">app-v1.2.zip<br/>Hash: abc123...</div>
+                    </div>
+                    
+                    <div class="arrow">→</div>
+                    
+                    <div class="flow-box aws">
+                        <div class="flow-title">AWS KMS</div>
+                        <div class="flow-desc">Symmetric Key<br/>🔑 (Secret)</div>
+                    </div>
+                    
+                    <div class="arrow">→</div>
+                    
+                    <div class="flow-box key">
+                        <div class="flow-title">Signature (HMAC)</div>
+                        <div class="flow-desc">Encrypted Hash<br/>Using Same Key</div>
+                    </div>
+                </div>
+                
+                <h3 style="text-align: center; margin: 30px 0 20px; color: #c53030;">🔴 Verification with Symmetric Key</h3>
+                <div class="flow-diagram">
+                    <div class="flow-box artifact">
+                        <div class="flow-title">Received Artifact</div>
+                        <div class="flow-desc">app-v1.2.zip<br/>+ Signature</div>
+                    </div>
+                    
+                    <div class="arrow">→</div>
+                    
+                    <div class="flow-box aws">
+                        <div class="flow-title">⚠️ MUST Call AWS KMS</div>
+                        <div class="flow-desc">Same Symmetric Key<br/>🔑 (Secret)<br/>Online Only!</div>
+                    </div>
+                    
+                    <div class="arrow">→</div>
+                    
+                    <div class="flow-box">
+                        <div class="flow-title">Verification Result</div>
+                        <div class="flow-desc">✓ Valid or<br/>✗ Invalid</div>
+                    </div>
+                </div>
+                
+                <div style="background: #fff5f5; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #fc8181;">
+                    <strong>⚠️ Critical Problem:</strong> The verifier MUST have access to the same secret key used for signing. This means:
+                    <ul style="margin-top: 10px; padding-left: 20px;">
+                        <li>Every verification requires calling AWS KMS API</li>
+                        <li>No offline verification possible</li>
+                        <li>Creates AWS as single point of failure</li>
+                        <li>Increases latency and costs</li>
+                        <li>Cannot distribute artifacts to air-gapped environments</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="code-block">
+<span class="code-comment"># Symmetric Key Signing (HMAC)</span>
+secret_key = "abc123..." <span class="code-comment"># Same key for signing AND verifying</span>
+
+<span class="code-comment"># Signing (in AWS)</span>
+signature = HMAC(secret_key, artifact_hash)
+
+<span class="code-comment"># Verification (REQUIRES AWS KMS access)</span>
+aws_kms_response = kms.verify(
+    KeyId='symmetric-key-id',
+    Message=artifact_hash,
+    Signature=signature
+)  <span class="code-comment"># ❌ Must call AWS every time!</span>
+            </div>
+        </div>
+
+        <!-- ASYMMETRIC KEY APPROACH (THE SOLUTION) -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="icon">✅</span>
+                Asymmetric Key Signatures (The Solution)
+                <span class="badge badge-solution">RECOMMENDED</span>
+            </h2>
+            
+            <div class="diagram-container">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #2f855a;">🟢 Signing with Private Key</h3>
+                <div class="flow-diagram">
+                    <div class="flow-box artifact">
+                        <div class="flow-title">Software Artifact</div>
+                        <div class="flow-desc">app-v1.2.zip<br/>Hash: abc123...</div>
+                    </div>
+                    
+                    <div class="arrow">→</div>
+                    
+                    <div class="flow-box private-key">
+                        <div class="flow-title">AWS KMS</div>
+                        <div class="flow-desc">Private Key 🔒<br/>(Kept Secret in AWS)</div>
+                    </div>
+                    
+                    <div class="arrow">→</div>
+                    
+                    <div class="flow-box key">
+                        <div class="flow-title">Digital Signature</div>
+                        <div class="flow-desc">Signed with<br/>Private Key</div>
+                    </div>
+                </div>
+                
+                <h3 style="text-align: center; margin: 30px 0 20px; color: #2f855a;">🟢 Verification with Public Key (Offline!)</h3>
+                <div class="flow-diagram">
+                    <div class="flow-box artifact">
+                        <div class="flow-title">Received Artifact</div>
+                        <div class="flow-desc">app-v1.2.zip<br/>+ Signature</div>
+                    </div>
+                    
+                    <div class="arrow">→</div>
+                    
+                    <div class="flow-box public-key">
+                        <div class="flow-title">✓ Public Key (Local)</div>
+                        <div class="flow-desc">Public Key 🔓<br/>(Can be shared!)<br/>No AWS needed!</div>
+                    </div>
+                    
+                    <div class="arrow">→</div>
+                    
+                    <div class="flow-box">
+                        <div class="flow-title">✅ Verification Result</div>
+                        <div class="flow-desc">Offline!<br/>Fast & Secure</div>
+                    </div>
+                </div>
+                
+                <div style="background: #f0fff4; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #68d391;">
+                    <strong>✅ Key Benefit:</strong> Public key can be distributed freely and used for verification without AWS:
+                    <ul style="margin-top: 10px; padding-left: 20px;">
+                        <li>Offline verification anywhere</li>
+                        <li>No AWS dependency for verification</li>
+                        <li>Works in air-gapped environments</li>
+                        <li>Fast, zero latency verification</li>
+                        <li>Public key can be embedded in applications</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="code-block">
+<span class="code-comment"># Asymmetric Key Signing (RSA/ECDSA)</span>
+private_key = "in AWS KMS" <span class="code-comment"># Never leaves AWS</span>
+public_key = "can be shared" <span class="code-comment"># Distribute freely</span>
+
+<span class="code-comment"># Signing (in AWS, one time)</span>
+signature = RSA_Sign(private_key, artifact_hash)
+
+<span class="code-comment"># Verification (OFFLINE, anywhere!)</span>
+is_valid = RSA_Verify(
+    public_key,        <span class="code-comment"># ✓ Public key stored locally</span>
+    artifact_hash,
+    signature
+)  <span class="code-comment"># ✅ No AWS call needed!</span>
+            </div>
+        </div>
+
+        <!-- COMPARISON -->
+        <div class="section">
+            <h2 class="section-title">⚖️ Direct Comparison</h2>
+            
+            <div class="comparison-grid">
+                <div class="comparison-card problem">
+                    <div class="card-header">
+                        <span class="icon">🔑</span>
+                        Symmetric Key (HMAC)
+                    </div>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <strong>How it works:</strong>
+                        <p style="margin-top: 10px;">Same secret key is used for both signing and verification. Like a shared password - anyone who can verify can also sign.</p>
+                    </div>
+                    
+                    <div class="pros-cons con">
+                        <div class="pros-cons-title">
+                            <span>❌</span> Problems
+                        </div>
+                        <ul>
+                            <li><strong>Online Dependency:</strong> Every verification requires AWS KMS API call</li>
+                            <li><strong>Single Point of Failure:</strong> If AWS is down, verification fails</li>
+                            <li><strong>No Offline Capability:</strong> Cannot verify in air-gapped networks</li>
+                            <li><strong>Latency:</strong> Network round-trip for every verification (100-500ms)</li>
+                            <li><strong>Cost:</strong> AWS KMS API charges per verification</li>
+                            <li><strong>Security Risk:</strong> Anyone with verify permission can also sign</li>
+                            <li><strong>Scalability:</strong> Limited by AWS API rate limits</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="pros-cons pro">
+                        <div class="pros-cons-title">
+                            <span>✓</span> Limited Benefits
+                        </div>
+                        <ul>
+                            <li>Slightly faster key generation</li>
+                            <li>Slightly smaller key size</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="comparison-card solution">
+                    <div class="card-header">
+                        <span class="icon">🔐</span>
+                        Asymmetric Key (RSA/ECDSA)
+                    </div>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <strong>How it works:</strong>
+                        <p style="margin-top: 10px;">Two separate keys: Private key (secret) for signing, Public key (shareable) for verification. Public key can verify but cannot sign.</p>
+                    </div>
+                    
+                    <div class="pros-cons pro">
+                        <div class="pros-cons-title">
+                            <span>✅</span> Benefits
+                        </div>
+                        <ul>
+                            <li><strong>Offline Verification:</strong> No AWS connection needed to verify</li>
+                            <li><strong>No Single Point of Failure:</strong> Verification independent of AWS</li>
+                            <li><strong>Air-Gapped Support:</strong> Works in isolated networks</li>
+                            <li><strong>Instant Verification:</strong> No network latency (~1ms local)</li>
+                            <li><strong>Zero Cost:</strong> No API charges for verification</li>
+                            <li><strong>Separation of Duties:</strong> Signing ≠ Verification permissions</li>
+                            <li><strong>Unlimited Scale:</strong> No API rate limits for verification</li>
+                            <li><strong>Industry Standard:</strong> Used by SSL/TLS, code signing, etc.</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="pros-cons con">
+                        <div class="pros-cons-title">
+                            <span>⚠️</span> Minor Tradeoffs
+                        </div>
+                        <ul>
+                            <li>Slightly slower key generation (one-time operation)</li>
+                            <li>Slightly larger key size (negligible in practice)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REAL WORLD SCENARIO -->
+        <div class="section">
+            <h2 class="section-title">🌍 Real-World Scenario</h2>
+            
+            <div class="diagram-container">
+                <h3 style="margin-bottom: 20px;">Scenario: Deploying Software to 1000 Edge Devices</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                    <div style="background: #fff5f5; padding: 20px; border-radius: 8px; border: 2px solid #fc8181;">
+                        <h4 style="color: #c53030; margin-bottom: 15px;">❌ With Symmetric Keys</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin: 10px 0;">📡 Each device must connect to AWS</li>
+                            <li style="margin: 10px 0;">⏱️ 1000 devices × 200ms = 200 seconds</li>
+                            <li style="margin: 10px 0;">💰 1000 API calls × $0.03 = $30 per deployment</li>
+                            <li style="margin: 10px 0;">🚫 If AWS down = deployment blocked</li>
+                            <li style="margin: 10px 0;">🏭 Factory floor with no internet? <strong>FAILS</strong></li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background: #f0fff4; padding: 20px; border-radius: 8px; border: 2px solid #68d391;">
+                        <h4 style="color: #2f855a; margin-bottom: 15px;">✅ With Asymmetric Keys</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin: 10px 0;">📦 Public key bundled with software</li>
+                            <li style="margin: 10px 0;">⚡ 1000 devices × 1ms = 1 second</li>
+                            <li style="margin: 10px 0;">💵 0 API calls = $0 per deployment</li>
+                            <li style="margin: 10px 0;">✓ Works even if AWS down</li>
+                            <li style="margin: 10px 0;">🏭 Factory floor with no internet? <strong>WORKS!</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RECOMMENDATIONS -->
+        <div class="recommendation">
+            <h3>🎯 Recommended Actions</h3>
+            <ul>
+                <li><strong>Migrate to Asymmetric Keys:</strong> Use AWS KMS RSA_2048 or ECC_NIST_P256 key types for signing</li>
+                <li><strong>Distribute Public Keys:</strong> Embed public keys in applications, certificate stores, or configuration</li>
+                <li><strong>Update Verification Logic:</strong> Implement local signature verification using public key cryptography</li>
+                <li><strong>Enable Offline Scenarios:</strong> Test deployment and verification in air-gapped environments</li>
+                <li><strong>Performance Benefits:</strong> Reduce verification latency from ~200ms to ~1ms</li>
+                <li><strong>Cost Reduction:</strong> Eliminate per-verification KMS API charges</li>
+                <li><strong>Resilience:</strong> Remove AWS as single point of failure for signature verification</li>
+            </ul>
+        </div>
+
+        <!-- AWS KMS IMPLEMENTATION -->
+        <div class="section">
+            <h2 class="section-title">⚙️ AWS KMS Implementation</h2>
+            
+            <div class="code-block">
+<span class="code-comment"># ❌ CURRENT: Symmetric Key (HMAC)</span>
+import boto3
+
+kms = boto3.client('kms')
+
+<span class="code-comment"># Create symmetric key</span>
+response = kms.create_key(
+    KeySpec='SYMMETRIC_DEFAULT',  <span class="code-comment"># ❌ Problem</span>
+    KeyUsage='GENERATE_VERIFY_MAC'
+)
+
+<span class="code-comment"># Every verification requires AWS call</span>
+verify_response = kms.verify_mac(
+    KeyId=key_id,
+    Message=artifact_hash,
+    Mac=signature
+)  <span class="code-comment"># ❌ Online only!</span>
+
+
+<span class="code-comment"># ✅ RECOMMENDED: Asymmetric Key (RSA/ECDSA)</span>
+<span class="code-comment"># Create asymmetric key pair</span>
+response = kms.create_key(
+    KeySpec='RSA_2048',  <span class="code-comment"># ✅ or ECC_NIST_P256</span>
+    KeyUsage='SIGN_VERIFY'
+)
+
+<span class="code-comment"># Get public key (one-time, distribute it)</span>
+public_key_response = kms.get_public_key(KeyId=key_id)
+public_key_pem = public_key_response['PublicKey']
+
+<span class="code-comment"># Sign in AWS (private key never leaves KMS)</span>
+sign_response = kms.sign(
+    KeyId=key_id,
+    Message=artifact_hash,
+    SigningAlgorithm='RSASSA_PKCS1_V1_5_SHA_256'
+)
+signature = sign_response['Signature']
+
+<span class="code-comment"># Verify OFFLINE using public key (no AWS needed!)</span>
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+
+public_key_obj = serialization.load_pem_public_key(public_key_pem)
+public_key_obj.verify(
+    signature,
+    artifact_hash,
+    padding.PKCS1v15(),
+    hashes.SHA256()
+)  <span class="code-comment"># ✅ Offline verification!</span>
+            </div>
+        </div>
+
+        <!-- SUMMARY TABLE -->
+        <div class="section">
+            <h2 class="section-title">📊 Quick Reference Table</h2>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                <thead>
+                    <tr style="background: #4a5568; color: white;">
+                        <th style="padding: 15px; text-align: left; border: 1px solid #e2e8f0;">Aspect</th>
+                        <th style="padding: 15px; text-align: left; border: 1px solid #e2e8f0;">Symmetric (HMAC)</th>
+                        <th style="padding: 15px; text-align: left; border: 1px solid #e2e8f0;">Asymmetric (RSA/ECDSA)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background: #f7fafc;">
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;"><strong>Key Structure</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;">1 secret key</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;">2 keys (private + public)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;"><strong>Verification Location</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #fff5f5;">❌ AWS only</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #f0fff4;">✅ Anywhere</td>
+                    </tr>
+                    <tr style="background: #f7fafc;">
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;"><strong>Offline Support</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #fff5f5;">❌ No</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #f0fff4;">✅ Yes</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;"><strong>Verification Latency</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #fff5f5;">100-500ms (network)</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #f0fff4;">~1ms (local)</td>
+                    </tr>
+                    <tr style="background: #f7fafc;">
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;"><strong>Cost per Verification</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #fff5f5;">$0.03</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #f0fff4;">$0.00</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;"><strong>AWS Availability Risk</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #fff5f5;">❌ Single point of failure</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #f0fff4;">✅ No dependency</td>
+                    </tr>
+                    <tr style="background: #f7fafc;">
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;"><strong>Air-Gapped Support</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #fff5f5;">❌ Impossible</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #f0fff4;">✅ Fully supported</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;"><strong>Industry Standard</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0;">For authentication only</td>
+                        <td style="padding: 12px; border: 1px solid #e2e8f0; background: #f0fff4;">✅ For signatures</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; padding: 20px; background: #f7fafc; border-radius: 8px;">
+            <h3 style="color: #2d3748; margin-bottom: 10px;">🎓 Key Takeaway</h3>
+            <p style="font-size: 1.1rem; color: #4a5568; max-width: 800px; margin: 0 auto;">
+                <strong>Use symmetric keys (HMAC) for authentication</strong> where both parties share the secret.
+                <br/>
+                <strong>Use asymmetric keys (RSA/ECDSA) for signatures</strong> where verification must be independent and offline-capable.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -66,14 +66,12 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             margin-bottom: 30px;
             border: 1px solid rgba(255,255,255,0.5);
-            overflow-x: auto;
         }
         
         .tabs {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            min-width: max-content;
         }
         
         .tab {
@@ -798,7 +796,9 @@
                             </div>
                             <div class="finding-section">
                                 <h4>🔧 Remediation</h4>
-                                <p>${finding.Remediation.Recommendation.Text.substring(0, 400)}${finding.Remediation.Recommendation.Text.length > 400 ? '...' : ''}</p>
+                                <p>${finding.Remediation?.Recommendation?.Text ? 
+                                    (finding.Remediation.Recommendation.Text.substring(0, 400) + (finding.Remediation.Recommendation.Text.length > 400 ? '...' : '')) : 
+                                    'No remediation information available'}</p>
                             </div>
                             <div class="finding-section">
                                 <h4>✅ Compliance Requirements</h4>

@@ -1,144 +1,104 @@
-# AWS Security Findings Sample Data Generator
+## Lexus, a service that transcribes voice messages
+This service provides the transcription API to Wxcas for transcribing voice mails recorded from Webex calling feature of Webex meetings. This service communicates with components like Voicea, Cxapi & U2C. Lexus is stateless service. No data is maintained by the Lexus service.
 
-This tool generates realistic sample data for various AWS security issues detected by AWS Security Hub and other AWS security services.
+## client
+It is used to invoke the rest endpoint of Lexus during integration test. It is also used by response client to communicate with the CXAPI server. The API exposed by this module is directly consumed by others, so be considerate when changing it.
 
-## Overview
+## How to do.
 
-The generator creates sample findings for **85+ security issues** across all major AWS security services:
+### Setup the environment variables for lexus:
+bootStrapServerProp: localhost:9092
+bootStrapConsumerProp: localhost:9092
 
-### Configuration & Compliance
-- **AWS Config** (4): Configuration drift, compliance violations, unauthorized changes, missing tags
-- **S3** (4): Encryption, public access, versioning, bucket policies
-- **EC2** (5): Security groups, public IPs, EBS encryption, SSH/RDP access
-- **IAM** (5): Root keys, MFA, password policies, excessive permissions
-- **RDS** (3): Encryption, public access, backups
-- **CloudTrail** (2): Multi-region trails, log validation
-- **Lambda** (2): Dead-letter queues, VPC configuration
-- **KMS** (1): Key rotation
-- **ELB** (2): Security configurations
+### ffmpeg setup.
 
-### Threat Detection
-- **GuardDuty** (3): Malicious IPs, unusual API calls, cryptocurrency mining
-- **VPC Flow Logs** (4): Suspicious traffic, brute force attacks, data exfiltration, port scanning
-- **Route53 DNS Logs** (4): Malicious domains, DNS tunneling, DGA activity, newly registered domains
+#### Windows setup.
+Step 1:
+Download ffmpeg : https://ffmpeg.org/download.html
 
-### Vulnerability Scanning
-- **Inspector** (4): CVE vulnerabilities, outdated runtimes, container vulnerabilities, network exposure
+[Mirror link](https://github.com/GyanD/codexffmpeg/releases/download/2021-12-27-git-617452ce2c/ffmpeg-2021-12-27-git-617452ce2c-full_build.7z)
 
-### Sensitive Data Discovery
-- **Macie** (4): PII data, financial data, exposed credentials, PHI/healthcare data
+Step 2: 
+Extract the zip and place the extracted file in to 'C://' drive.
 
-### Access Analysis
-- **IAM Access Analyzer** (4): Public access, cross-account access, public Lambda policies, external KMS access
+Step 3: 
+Set the path variable to the extracted bin folder, Path: C:\ffmpeg\bin
 
-### Network Security
-- **WAF & Shield** (4): SQL injection, XSS attacks, DDoS attacks, rate limiting violations
+Step 4:
+Open the command prompt and run ffmpeg to verify if the installation is completed. 
 
-### API Activity Monitoring
-- **CloudTrail Events** (5): Unauthorized API calls, IAM changes, logging disabled, suspicious logins, root account usage
+#### Linux setup
 
-## Features
+apt-get install ffmpeg
 
-- Generates findings with realistic AWS resource ARNs
-- Multiple severity levels: **CRITICAL**, **HIGH**, **MEDIUM**, **LOW**
-- Compliance statuses: **NON_COMPLIANT**, **WARNING**
-- Organized by date for S3/Athena compatibility
-- Summary reports with statistics
+### Kafka setup locally
 
-## Usage
+https://cisco.webex.com/cisco/ldr.php?RCID=714559fb5f256441432cfefad63c1d91
 
-### Basic Usage
+Password: wP6Jhcqv
 
-```bash
-python3 generate_security_findings.py
-```
+### Run redis setup.
 
-This will generate:
-- `security_findings_all.json` - All findings in a single file
-- `findings_by_date/` - Findings organized by date (YYYY/MM/DD format)
-- `findings_summary.json` - Statistical summary of findings
+Download redis: https://redis.io/download
 
-### Customization
+Run : Open cmd and run redis-server.exe
 
-Edit the script to customize:
-- Number of findings per service (default: 5)
-- Account IDs
-- Regions
-- Add new security issue types
+### LocalStack, you can run your AWS applications.
 
-## Output Format
+LocalStack is used only for testing - [reference](https://confluence-eng-sjc12.cisco.com/conf/pages/viewpage.action?pageId=241456545)
 
-Findings are generated in AWS Security Hub format compatible with the CloudFormation template structure:
+[LocalStack](https://confluence-eng-sjc12.cisco.com/conf/display/MESSAGING/CALL-45735+Explore+Localstack+to+simulate+AWS+S3+in+integration+environment)
 
-```json
-{
-  "id": "uuid",
-  "detail": {
-    "findings": [{
-      "AwsAccountId": "123456789012",
-      "CreatedAt": "2024-11-24T10:30:00.000Z",
-      "UpdatedAt": "2024-11-24T12:30:00.000Z",
-      "Description": "Security issue description",
-      "ProductArn": "arn:aws:securityhub:...",
-      "GeneratorId": "aws-foundational-security-best-practices/...",
-      "Region": "us-east-1",
-      "Compliance": {"status": "NON_COMPLIANT"},
-      "Workflow": {"status": "NEW"},
-      "Types": "Software and Configuration Checks/...",
-      "Title": "Issue title",
-      "Severity": {"Label": "HIGH"},
-      "Resources": [{
-        "Id": "arn:aws:...",
-        "Type": "AwsS3Bucket"
-      }]
-    }]
-  }
-}
-```
+### Security Rate limiting local setup
 
-## Integration with CloudFormation Template
+https://confluence-eng-sjc12.cisco.com/conf/display/MESSAGING/CALL+-44401+Security+Traffic+AND++Protocol+protection+for+Lexus+service++Denial+of+service
 
-The generated data is compatible with the `S3AthenaWorkshopTemplate.yaml` template:
+## PagerDuty
 
-1. Deploy the CloudFormation stack
-2. Upload generated findings to the S3 bucket created by the template
-3. Query findings using Athena with the pre-configured views
+https://ciscospark.pagerduty.com/services/PZGV51T
 
-### Upload to S3
+## Logs
 
-```bash
-# Upload date-organized findings
-aws s3 sync findings_by_date/ s3://YOUR-BUCKET-NAME/raw/firehose/
-```
+### Production
 
-### Query in Athena
+https://logs-noram.wbx2.com/app/kibana
 
-```sql
-SELECT * FROM SecurityHub.securityhubfindingsview
-WHERE Severity = 'CRITICAL'
-ORDER BY CreatedAt DESC;
-```
+`logs6aiad2-es-app:logstash-app-lexus` — to filter logs for Lexus
 
-## Sample Statistics
+### Integration
 
-Typical generation produces:
-- **85+ total findings** (5 per service across 17 services)
-- **Severity distribution:**
-  - CRITICAL: 10 findings
-  - HIGH: 34 findings  
-  - MEDIUM: 29 findings
-  - LOW: 12 findings
-- **Compliance statuses:**
-  - NON_COMPLIANT: 52 findings
-  - WARNING: 33 findings (threat/anomaly detections)
-- Findings distributed across multiple AWS regions (us-east-1, us-west-2, eu-west-1, ap-southeast-1)
-- Covers all major AWS security service categories
+https://logs-noram-int.wbx2.com/app/kibana
 
-## Requirements
+logs6aiad2-es-app:logstash-app-lexus` — to filter logs for Lexus
 
-- Python 3.6+
-- No external dependencies (uses only standard library)
+## Metrics
 
-## License
+Integration | Production
+------------|-----------
+[Metrics Dashboard for Integration](https://metrics-noram-int.wbx2.com/d/CdLUiKSnz/lexus-dashboard?orgId=1) | [Metrics Dashboard for Production](https://metrics-noram.wbx2.com/d/CdLUiKSnz/lexus-dashboard?orgId=1)
 
-This tool generates sample data for testing and demonstration purposes only.
+
+## Deployments
+
+Integration | Production
+------------|-----------
+intb1/intb3 (int-first) | a6,a7,a8 (achm) Chicago, USA
+intb2/intb4 (int-second) | r1,r2,r3 (aore) Oregon, USA
+&nbsp;|k1,k2,k3 (afra) Frankfurt, Germany
+
+
+## Pipelines
+
+- [Master Pipeline](https://sqbu-jenkins.wbx2.com/service06/job/team/job/lexus/job/pipeline/job/master/)
+- [Deploy Jobs](https://sqbu-jenkins.wbx2.com/service06/job/platform/job/deploy/job/lexus/)
+- [Test Jobs](https://sqbu-jenkins.wbx2.com/service06/job/platform/job/pipeline/job/public-test/job/lexus/)
+- [Archive Jobs](https://sqbu-jenkins.wbx2.com/service06/job/platform/job/pipeline/job/team/job/lexus/)
+
+## Threat Model
+[ID 31921](https://wwwin-tb.cisco.com/www/threatBuilder.html?id=31921)
+
+## Corona
+[ID 82722](https://corona.cisco.com/releases/82722)
+ 
+## TPS Compliance
+[ID 1197420429](https://tpscompliance.cisco.com/compliance/product-releases/product/1197420429) 

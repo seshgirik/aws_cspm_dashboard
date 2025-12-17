@@ -1,0 +1,180 @@
+<article class="issue" id="finding-30"
+    data-service="elb-load-balancer"
+    data-severity="critical"
+    data-cloud="north-america"
+    data-aiml="false"
+    data-compliance="warning"
+    data-regulations="none"
+    data-threat="network-exposure">
+  <div class="badge-row">
+    <div class="badge">TTPs/Impact/Network Denial of Service</div>
+    <div class="severity sev-critical">CRITICAL Severity</div>
+  </div>
+  <div class="threat-tags">
+    <span class="threat-chip threat-network-exposure">
+      Network Exposure
+    </span>
+    <span class="threat-chip threat-mitre">MITRE: Initial Access</span>
+    <span class="threat-chip threat-surface">API/Application Layer</span>
+  </div>
+  <h2>DDoS attack mitigated by AWS Shield</h2>
+  <p class="summary">AWS Shield detected and mitigated volumetric DDoS attack with peak of 2.3 Tbps targeting ALB endpoint.</p>
+  <div class="meta-grid">
+    <div class="meta-card">
+  <span>Risk Score</span>
+  <strong>100/100</strong>
+  <small>Threat-model provided score</small>
+</div>
+    <div class="meta-card">
+  <span>Created</span>
+  <strong>Nov 6, 2025, 9:58 AM</strong>
+  <small>us-west-2</small>
+</div>
+    <div class="meta-card">
+  <span>Primary Resource</span>
+  <strong>AwsElbLoadBalancer</strong>
+  <small>arn:aws:elasticloadbalancing:us-east-1:456789012345:loadb...</small>
+</div>
+    <div class="meta-card">
+  <span>Service</span>
+  <strong>Elb Load Balancer</strong>
+  <small>API/Application Layer</small>
+</div>
+    <div class="meta-card">
+  <span>Threat</span>
+  <strong>Network Exposure</strong>
+  <small>Exposed network paths allow intrusion or lateral movement.</small>
+</div>
+  </div>
+  <div class="diagram">
+    <div class="flow">
+      <h3>Threat Flow</h3>
+      <ol class="flowline">
+        <li><strong>Resource</strong>AwsElbLoadBalancer · arn:aws:elasticloadbalancing:us-east-1:456789012345:loadb...</li>
+<li><strong>Regions</strong>us-west-2</li>
+<li><strong>Attack Surface</strong>API/Application Layer</li>
+<li><strong>MITRE</strong>Initial Access</li>
+<li><strong>Impact</strong>AWS Shield detected and mitigated volumetric DDoS attack with peak of 2.3 Tbps targeting ALB endpoint.</li>
+      </ol>
+      <div class="stage-grid">
+        <div class="stage">
+          <div class="stage-icon">🧩</div>
+          <strong>Generator</strong>
+          <span>aws/shield</span>
+        </div>
+<div class="stage">
+          <div class="stage-icon">🛡️</div>
+          <strong>Compliance</strong>
+          <span>WARNING</span>
+        </div>
+<div class="stage">
+          <div class="stage-icon">🎯</div>
+          <strong>STRIDE</strong>
+          <span>Information Disclosure (CRITICAL)</span>
+        </div>
+<div class="stage">
+          <div class="stage-icon">⚙️</div>
+          <strong>Workflow</strong>
+          <span>SUPPRESSED</span>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="risk"></i>Resource</span>
+        <span><i class="detect"></i>Region</span>
+        <span><i class="mitre"></i>MITRE</span>
+        <span><i class="impact"></i>Impact</span>
+      </div>
+    </div>
+    <div class="flow">
+      <h3>Response Considerations</h3>
+      <ul>
+        <li>Prioritize remediation in us-west-2 to contain blast radius.</li>
+<li>Run playbooks for aws/shield and verify guardrail coverage.</li>
+<li>Investigate resources of type AwsElbLoadBalancer for misconfiguration drift.</li>
+<li>Ensure telemetry covers attack surface: API/Application Layer.</li>
+<li>Map finding to applicable regulatory frameworks.</li>
+      </ul>
+      <div class="highlight-box">
+        <h4>Signals & Tags</h4>
+        <ul>
+          <li>Types: TTPs/Impact/Network Denial of Service</li>
+          <li>Workflow: SUPPRESSED</li>
+          <li>Account: 987654321098</li>
+          <li>Regulations: Not referenced</li>
+          <li>AI/ML Focus: General Cloud</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Enhanced Visual Diagram: DDoS Mitigation -->
+  <div class="info-callout">
+    <h4>🎓 Understanding DDoS Protection</h4>
+    <p><span class="key-concept">DDoS (Distributed Denial of Service)</span> attacks aim to overwhelm your application by flooding it with traffic from multiple sources. AWS Shield provides automatic detection and mitigation to protect against these threats.</p>
+    <p><strong>Why It Matters:</strong> Without protection, DDoS attacks can degrade performance, cause downtime, and impact user experience.</p>
+  </div>
+  
+  <div class="visual-diagram">
+    <h4>🌐 DDoS Attack vs. AWS Shield Defense</h4>
+    <div class="network-topology">
+      <div class="topology-side vulnerable">
+        <h5>❌ Attack Scenario</h5>
+        <div class="network-layer-box internet">
+          <div class="layer-title-text">🌐 Malicious Traffic</div>
+          <div class="layer-detail">Botnets and attack sources flood ALB with traffic</div>
+        </div>
+        <div class="arrow-connector">↓</div>
+        <div class="network-layer-box vulnerable-state">
+          <div class="layer-title-text">🖥️ ALB Endpoint</div>
+          <div class="layer-detail">Overwhelmed by 2.3 Tbps traffic<br/>Potential service disruption</div>
+        </div>
+      </div>
+      <div class="topology-side secure">
+        <h5>✅ Mitigation by AWS Shield</h5>
+        <div class="network-layer-box secure-state">
+          <div class="layer-title-text">🛡️ AWS Shield</div>
+          <div class="layer-detail">Automatic detection and filtering<br/>Traffic normalized, service protected</div>
+        </div>
+        <div class="arrow-connector">↓</div>
+        <div class="network-layer-box secure-state">
+          <div class="layer-title-text">🖥️ ALB Endpoint</div>
+          <div class="layer-detail">Normal operation<br/>No disruption to users</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="attack-path-visual">
+    <h4>🎯 Attack Path: How DDoS is Mitigated</h4>
+    <div class="attack-steps">
+      <div class="attack-step-card">
+        <div class="step-num">1</div>
+        <div class="step-text">
+          <strong>Detection</strong>
+          AWS Shield identifies abnormal traffic patterns and potential DDoS signatures
+        </div>
+      </div>
+      <div class="attack-step-card">
+        <div class="step-num">2</div>
+        <div class="step-text">
+          <strong>Analysis</strong>
+          Traffic is analyzed to distinguish legitimate requests from attack traffic
+        </div>
+      </div>
+      <div class="attack-step-card">
+        <div class="step-num">3</div>
+        <div class="step-text">
+          <strong>Mitigation</strong>
+          AWS Shield applies rate limiting and filtering to block malicious traffic
+        </div>
+      </div>
+      <div class="attack-step-card">
+        <div class="step-num">4</div>
+        <div class="step-text">
+          <strong>Resolution</strong>
+          Normal traffic flow restored, continuous monitoring ensures ongoing protection
+        </div>
+      </div>
+    </div>
+  </div>
+</article>

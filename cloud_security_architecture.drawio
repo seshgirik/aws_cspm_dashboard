@@ -1,0 +1,216 @@
+<mxfile host="app.diagrams.net" modified="2025-09-20T00:00:00.000Z" agent="Mozilla/5.0" version="24.7.0" type="device">
+  <diagram id="HLMultiAccount" name="1-LLM Multi-Account Platform">
+    <mxGraphModel dx="1280" dy="720" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <!-- Customer Account Container -->
+        <mxCell id="custAcct" value="Customer Account" style="swimlane;fontStyle=1;align=left;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=28;horizontalStack=0;resizeParent=1;container=1;recursiveResize=0;fillColor=#ffe6e6;strokeColor=#b85450;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="640" height="760" as="geometry"/>
+        </mxCell>
+        <!-- VPC A -->
+        <mxCell id="vpcA" value="VPC-A (Inference Clients)" style="swimlane;startSize=24;fillColor=#e1f5fe;strokeColor=#0277bd;rounded=1;" vertex="1" parent="custAcct">
+          <mxGeometry x="20" y="60" width="280" height="300" as="geometry"/>
+        </mxCell>
+        <mxCell id="clientA" value="Client-A\n(App / API)" style="shape=process;rounded=1;fillColor=#ffffff;strokeColor=#0277bd;" vertex="1" parent="vpcA">
+          <mxGeometry x="40" y="70" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="natGw" value="NAT GW / Egress Firewall" style="shape=process;rounded=1;fillColor=#fff3e0;strokeColor=#ef6c00;" vertex="1" parent="vpcA">
+          <mxGeometry x="40" y="150" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="privLinkEp" value="Interface VPC Endpoint\n(Amazon Bedrock PrivateLink)" style="shape=process;rounded=1;fillColor=#ede7f6;strokeColor=#5e35b1;" vertex="1" parent="vpcA">
+          <mxGeometry x="40" y="230" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <!-- VPC B -->
+        <mxCell id="vpcB" value="VPC-B (Training / Fine-tune)" style="swimlane;startSize=24;fillColor=#e1f5fe;strokeColor=#0277bd;rounded=1;" vertex="1" parent="custAcct">
+          <mxGeometry x="340" y="60" width="280" height="300" as="geometry"/>
+        </mxCell>
+        <mxCell id="clientB" value="Client-B\n(Training Orchestrator)" style="shape=process;rounded=1;fillColor=#ffffff;strokeColor=#0277bd;" vertex="1" parent="vpcB">
+          <mxGeometry x="40" y="70" width="200" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="s3Train" value="S3 Training Data Bucket\n(KMS CMK: customer-managed)" style="shape=datastore;fillColor=#fffde7;strokeColor=#f9a825;" vertex="1" parent="vpcB">
+          <mxGeometry x="60" y="150" width="160" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="kmsKey" value="AWS KMS Key\n(Key Policy: least-priv, rotation)" style="shape=hexagon;perimeter=hexagonPerimeter;fillColor=#e8f5e9;strokeColor=#2e7d32;" vertex="1" parent="vpcB">
+          <mxGeometry x="90" y="250" width="100" height="60" as="geometry"/>
+        </mxCell>
+        <!-- Customer Account Shared Components -->
+        <mxCell id="cloudTrail" value="CloudTrail / CloudWatch Logs" style="shape=process;rounded=1;fillColor=#f3e5f5;strokeColor=#6a1b9a;" vertex="1" parent="custAcct">
+          <mxGeometry x="60" y="390" width="200" height="60" as="geometry"/>
+        </mxCell>
+  <mxCell id="iamBoundary" value="IAM Boundary &amp; SCPs\n(Deny * outside allowed services)" style="shape=process;rounded=1;fillColor=#e0f2f1;strokeColor=#00695c;" vertex="1" parent="custAcct">
+          <mxGeometry x="300" y="390" width="300" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="auditLake" value="Central Audit S3 (Object Lock)" style="shape=datastore;fillColor=#ede7f6;strokeColor=#5e35b1;" vertex="1" parent="custAcct">
+          <mxGeometry x="220" y="470" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <!-- Bedrock Service Account -->
+        <mxCell id="svcAcct" value="Amazon Bedrock Service Account" style="swimlane;startSize=32;fillColor=#e3f2fd;strokeColor=#1565c0;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="720" y="60" width="360" height="760" as="geometry"/>
+        </mxCell>
+        <mxCell id="bedrockEndpoint" value="Bedrock API Endpoint\n(Control Plane)" style="shape=process;rounded=1;fillColor=#ffffff;strokeColor=#1565c0;" vertex="1" parent="svcAcct">
+          <mxGeometry x="40" y="60" width="220" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="orchestrator" value="Training / Inference Orchestrator" style="shape=process;rounded=1;fillColor=#fff3e0;strokeColor=#ef6c00;" vertex="1" parent="svcAcct">
+          <mxGeometry x="40" y="150" width="260" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="promptStore" value="Prompt History Store\n(Scoped, console only)" style="shape=process;rounded=1;fillColor=#fce4ec;strokeColor=#ad1457;" vertex="1" parent="svcAcct">
+          <mxGeometry x="40" y="240" width="260" height="60" as="geometry"/>
+        </mxCell>
+  <mxCell id="metricsPlane" value="Usage Metering &amp; Throttling" style="shape=process;rounded=1;fillColor=#ede7f6;strokeColor=#5e35b1;" vertex="1" parent="svcAcct">
+          <mxGeometry x="40" y="320" width="260" height="60" as="geometry"/>
+        </mxCell>
+        <!-- Model Provider Account -->
+        <mxCell id="modelAcct" value="Model Provider Escrow Account" style="swimlane;startSize=32;fillColor=#f1f8e9;strokeColor=#558b2f;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="60" width="360" height="760" as="geometry"/>
+        </mxCell>
+        <mxCell id="baseModels" value="Base Model S3 (Provider Managed)" style="shape=datastore;fillColor=#fffde7;strokeColor=#f9a825;" vertex="1" parent="modelAcct">
+          <mxGeometry x="40" y="70" width="240" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="fineTuneBucket" value="Fine-Tuned Models (Logical Handle)" style="shape=datastore;fillColor=#e8f5e9;strokeColor=#2e7d32;" vertex="1" parent="modelAcct">
+          <mxGeometry x="40" y="160" width="240" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="sagemakerTrain" value="SageMaker Training Jobs" style="shape=process;rounded=1;fillColor=#e0f2f1;strokeColor=#00695c;" vertex="1" parent="modelAcct">
+          <mxGeometry x="40" y="250" width="240" height="70" as="geometry"/>
+        </mxCell>
+        <!-- Connections -->
+        <mxCell id="edge1" edge="1" parent="1" source="privLinkEp" target="bedrockEndpoint" style="endArrow=block;strokeColor=#1565c0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge2" edge="1" parent="1" source="clientB" target="bedrockEndpoint" style="dashed=1;endArrow=block;strokeColor=#1565c0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge3" edge="1" parent="1" source="bedrockEndpoint" target="sagemakerTrain" style="endArrow=block;strokeColor=#558b2f;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge4" value="STS AssumeRole limited" edge="1" parent="1" source="sagemakerTrain" target="s3Train" style="endArrow=block;dashed=1;strokeColor=#f57c00;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+  <mxCell id="legend" value="Legend:\nSolid = direct service call\nDashed = cross-account / assumed role\nDatastore = encrypted at rest (KMS)" style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#424242;" vertex="1" parent="1">
+          <mxGeometry x="40" y="10" width="360" height="40" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="SecOps" name="2-SecOps Remediation Pipeline">
+    <mxGraphModel dx="1280" dy="720" grid="1" gridSize="10" guides="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <!-- Security Tooling Account -->
+        <mxCell id="toolAcct" value="Security Tooling Account" style="swimlane;startSize=30;fillColor=#fce4ec;strokeColor=#ad1457;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="960" height="760" as="geometry"/>
+        </mxCell>
+        <mxCell id="secUser" value="SecOps User" style="shape=actor;fillColor=#ffffff;strokeColor=#424242;" vertex="1" parent="1">
+          <mxGeometry x="10" y="140" width="60" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="kb" value="Knowledge Base (Versioned, Signed)" style="shape=folder;fillColor=#fffde7;strokeColor=#f9a825;" vertex="1" parent="toolAcct">
+          <mxGeometry x="40" y="80" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="agent" value="Bedrock Agent" style="shape=process;rounded=1;fillColor=#e3f2fd;strokeColor=#1565c0;" vertex="1" parent="toolAcct">
+          <mxGeometry x="260" y="80" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="model" value="Bedrock LLM Model (Guardrailed)" style="shape=process;rounded=1;fillColor=#ede7f6;strokeColor=#5e35b1;" vertex="1" parent="toolAcct">
+          <mxGeometry x="480" y="80" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="lambdaRem" value="Lambda: Remediation Generator (No direct prod write)" style="shape=process;rounded=1;fillColor=#e0f2f1;strokeColor=#00695c;" vertex="1" parent="toolAcct">
+          <mxGeometry x="720" y="80" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="actionGroup" value="Action Group (Tool Contract)" style="shape=process;rounded=1;dashed=1;fillColor=#ffffff;strokeColor=#424242;" vertex="1" parent="toolAcct">
+          <mxGeometry x="680" y="60" width="280" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="secHub" value="AWS Security Hub (Findings)" style="shape=process;rounded=1;fillColor=#fff3e0;strokeColor=#ef6c00;" vertex="1" parent="toolAcct">
+          <mxGeometry x="40" y="200" width="200" height="70" as="geometry"/>
+        </mxCell>
+  <mxCell id="findingStore" value="S3 Findings &amp; Prompt/Audit Store (Object Lock)" style="shape=datastore;fillColor=#fffde7;strokeColor=#f9a825;" vertex="1" parent="toolAcct">
+          <mxGeometry x="260" y="200" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="codePipeline" value="CodePipeline (Manual Approval Gate)" style="shape=process;rounded=1;fillColor=#e8f5e9;strokeColor=#2e7d32;" vertex="1" parent="toolAcct">
+          <mxGeometry x="480" y="200" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="codeBuild" value="CodeBuild (Policy-as-Code Validation)" style="shape=process;rounded=1;fillColor=#f3e5f5;strokeColor=#6a1b9a;" vertex="1" parent="toolAcct">
+          <mxGeometry x="720" y="200" width="200" height="70" as="geometry"/>
+        </mxCell>
+  <mxCell id="artifactRepo" value="S3 / Artifact Store (Signed, Checksums, Provenance)" style="shape=datastore;fillColor=#ede7f6;strokeColor=#5e35b1;" vertex="1" parent="toolAcct">
+          <mxGeometry x="260" y="310" width="220" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="gitRepo" value="Third-Party Git (Protected Branch)" style="shape=folder;fillColor=#e8f5e9;strokeColor=#2e7d32;" vertex="1" parent="toolAcct">
+          <mxGeometry x="520" y="310" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="approvalUser" value="SecOps Approver" style="shape=actor;fillColor=#ffffff;strokeColor=#424242;" vertex="1" parent="toolAcct">
+          <mxGeometry x="760" y="300" width="60" height="80" as="geometry"/>
+        </mxCell>
+        <!-- Workload Account -->
+        <mxCell id="workAcct" value="Workload Account" style="swimlane;startSize=30;fillColor=#e1f5fe;strokeColor=#0277bd;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="60" width="520" height="760" as="geometry"/>
+        </mxCell>
+        <mxCell id="ssm" value="AWS Systems Manager (Scoped Docs)" style="shape=process;rounded=1;fillColor=#fff3e0;strokeColor=#ef6c00;" vertex="1" parent="workAcct">
+          <mxGeometry x="40" y="80" width="240" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="automation" value="Automation Execution Role (Permission Boundary)" style="shape=process;rounded=1;fillColor=#e0f2f1;strokeColor=#00695c;" vertex="1" parent="workAcct">
+          <mxGeometry x="40" y="170" width="260" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="targetInfra" value="Target Resources (EC2, IAM, SG, etc.)" style="shape=process;rounded=1;fillColor=#ffffff;strokeColor=#424242;" vertex="1" parent="workAcct">
+          <mxGeometry x="40" y="260" width="260" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="obs" value="CloudTrail / Config / Detective" style="shape=process;rounded=1;fillColor=#f3e5f5;strokeColor=#6a1b9a;" vertex="1" parent="workAcct">
+          <mxGeometry x="40" y="370" width="240" height="70" as="geometry"/>
+        </mxCell>
+        <!-- Flow Edges -->
+        <mxCell id="secedge1" value="1 Findings" edge="1" parent="1" source="secHub" target="agent" style="endArrow=block;strokeColor=#ef6c00;"/>
+        <mxCell id="secedge2" value="2 Context (KB)" edge="1" parent="1" source="kb" target="agent" style="dashed=1;endArrow=block;strokeColor=#f9a825;"/>
+  <mxCell id="secedge3" value="3 Prompt &amp; Plan" edge="1" parent="1" source="agent" target="model" style="endArrow=block;strokeColor=#1565c0;"/>
+        <mxCell id="secedge4" value="3 Tool Invoke" edge="1" parent="1" source="agent" target="lambdaRem" style="endArrow=block;strokeColor=#00695c;"/>
+        <mxCell id="secedge5" value="4 Proposed Remediation" edge="1" parent="1" source="lambdaRem" target="codePipeline" style="endArrow=block;strokeColor=#2e7d32;"/>
+        <mxCell id="secedge6" value="5 Source Update" edge="1" parent="1" source="codePipeline" target="gitRepo" style="endArrow=block;dashed=1;strokeColor=#2e7d32;"/>
+        <mxCell id="secedge7" value="6 Build & Validate" edge="1" parent="1" source="codePipeline" target="codeBuild" style="endArrow=block;strokeColor=#6a1b9a;"/>
+        <mxCell id="secedge8" value="7 Provenance + Artifact" edge="1" parent="1" source="codeBuild" target="artifactRepo" style="endArrow=block;strokeColor=#5e35b1;"/>
+        <mxCell id="secedge9" value="8 Manual Approve" edge="1" parent="1" source="approvalUser" target="codePipeline" style="endArrow=block;dashed=1;strokeColor=#424242;"/>
+        <mxCell id="secedge10" value="9 AssumeRole SSM" edge="1" parent="1" source="codePipeline" target="ssm" style="endArrow=block;strokeColor=#ef6c00;"/>
+        <mxCell id="secedge11" value="10 Execute Docs" edge="1" parent="1" source="ssm" target="targetInfra" style="endArrow=block;strokeColor=#00695c;"/>
+        <mxCell id="secedge12" value="11 Observability" edge="1" parent="1" source="targetInfra" target="obs" style="endArrow=block;strokeColor=#6a1b9a;"/>
+        <mxCell id="legend2" value="Legend:\nDashed = reference / read path\nSolid = execution path\nYellow datastore = immutable/audited" style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#424242;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="380" height="40" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="Controls" name="3-Security Controls Overlay">
+    <mxGraphModel dx="1280" dy="720" grid="1" gridSize="10" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="layerTitle" value="Security Control Layers" style="text;fontStyle=1;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="300" height="40" as="geometry"/>
+        </mxCell>
+  <mxCell id="networkLayer" value="Network Layer:\n- PrivateLink for inference &amp; training traffic\n- No public egress from training VPC\n- VPC Endpoint Policies restrict Bedrock access" style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#e3f2fd;strokeColor=#1565c0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="420" height="140" as="geometry"/>
+        </mxCell>
+  <mxCell id="identityLayer" value="Identity &amp; Access Layer:\n- STS AssumeRole with ExternalId\n- Permission Boundaries for remediation roles\n- SCP deny * on non-approved services\n- Session tags passed end-to-end" style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#e8f5e9;strokeColor=#2e7d32;" vertex="1" parent="1">
+          <mxGeometry x="480" y="80" width="420" height="160" as="geometry"/>
+        </mxCell>
+  <mxCell id="dataLayer" value="Data Protection Layer:\n- KMS CMKs (rotation, key policy least-priv)\n- Object Lock immutable audit buckets\n- Signed + hashed artifacts &amp; KB docs\n- Separation: customer data vs model IP" style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#fffde7;strokeColor=#f9a825;" vertex="1" parent="1">
+          <mxGeometry x="920" y="80" width="420" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="aiLayer" value="AI Safety Layer:\n- Guardrails: prompt classification, output schema\n- Tool allow-list & semantic diff gating\n- Hallucination detection via policy-as-code validation\n- KB ingestion review pipeline" style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#f3e5f5;strokeColor=#6a1b9a;" vertex="1" parent="1">
+          <mxGeometry x="40" y="250" width="420" height="160" as="geometry"/>
+        </mxCell>
+  <mxCell id="pipelineLayer" value="Supply Chain &amp; Change Integrity:\n- Signed commits &amp; provenance (SLSA)\n- Mandatory manual approval for prod\n- Drift &amp; anomaly detection on change velocity" style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#ede7f6;strokeColor=#5e35b1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="260" width="420" height="150" as="geometry"/>
+        </mxCell>
+  <mxCell id="observLayer" value="Observability &amp; Response:\n- CloudTrail Lake correlation IDs\n- Config + Detective + GuardDuty\n- SIEM enrichment with model prompt hash\n- Rollback recipes stored &amp; signed" style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#e0f2f1;strokeColor=#00695c;" vertex="1" parent="1">
+          <mxGeometry x="920" y="260" width="420" height="150" as="geometry"/>
+        </mxCell>
+  <mxCell id="governLayer" value="Governance &amp; Compliance:\n- Mapping: SOX (change), ISO 27001 A.12, A.9\n- Data residency controls via account scoping\n- Quarterly key &amp; role attestation\n- Red-team prompt injection tests" style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#fff3e0;strokeColor=#ef6c00;" vertex="1" parent="1">
+          <mxGeometry x="40" y="430" width="420" height="150" as="geometry"/>
+        </mxCell>
+  <mxCell id="riskLayer" value="Risk Priorities Evolution:\nPhase 1 (Data): confidentiality &amp; isolation\nPhase 2 (Automation): integrity &amp; provenance\nPhase 3 (Scale): adaptive controls &amp; anomaly ML" style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#fce4ec;strokeColor=#ad1457;" vertex="1" parent="1">
+          <mxGeometry x="480" y="430" width="420" height="150" as="geometry"/>
+        </mxCell>
+  <mxCell id="legend3" value="Use pages 1 &amp; 2 for topology; this page overlays control families." style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#ffffff;strokeColor=#424242;" vertex="1" parent="1">
+          <mxGeometry x="920" y="430" width="420" height="80" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

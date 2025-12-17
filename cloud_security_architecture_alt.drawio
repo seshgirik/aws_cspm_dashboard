@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2025-09-20T00:30:00.000Z" agent="Mozilla/5.0" version="24.7.0" type="device">
+  <!-- Alternate variant with explicit XML declaration. Identical logical content -->
+  <diagram id="HLMultiAccount" name="1-LLM Multi-Account Platform (ALT REF)">
+    <mxGraphModel dx="1280" dy="720" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="note" value="If original file fails, this alt variant ensures XML declaration handling." style="shape=note;whiteSpace=wrap;rounded=1;fillColor=#e3f2fd;strokeColor=#1565c0;" vertex="1" parent="1"><mxGeometry x="40" y="40" width="460" height="80" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

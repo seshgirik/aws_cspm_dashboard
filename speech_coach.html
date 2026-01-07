@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speech Coach — Record & Feedback</title>
+  <style>
+    :root {
+      --bg1: #0f172a;
+      --bg2: #111827;
+      --card: rgba(255, 255, 255, 0.06);
+      --card2: rgba(255, 255, 255, 0.09);
+      --border: rgba(255, 255, 255, 0.14);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.72);
+      --muted2: rgba(255, 255, 255, 0.62);
+      --good: #34d399;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+      --accent: #60a5fa;
+      --accent2: #a78bfa;
+      --shadow: 0 16px 50px rgba(0, 0, 0, 0.45);
+      --radius: 18px;
+      --radius2: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+        "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+        Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      min-height: 100vh;
+      background: radial-gradient(1200px 600px at 10% 0%, rgba(96, 165, 250, 0.22), transparent 60%),
+        radial-gradient(900px 600px at 80% 20%, rgba(167, 139, 250, 0.16), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      padding: 28px 18px 40px;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .back {
+      text-decoration: none;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      transition: transform 120ms ease, background 120ms ease;
+      white-space: nowrap;
+    }
+
+    .back:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .titlewrap {
+      flex: 1;
+    }
+
+    h1 {
+      font-size: 1.9rem;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      line-height: 1.35;
+      font-size: 0.98rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    @media (min-width: 980px) {
+      .grid {
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 18px;
+      }
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      overflow: hidden;
+    }
+
+    .panel h2 {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .note {
+      color: var(--muted2);
+      font-size: 0.93rem;
+      line-height: 1.45;
+      margin-top: 10px;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin: 12px 0 10px;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease, border 120ms ease;
+      user-select: none;
+    }
+
+    .btn:hover:enabled {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, rgba(96, 165, 250, 0.25), rgba(167, 139, 250, 0.25));
+      border-color: rgba(96, 165, 250, 0.38);
+    }
+
+    .btn.danger {
+      border-color: rgba(251, 113, 133, 0.55);
+      background: rgba(251, 113, 133, 0.12);
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.04);
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .toggle input {
+      width: 16px;
+      height: 16px;
+    }
+
+    .status {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .status strong {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .status.error {
+      border-color: rgba(251, 113, 133, 0.6);
+      background: rgba(251, 113, 133, 0.12);
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .status.ok {
+      border-color: rgba(52, 211, 153, 0.45);
+      background: rgba(52, 211, 153, 0.08);
+    }
+
+    .vizwrap {
+      margin-top: 12px;
+      border-radius: var(--radius2);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(0, 0, 0, 0.22);
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      height: 120px;
+      display: block;
+    }
+
+    .meter {
+      margin-top: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .meter > div {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--good), var(--warn), var(--bad));
+      transition: width 90ms linear;
+    }
+
+    audio {
+      margin-top: 12px;
+      width: 100%;
+    }
+
+    .smallrow {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .pill code {
+      font-family: var(--mono);
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 0.88rem;
+    }
+
+    .linkbtn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.05);
+      text-decoration: none;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.92);
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease, border 120ms ease;
+    }
+
+    .linkbtn:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    @media (min-width: 560px) {
+      .metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .metric {
+      background: var(--card2);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 14px;
+      padding: 12px;
+      min-height: 68px;
+    }
+
+    .metric .label {
+      color: var(--muted2);
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+    }
+
+    .metric .value {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .metric .value.small {
+      font-size: 0.95rem;
+    }
+
+    .suggestions {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.18);
+      color: rgba(255, 255, 255, 0.86);
+      line-height: 1.5;
+    }
+
+    .suggestions ul {
+      margin-top: 10px;
+      padding-left: 18px;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .suggestions li {
+      margin: 6px 0;
+    }
+
+    .textbox {
+      margin-top: 14px;
+    }
+
+    .textbox label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 6px;
+      color: rgba(255, 255, 255, 0.86);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .textbox label span {
+      color: var(--muted2);
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      resize: vertical;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(255, 255, 255, 0.9);
+      padding: 12px;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    textarea[readonly] {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .muted {
+      color: var(--muted2);
+    }
+
+    .footer {
+      margin-top: 14px;
+      font-size: 0.9rem;
+      color: var(--muted2);
+      line-height: 1.5;
+    }
+
+    .kbd {
+      font-family: var(--mono);
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.86);
+      white-space: nowrap;
+    }
+
+    .subnote {
+      margin-top: 8px;
+      color: var(--muted2);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .mono {
+      font-family: var(--mono);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a class="back" href="index.html">← Back</a>
+      <div class="titlewrap">
+        <h1>🎙️ Speech Coach</h1>
+        <div class="subtitle">
+          Record your voice and get instant feedback (pace, pauses, loudness, clipping). Nothing is
+          uploaded — it stays in your browser.
+        </div>
+      </div>
+      <a class="linkbtn" href="viewer_ultimate.html">Open Dashboard</a>
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Record</h2>
+        <div class="row">
+          <button id="startBtn" class="btn primary" type="button">Start recording</button>
+          <button id="stopBtn" class="btn danger" type="button" disabled>Stop</button>
+          <button id="resetBtn" class="btn" type="button" disabled>Reset</button>
+          <label class="toggle" title="Uses your browser's built-in speech recognition (availability varies).">
+            <input id="liveTranscriptToggle" type="checkbox" checked />
+            Live transcript (beta)
+          </label>
+        </div>
+
+        <div class="vizwrap">
+          <canvas id="viz" width="1100" height="240"></canvas>
+        </div>
+        <div class="meter" aria-label="Input level">
+          <div id="meterBar"></div>
+        </div>
+
+        <div class="smallrow">
+          <span class="pill">Status: <code id="recStatus">idle</code></span>
+          <span class="pill">Time: <code id="recTime">00:00</code></span>
+          <a id="downloadLink" class="linkbtn" href="#" download="speech.webm" style="display:none;">Download</a>
+        </div>
+
+        <audio id="playback" controls style="display:none;"></audio>
+
+        <div id="statusBox" class="status" role="status" aria-live="polite">
+          <strong>Tip:</strong> For microphone access, open this page from
+          <span class="kbd">http://localhost</span> (not <span class="kbd">file://</span>).
+          You can start a local server with <span class="kbd">python3 -m http.server</span>.
+        </div>
+
+        <div class="note">
+          <strong>What this measures:</strong> volume consistency, clipping, speaking vs silence, and pause
+          lengths. “Speaking” is detected by audio energy (approximate).
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Feedback</h2>
+        <div class="metrics">
+          <div class="metric">
+            <div class="label">Duration</div>
+            <div id="mDuration" class="value">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Speaking time</div>
+            <div id="mSpeaking" class="value">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Silence time</div>
+            <div id="mSilence" class="value">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Longest pause</div>
+            <div id="mLongestPause" class="value">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Pauses &gt; 1.0s</div>
+            <div id="mLongPauses" class="value">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Avg loudness</div>
+            <div id="mLoudness" class="value small">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Peak</div>
+            <div id="mPeak" class="value small">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Clipping</div>
+            <div id="mClipping" class="value small">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Estimated WPM</div>
+            <div id="mWpm" class="value">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Filler words</div>
+            <div id="mFillers" class="value">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Transcript</div>
+            <div id="mTranscriptSupport" class="value small">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Confidence score</div>
+            <div id="mConfidence" class="value">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Conciseness</div>
+            <div id="mConciseness" class="value">—</div>
+          </div>
+          <div class="metric">
+            <div class="label">Lexical diversity</div>
+            <div id="mLexical" class="value small">—</div>
+          </div>
+        </div>
+
+        <div id="suggestions" class="suggestions">
+          <div style="font-weight: 800; margin-bottom: 6px;">What you’ll see here</div>
+          <div class="muted">
+            Record 20–60 seconds, then stop. The page will compute pause stats, loudness, and (if enabled)
+            a live transcript to estimate speaking pace and filler words.
+          </div>
+        </div>
+
+        <div id="contentSummary" class="suggestions">
+          <div style="font-weight: 800; margin-bottom: 6px;">Content summary</div>
+          <div class="muted">Enable “Live transcript” or paste a transcript to generate a summary and key topics.</div>
+        </div>
+
+        <div id="wordChoice" class="suggestions">
+          <div style="font-weight: 800; margin-bottom: 6px;">Word choice</div>
+          <div class="muted">Enable “Live transcript” or paste a transcript to get weak/overused word suggestions.</div>
+        </div>
+
+        <div class="textbox">
+          <label for="transcriptBox">Transcript <span id="transcriptHint">(optional)</span></label>
+          <textarea id="transcriptBox" placeholder="Enable “Live transcript” before recording, or paste your transcript here after recording."></textarea>
+          <div class="row" style="margin-top: 10px;">
+            <button id="analyzeTranscriptBtn" class="btn" type="button">Analyze transcript</button>
+            <button id="clearTranscriptBtn" class="btn" type="button">Clear transcript</button>
+          </div>
+          <div class="subnote">
+            Transcript-based coaching (WPM, fillers, word choice, conciseness, summary) depends on the text here.
+          </div>
+        </div>
+
+        <div class="footer">
+          <strong>Privacy:</strong> audio stays local in your browser tab. If you enable “Live transcript”, your
+          browser may use its built-in speech service (varies by browser).
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const recStatus = document.getElementById("recStatus");
+    const recTime = document.getElementById("recTime");
+    const statusBox = document.getElementById("statusBox");
+    const meterBar = document.getElementById("meterBar");
+	    const canvas = document.getElementById("viz");
+	    const ctx = canvas ? canvas.getContext("2d") : null;
+	    const playback = document.getElementById("playback");
+	    const downloadLink = document.getElementById("downloadLink");
+	    const transcriptBox = document.getElementById("transcriptBox");
+	    const transcriptHint = document.getElementById("transcriptHint");
+	    const liveTranscriptToggle = document.getElementById("liveTranscriptToggle");
+	    const analyzeTranscriptBtn = document.getElementById("analyzeTranscriptBtn");
+	    const clearTranscriptBtn = document.getElementById("clearTranscriptBtn");
+
+    const mDuration = document.getElementById("mDuration");
+    const mSpeaking = document.getElementById("mSpeaking");
+    const mSilence = document.getElementById("mSilence");
+    const mLongestPause = document.getElementById("mLongestPause");
+    const mLongPauses = document.getElementById("mLongPauses");
+    const mLoudness = document.getElementById("mLoudness");
+    const mPeak = document.getElementById("mPeak");
+    const mClipping = document.getElementById("mClipping");
+	    const mWpm = document.getElementById("mWpm");
+	    const mFillers = document.getElementById("mFillers");
+	    const mTranscriptSupport = document.getElementById("mTranscriptSupport");
+	    const mConfidence = document.getElementById("mConfidence");
+		    const mConciseness = document.getElementById("mConciseness");
+		    const mLexical = document.getElementById("mLexical");
+		    const suggestionsEl = document.getElementById("suggestions");
+		    const contentSummaryEl = document.getElementById("contentSummary");
+		    const wordChoiceEl = document.getElementById("wordChoice");
+
+    let audioContext = null;
+    let analyser = null;
+    let zeroGain = null;
+    let mediaStream = null;
+    let mediaRecorder = null;
+    let chunks = [];
+    let rafId = null;
+    let recordingStartMs = null;
+    let clockId = null;
+    let lastBlobUrl = null;
+
+    let speechRecognition = null;
+    let isRecording = false;
+	    let transcriptEnabled = false;
+	    let transcriptText = "";
+	    let recognitionRestartTimer = null;
+
+		    let lastAudioAnalysis = null;
+		    let lastTextAnalysis = null;
+
+	    const STOPWORDS = new Set([
+	      "a","about","above","after","again","against","all","am","an","and","any","are","as","at","be","because",
+	      "been","before","being","below","between","both","but","by","can","could","did","do","does","doing","down",
+	      "during","each","few","for","from","further","had","has","have","having","he","her","here","hers","herself",
+	      "him","himself","his","how","i","if","in","into","is","it","its","itself","just","me","more","most","my",
+	      "myself","no","nor","not","now","of","off","on","once","only","or","other","our","ours","ourselves","out",
+	      "over","own","same","she","should","so","some","such","than","that","the","their","theirs","them","themselves",
+	      "then","there","these","they","this","those","through","to","too","under","until","up","very","was","we",
+	      "were","what","when","where","which","while","who","whom","why","will","with","you","your","yours","yourself",
+	      "yourselves"
+	    ]);
+
+    function formatSeconds(seconds) {
+      const s = Math.max(0, Math.floor(seconds));
+      const mm = String(Math.floor(s / 60)).padStart(2, "0");
+      const ss = String(s % 60).padStart(2, "0");
+      return `${mm}:${ss}`;
+    }
+
+    function fmtFixed(value, digits = 1) {
+      return Number.isFinite(value) ? value.toFixed(digits) : "—";
+    }
+
+	    function setStatus(kind, html) {
+	      statusBox.className = `status ${kind || ""}`.trim();
+	      statusBox.innerHTML = html;
+	    }
+
+	    window.addEventListener("error", (event) => {
+	      const msg = event && event.message ? String(event.message) : "Unknown error";
+	      setStatus("error", `<strong>JavaScript error:</strong> <span class="mono">${escapeHtml(msg)}</span>`);
+	    });
+
+	    window.addEventListener("unhandledrejection", (event) => {
+	      const reason = event && event.reason ? event.reason : "Unknown rejection";
+	      const msg = reason && reason.message ? String(reason.message) : String(reason);
+	      setStatus("error", `<strong>Unhandled promise:</strong> <span class="mono">${escapeHtml(msg)}</span>`);
+	    });
+
+	    function resetMetricsUI() {
+	      mDuration.textContent = "—";
+	      mSpeaking.textContent = "—";
+	      mSilence.textContent = "—";
+	      mLongestPause.textContent = "—";
+	      mLongPauses.textContent = "—";
+	      mLoudness.textContent = "—";
+	      mPeak.textContent = "—";
+	      mClipping.textContent = "—";
+	      mWpm.textContent = "—";
+	      mFillers.textContent = "—";
+		      mConfidence.textContent = "—";
+		      mConciseness.textContent = "—";
+		      mLexical.textContent = "—";
+		      suggestionsEl.innerHTML =
+		        '<div style="font-weight: 800; margin-bottom: 6px;">What you’ll see here</div>' +
+		        '<div class="muted">Record 20–60 seconds, then stop. The page will compute pause stats, loudness, and (if enabled) a live transcript to estimate speaking pace and filler words.</div>';
+	      contentSummaryEl.innerHTML =
+	        '<div style="font-weight: 800; margin-bottom: 6px;">Content summary</div>' +
+	        '<div class="muted">Enable “Live transcript” or paste a transcript to generate a summary and key topics.</div>';
+	      wordChoiceEl.innerHTML =
+	        '<div style="font-weight: 800; margin-bottom: 6px;">Word choice</div>' +
+	        '<div class="muted">Enable “Live transcript” or paste a transcript to get weak/overused word suggestions.</div>';
+	    }
+
+    function cleanupBlobUrl() {
+      if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
+      lastBlobUrl = null;
+    }
+
+	    function clearViz() {
+	      if (!ctx || !canvas) return;
+	      ctx.clearRect(0, 0, canvas.width, canvas.height);
+	      ctx.fillStyle = "rgba(0, 0, 0, 0.20)";
+	      ctx.fillRect(0, 0, canvas.width, canvas.height);
+	      meterBar.style.width = "0%";
+	    }
+
+	    function getBestMimeType(options = {}) {
+	      const includeVideo = Boolean(options.includeVideo);
+	      const candidates = includeVideo
+	        ? [
+	            "video/webm;codecs=vp9,opus",
+	            "video/webm;codecs=vp8,opus",
+	            "video/webm",
+	            "video/mp4"
+	          ]
+	        : [
+	            "audio/webm;codecs=opus",
+	            "audio/webm",
+	            "audio/ogg;codecs=opus",
+	            "audio/ogg",
+	            "audio/mp4"
+	          ];
+	      for (const mimeType of candidates) {
+	        if (window.MediaRecorder && MediaRecorder.isTypeSupported(mimeType)) return mimeType;
+	      }
+	      return "";
+	    }
+
+	    function clamp(value, min, max) {
+	      return Math.min(max, Math.max(min, value));
+	    }
+
+	    function escapeHtml(s) {
+	      return String(s)
+	        .replace(/&/g, "&amp;")
+	        .replace(/</g, "&lt;")
+	        .replace(/>/g, "&gt;")
+	        .replace(/"/g, "&quot;")
+	        .replace(/'/g, "&#39;");
+	    }
+
+    function safeDbfsFromRms(rms) {
+      if (!Number.isFinite(rms) || rms <= 0) return -Infinity;
+      return 20 * Math.log10(rms);
+    }
+
+    function percentile(sortedValuesAsc, p) {
+      if (!sortedValuesAsc.length) return NaN;
+      const clamped = Math.min(1, Math.max(0, p));
+      const idx = (sortedValuesAsc.length - 1) * clamped;
+      const lo = Math.floor(idx);
+      const hi = Math.ceil(idx);
+      if (lo === hi) return sortedValuesAsc[lo];
+      const t = idx - lo;
+      return sortedValuesAsc[lo] * (1 - t) + sortedValuesAsc[hi] * t;
+    }
+
+    function countWords(text) {
+      const cleaned = String(text || "")
+        .replace(/[“”]/g, '"')
+        .replace(/[’]/g, "'")
+        .trim();
+      if (!cleaned) return 0;
+      return cleaned.split(/\s+/).filter(Boolean).length;
+    }
+
+	    function countMatches(text, re) {
+	      const m = String(text || "").match(re);
+	      return m ? m.length : 0;
+	    }
+
+	    function countFillersDetailed(text) {
+	      const t = String(text || "").toLowerCase();
+	      const byType = {
+	        "ums/uhs/ahs": countMatches(t, /\b(um+|uh+|erm+|ah+)\b/g),
+	        like: countMatches(t, /\b(like)\b/g),
+	        "you know": countMatches(t, /\b(you know)\b/g),
+	        "i mean": countMatches(t, /\b(i mean)\b/g),
+	        "kind of/sort of": countMatches(t, /\b(kind of|sort of|kinda)\b/g)
+	      };
+	      const total = Object.values(byType).reduce((a, b) => a + b, 0);
+	      return { total, byType };
+	    }
+
+	    function countFillers(text) {
+	      return countFillersDetailed(text).total;
+	    }
+
+	    function tokenizeWords(text) {
+	      const matches = String(text || "").toLowerCase().match(/[a-z]+(?:'[a-z]+)?/g);
+	      return matches ? matches : [];
+	    }
+
+	    function splitSentences(text) {
+	      const t = String(text || "").replace(/\s+/g, " ").trim();
+	      if (!t) return [];
+	      const parts = t.match(/[^.!?]+[.!?]+|[^.!?]+$/g);
+	      return (parts || []).map((s) => s.trim()).filter(Boolean);
+	    }
+
+	    function analyzeText(transcript, speakingSec) {
+	      const raw = String(transcript || "").trim();
+	      if (!raw) {
+	        return {
+	          hasTranscript: false,
+	          transcript: "",
+	          wordCount: 0,
+	          sentenceCount: 0,
+	          avgSentenceLen: NaN,
+	          lexicalDiversity: NaN,
+	          fillers: { total: NaN, byType: {} },
+	          fillersPerMin: NaN,
+	          wpm: NaN,
+	          weakWords: [],
+	          overusedWords: [],
+	          wordyPhrases: [],
+	          topics: [],
+	          summarySentences: [],
+	          concisenessScore: NaN
+	        };
+	      }
+
+	      const sentences = splitSentences(raw);
+	      const words = tokenizeWords(raw);
+	      const wordCount = words.length;
+	      const sentenceCount = sentences.length || (raw ? 1 : 0);
+	      const avgSentenceLen = sentenceCount > 0 ? wordCount / sentenceCount : NaN;
+	      const uniqueCount = new Set(words).size;
+	      const lexicalDiversity = wordCount > 0 ? uniqueCount / wordCount : NaN;
+
+	      const fillers = countFillersDetailed(raw);
+	      const fillersPerMin = Number.isFinite(speakingSec) && speakingSec > 0 ? (fillers.total / speakingSec) * 60 : NaN;
+	      const wpm = Number.isFinite(speakingSec) && speakingSec > 0 ? (wordCount / speakingSec) * 60 : NaN;
+
+	      const weakPatterns = [
+	        { label: "very", re: /\bvery\b/g, suggestion: "Remove it or use a specific measure/descriptor." },
+	        { label: "really", re: /\breally\b/g, suggestion: "Usually removable without losing meaning." },
+	        { label: "just", re: /\bjust\b/g, suggestion: "Often softens the message; remove if unnecessary." },
+	        { label: "basically", re: /\bbasically\b/g, suggestion: "Replace with a clear 1-sentence point or remove." },
+	        { label: "actually", re: /\bactually\b/g, suggestion: "Often unnecessary; consider removing." },
+	        { label: "kind of / sort of", re: /\b(kind of|sort of)\b/g, suggestion: "Be precise or remove the hedge." },
+	        { label: "maybe / perhaps", re: /\b(maybe|perhaps)\b/g, suggestion: "If you mean it, state it decisively; if not, quantify uncertainty." },
+	        { label: "stuff / things", re: /\b(stuff|things)\b/g, suggestion: "Swap for a specific noun." },
+	        { label: "a lot", re: /\b(a lot)\b/g, suggestion: "Quantify (e.g., % / count) or choose a clearer adjective." },
+	        { label: "good / bad", re: /\b(good|bad)\b/g, suggestion: "Use specific qualifiers (e.g., effective, risky, harmful, beneficial)." }
+	      ];
+
+	      const weakWords = weakPatterns
+	        .map((p) => ({ label: p.label, count: countMatches(raw.toLowerCase(), p.re), suggestion: p.suggestion }))
+	        .filter((x) => x.count > 0)
+	        .sort((a, b) => b.count - a.count);
+
+	      const contentCounts = new Map();
+	      for (const w of words) {
+	        if (STOPWORDS.has(w)) continue;
+	        if (w.length < 4) continue;
+	        contentCounts.set(w, (contentCounts.get(w) || 0) + 1);
+	      }
+	      const overusedWords = Array.from(contentCounts.entries())
+	        .filter(([, c]) => c >= 3)
+	        .sort((a, b) => b[1] - a[1])
+	        .slice(0, 10)
+	        .map(([word, count]) => ({ word, count }));
+
+	      const wordyPatterns = [
+	        { phrase: "in order to", re: /\bin order to\b/g, replacement: "to" },
+	        { phrase: "due to the fact that", re: /\bdue to the fact that\b/g, replacement: "because" },
+	        { phrase: "at this point in time", re: /\bat this point in time\b/g, replacement: "now" },
+	        { phrase: "for the purpose of", re: /\bfor the purpose of\b/g, replacement: "to" },
+	        { phrase: "as a matter of fact", re: /\bas a matter of fact\b/g, replacement: "in fact" },
+	        { phrase: "in the event that", re: /\bin the event that\b/g, replacement: "if" },
+	        { phrase: "has the ability to", re: /\bhas the ability to\b/g, replacement: "can" },
+	        { phrase: "make a decision", re: /\bmake a decision\b/g, replacement: "decide" },
+	        { phrase: "give an explanation", re: /\bgive an explanation\b/g, replacement: "explain" },
+	        { phrase: "a number of", re: /\ba number of\b/g, replacement: "several" },
+	        { phrase: "the majority of", re: /\bthe majority of\b/g, replacement: "most" },
+	        { phrase: "in terms of", re: /\bin terms of\b/g, replacement: "about" },
+	        { phrase: "with regard to", re: /\bwith regard to\b/g, replacement: "about" }
+	      ];
+	      const wordyPhrases = wordyPatterns
+	        .map((p) => ({ phrase: p.phrase, count: countMatches(raw.toLowerCase(), p.re), replacement: p.replacement }))
+	        .filter((x) => x.count > 0)
+	        .sort((a, b) => b.count - a.count);
+
+	      const topics = Array.from(contentCounts.entries())
+	        .sort((a, b) => b[1] - a[1])
+	        .slice(0, 8)
+	        .map(([word]) => word);
+
+	      // Simple extractive summary: top 2 scored sentences by word frequency.
+	      const freq = new Map();
+	      for (const w of words) {
+	        if (STOPWORDS.has(w)) continue;
+	        if (w.length < 3) continue;
+	        freq.set(w, (freq.get(w) || 0) + 1);
+	      }
+	      const scored = sentences.map((s, idx) => {
+	        const sw = tokenizeWords(s);
+	        let score = 0;
+	        for (const w of sw) score += freq.get(w) || 0;
+	        const norm = sw.length > 0 ? score / sw.length : 0;
+	        return { idx, sentence: s, score: norm };
+	      });
+	      const summarySentences = scored
+	        .sort((a, b) => b.score - a.score)
+	        .slice(0, Math.min(2, scored.length))
+	        .sort((a, b) => a.idx - b.idx)
+	        .map((x) => x.sentence);
+
+	      const weakCount = weakWords.reduce((sum, w) => sum + w.count, 0);
+	      const wordyCount = wordyPhrases.reduce((sum, w) => sum + w.count, 0);
+	      const fillerPer100 = wordCount > 0 ? (fillers.total / wordCount) * 100 : 0;
+	      const weakPer100 = wordCount > 0 ? (weakCount / wordCount) * 100 : 0;
+	      const wordyPer100 = wordCount > 0 ? (wordyCount / wordCount) * 100 : 0;
+
+	      let conciseness = 100;
+	      conciseness -= clamp(fillerPer100 * 2.2, 0, 30);
+	      conciseness -= clamp(weakPer100 * 1.6, 0, 18);
+	      conciseness -= clamp(wordyPer100 * 6.0, 0, 20);
+	      if (Number.isFinite(avgSentenceLen) && avgSentenceLen > 22) conciseness -= clamp((avgSentenceLen - 22) * 1.6, 0, 18);
+	      if (Number.isFinite(lexicalDiversity) && lexicalDiversity < 0.34) conciseness -= clamp((0.34 - lexicalDiversity) * 60, 0, 12);
+	      const concisenessScore = clamp(Math.round(conciseness), 0, 100);
+
+	      return {
+	        hasTranscript: true,
+	        transcript: raw,
+	        wordCount,
+	        sentenceCount,
+	        avgSentenceLen,
+	        lexicalDiversity,
+	        fillers,
+	        fillersPerMin,
+	        wpm,
+	        weakWords,
+	        overusedWords,
+	        wordyPhrases,
+	        topics,
+	        summarySentences,
+	        concisenessScore
+	      };
+	    }
+
+		    function computeConfidenceScore({ audio, text }) {
+		      const components = [];
+
+		      // Pace (requires transcript).
+		      if (text && text.hasTranscript && Number.isFinite(text.wpm)) {
+		        const wpm = text.wpm;
+		        let pace = 25;
+		        if (wpm < 90 || wpm > 210) pace = 0;
+		        else if (wpm < 120) pace = 12 + (wpm - 90) * (13 / 30);
+	        else if (wpm <= 170) pace = 25;
+	        else pace = 25 - (wpm - 170) * (25 / 40);
+	        components.push({ weight: 1, score: clamp(pace, 0, 25) });
+	      }
+
+	      // Fillers (requires transcript).
+		      if (text && text.hasTranscript) {
+		        const fpm = text.fillersPerMin;
+		        if (Number.isFinite(fpm)) {
+		          let filler = 25;
+		          if (fpm <= 1) filler = 25;
+		          else if (fpm <= 3) filler = 22;
+	          else if (fpm <= 6) filler = 16;
+	          else if (fpm <= 10) filler = 10;
+	          else filler = 4;
+	          components.push({ weight: 1, score: clamp(filler, 0, 25) });
+	        }
+	      }
+
+	      // Audio quality.
+	      if (audio) {
+	        let aq = 25;
+	        if (Number.isFinite(audio.avgDbfs)) {
+	          if (audio.avgDbfs < -33) aq -= 10;
+	          if (audio.avgDbfs > -9) aq -= 10;
+	        }
+	        if (Number.isFinite(audio.clippingPct)) {
+	          if (audio.clippingPct > 0.1) aq -= 10;
+	          if (audio.clippingPct > 0.5) aq -= 10;
+	        }
+	        components.push({ weight: 1, score: clamp(aq, 0, 25) });
+	      }
+
+	      // Pausing.
+	      if (audio) {
+	        let pause = 25;
+	        if (Number.isFinite(audio.longestPauseSec)) {
+	          if (audio.longestPauseSec > 6) pause -= 18;
+	          else if (audio.longestPauseSec > 3.5) pause -= 10;
+	        }
+	        if (Number.isFinite(audio.longPauseCount)) {
+	          if (audio.longPauseCount === 0) pause -= 4;
+	          if (audio.longPauseCount > 10) pause -= 8;
+	        }
+	        components.push({ weight: 1, score: clamp(pause, 0, 25) });
+	      }
+
+		      const totalWeight = components.reduce((s, c) => s + c.weight, 0);
+		      if (totalWeight === 0) return NaN;
+	      const sum = components.reduce((s, c) => s + c.score * c.weight, 0);
+	      return Math.round((sum / (25 * totalWeight)) * 100);
+	    }
+
+		    function renderContentSummary(text, confidenceScore) {
+		      if (!text || !text.hasTranscript) {
+		        contentSummaryEl.innerHTML =
+		          '<div style="font-weight: 800; margin-bottom: 6px;">Content summary</div>' +
+		          '<div class="muted">Enable “Live transcript” or paste a transcript to generate a summary and key topics.</div>';
+		        return;
+		      }
+
+	      const topicsHtml = text.topics.length
+	        ? `<div class="muted" style="margin-top:6px;">Key topics: <span class="mono">${escapeHtml(text.topics.join(", "))}</span></div>`
+	        : '<div class="muted" style="margin-top:6px;">Key topics: —</div>';
+
+		      const summaryHtml = text.summarySentences.length
+		        ? `<ul>${text.summarySentences.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ul>`
+		        : '<div class="muted">Summary: —</div>';
+
+		      const conf = Number.isFinite(confidenceScore) ? `${confidenceScore}/100` : "—";
+
+		      contentSummaryEl.innerHTML =
+		        '<div style="font-weight: 800; margin-bottom: 6px;">Content summary</div>' +
+		        `<div class="muted">Confidence score: <span class="mono">${escapeHtml(conf)}</span></div>` +
+		        topicsHtml +
+		        `<div style="margin-top:10px; font-weight:800;">Summary</div>` +
+		        summaryHtml;
+		    }
+
+		    function renderWordChoice(text) {
+		      if (!text || !text.hasTranscript) {
+		        wordChoiceEl.innerHTML =
+		          '<div style="font-weight: 800; margin-bottom: 6px;">Word choice</div>' +
+		          '<div class="muted">Enable “Live transcript” or paste a transcript to get weak/overused word suggestions.</div>';
+		        return;
+	      }
+
+	      const synonyms = new Map([
+	        ["important", ["crucial", "key", "critical"]],
+	        ["good", ["effective", "beneficial", "strong"]],
+	        ["bad", ["risky", "harmful", "weak"]],
+	        ["big", ["significant", "major", "substantial"]],
+	        ["small", ["minor", "limited"]],
+	        ["help", ["support", "enable", "assist"]],
+	        ["change", ["shift", "improve", "adjust"]],
+	        ["issue", ["risk", "problem", "gap"]],
+	        ["thing", ["item", "topic", "area"]]
+	      ]);
+
+	      const fillers = text.fillers;
+	      const fillerLines = Object.entries(fillers.byType)
+	        .filter(([, c]) => c > 0)
+	        .sort((a, b) => b[1] - a[1])
+	        .map(([k, c]) => `<li><span class="mono">${escapeHtml(k)}</span>: ${c}</li>`)
+	        .join("");
+	      const fillerHtml = fillerLines ? `<ul>${fillerLines}</ul>` : '<div class="muted">No common filler words detected in transcript.</div>';
+
+	      const weakHtml = text.weakWords.length
+	        ? `<ul>${text.weakWords
+	            .slice(0, 8)
+	            .map((w) => `<li><span class="mono">${escapeHtml(w.label)}</span> (${w.count}) — ${escapeHtml(w.suggestion)}</li>`)
+	            .join("")}</ul>`
+	        : '<div class="muted">No common “weak words” flagged.</div>';
+
+	      const overusedHtml = text.overusedWords.length
+	        ? `<ul>${text.overusedWords
+	            .slice(0, 8)
+	            .map((w) => {
+	              const alts = synonyms.get(w.word);
+	              const hint = alts ? ` Try: <span class="mono">${escapeHtml(alts.join(", "))}</span>.` : "";
+	              return `<li><span class="mono">${escapeHtml(w.word)}</span> (${w.count}).${hint}</li>`;
+	            })
+	            .join("")}</ul>`
+	        : '<div class="muted">No strongly overused content words found.</div>';
+
+	      const wordyHtml = text.wordyPhrases.length
+	        ? `<ul>${text.wordyPhrases
+	            .slice(0, 8)
+	            .map((p) => `<li><span class="mono">${escapeHtml(p.phrase)}</span> (${p.count}) → <span class="mono">${escapeHtml(p.replacement)}</span></li>`)
+	            .join("")}</ul>`
+	        : '<div class="muted">No common wordy phrases detected.</div>';
+
+	      wordChoiceEl.innerHTML =
+	        '<div style="font-weight: 800; margin-bottom: 6px;">Word choice</div>' +
+	        '<div class="muted">Filler words</div>' +
+	        fillerHtml +
+	        '<div class="muted" style="margin-top:10px;">Weak words / hedges</div>' +
+	        weakHtml +
+	        '<div class="muted" style="margin-top:10px;">Overused words (variety)</div>' +
+	        overusedHtml +
+	        '<div class="muted" style="margin-top:10px;">Wordy phrases (conciseness)</div>' +
+	        wordyHtml;
+	    }
+
+	    function renderSuggestions(result) {
+	      if (!result) return;
+	      const good = [];
+	      const improve = [];
+	      const meta = [];
+
+		      const { wpm, speakingRatio, longestPauseSec, clippingPct, avgDbfs, confidenceScore, textAnalysis } = result;
+
+	      if (Number.isFinite(confidenceScore)) {
+	        meta.push(`Confidence score: <span class="mono">${confidenceScore}/100</span> (heuristic).`);
+	      } else {
+	        meta.push('Confidence score: <span class="mono">—</span> (add transcript for better scoring).');
+	      }
+
+	      if (Number.isFinite(wpm)) {
+	        if (wpm > 175) improve.push(`Pacing is fast (~${Math.round(wpm)} WPM). Aim ~130–170 WPM for most talks.`);
+	        else if (wpm < 110) improve.push(`Pacing is slow (~${Math.round(wpm)} WPM). Try ~130–170 WPM for most talks.`);
+	        else good.push(`Pacing is in a good range (~${Math.round(wpm)} WPM).`);
+	      } else {
+	        improve.push("Add a transcript (Live transcript or paste) to estimate WPM.");
+	      }
+
+		      if (textAnalysis && textAnalysis.hasTranscript) {
+		        const fpm = textAnalysis.fillersPerMin;
+		        const total =
+		          textAnalysis.fillers && typeof textAnalysis.fillers.total === "number" ? textAnalysis.fillers.total : NaN;
+		        if (Number.isFinite(fpm) && Number.isFinite(total)) {
+		          if (fpm <= 3) good.push(`Filler words are low (${total} total, ~${fpm.toFixed(1)}/min).`);
+		          else improve.push(`Filler words are high (${total} total, ~${fpm.toFixed(1)}/min). Slow down slightly and insert intentional pauses.`);
+		        }
+	      } else {
+	        improve.push("Enable transcript to detect filler words and word choice issues.");
+	      }
+
+	      if (Number.isFinite(longestPauseSec)) {
+	        if (longestPauseSec >= 3.5) improve.push(`Longest pause is ${longestPauseSec.toFixed(1)}s. Use a bridge phrase or shorten the pause.`);
+	        else good.push(`Pauses look controlled (longest ~${longestPauseSec.toFixed(1)}s).`);
+	      }
+
+	      if (Number.isFinite(speakingRatio) && speakingRatio < 0.55) {
+	        improve.push("There’s a lot of silence vs speech. Try 2–3 anchor points and short transitions.");
+	      }
+
+	      if (Number.isFinite(avgDbfs)) {
+	        if (avgDbfs < -30) improve.push("Audio is quiet. Move closer to the mic or raise input gain.");
+	        else if (avgDbfs > -10) improve.push("Audio is loud. Keep a consistent mic distance to avoid distortion.");
+	        else good.push("Audio level is in a healthy range.");
+	      }
+
+	      if (Number.isFinite(clippingPct)) {
+	        if (clippingPct > 0.1) improve.push(`Clipping detected (${clippingPct.toFixed(2)}%). Reduce input volume or move the mic farther away.`);
+	        else good.push("No meaningful clipping detected.");
+	      }
+
+		      const goodHtml = good.length ? `<ul>${good.map((t) => `<li>${t}</li>`).join("")}</ul>` : '<div class="muted">—</div>';
+		      const improveHtml = improve.length ? `<ul>${improve.map((t) => `<li>${t}</li>`).join("")}</ul>` : '<div class="muted">—</div>';
+
+	      suggestionsEl.innerHTML =
+	        '<div style="font-weight: 800; margin-bottom: 6px;">Quick feedback</div>' +
+	        `<div class="muted">${meta.join(" ")}</div>` +
+	        '<div style="margin-top:10px; font-weight:800;">Good habits</div>' +
+	        goodHtml +
+		        '<div style="margin-top:10px; font-weight:800;">Improve next</div>' +
+		        improveHtml +
+		        '<div class="muted" style="margin-top:10px;">These are heuristics from audio energy + transcript. Use them as directional coaching.</div>';
+		    }
+
+    function setTranscriptSupportText() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        mTranscriptSupport.textContent = "not available";
+        transcriptHint.textContent = "(your browser doesn’t support it)";
+        liveTranscriptToggle.disabled = true;
+        liveTranscriptToggle.checked = false;
+        transcriptEnabled = false;
+        return;
+      }
+      mTranscriptSupport.textContent = "available";
+      transcriptHint.textContent = "(optional)";
+    }
+
+    async function ensureAudioContext() {
+      if (audioContext) return;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      audioContext = new Ctx();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      zeroGain = audioContext.createGain();
+      zeroGain.gain.value = 0;
+      analyser.connect(zeroGain);
+      zeroGain.connect(audioContext.destination);
+    }
+
+    function stopClock() {
+      if (clockId) window.clearInterval(clockId);
+      clockId = null;
+      recTime.textContent = "00:00";
+    }
+
+    function startClock() {
+      stopClock();
+      clockId = window.setInterval(() => {
+        if (!recordingStartMs) return;
+        const elapsed = (Date.now() - recordingStartMs) / 1000;
+        recTime.textContent = formatSeconds(elapsed);
+      }, 200);
+    }
+
+    function stopViz() {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      meterBar.style.width = "0%";
+    }
+
+	    function drawViz() {
+	      if (!analyser || !ctx || !canvas) return;
+	      const bufferLen = analyser.fftSize;
+	      const data = new Uint8Array(bufferLen);
+	      analyser.getByteTimeDomainData(data);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.20)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(96, 165, 250, 0.92)";
+      ctx.beginPath();
+
+      let sumSq = 0;
+      for (let i = 0; i < bufferLen; i++) {
+        const v = (data[i] - 128) / 128;
+        sumSq += v * v;
+        const x = (i / (bufferLen - 1)) * w;
+        const y = h / 2 + v * (h * 0.38);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      const rms = Math.sqrt(sumSq / bufferLen);
+      const levelPct = Math.max(0, Math.min(100, rms * 220));
+      meterBar.style.width = `${levelPct}%`;
+
+      rafId = requestAnimationFrame(drawViz);
+    }
+
+    function stopSpeechRecognition() {
+      if (recognitionRestartTimer) window.clearTimeout(recognitionRestartTimer);
+      recognitionRestartTimer = null;
+
+      if (!speechRecognition) return;
+      try {
+        speechRecognition.onend = null;
+        speechRecognition.onresult = null;
+        speechRecognition.onerror = null;
+        speechRecognition.stop();
+      } catch (_) {
+        // ignore
+      }
+      speechRecognition = null;
+    }
+
+    function startSpeechRecognition() {
+      stopSpeechRecognition();
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return false;
+
+      transcriptText = "";
+      transcriptBox.value = "";
+
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const r = event.results[i];
+          const text = r[0] && typeof r[0].transcript === "string" ? r[0].transcript : "";
+          if (r.isFinal) transcriptText += text + " ";
+          else interim += text;
+        }
+        transcriptBox.value = (transcriptText + interim).trim();
+      };
+
+      recognition.onerror = (event) => {
+        // Some browsers fire "no-speech" and stop; we'll just keep going if recording.
+        if (!isRecording) return;
+        const error = event && event.error ? event.error : "unknown";
+        setStatus("error", `<strong>Transcript error:</strong> ${error}. You can keep recording without transcript.`);
+      };
+
+      recognition.onend = () => {
+        if (!isRecording || !transcriptEnabled) return;
+        recognitionRestartTimer = window.setTimeout(() => {
+          try {
+            recognition.start();
+          } catch (_) {
+            // ignore; may fail if already started
+          }
+        }, 250);
+      };
+
+      try {
+        recognition.start();
+      } catch (_) {
+        return false;
+      }
+      speechRecognition = recognition;
+      return true;
+    }
+
+		    async function startRecording() {
+		      resetMetricsUI();
+		      cleanupBlobUrl();
+		      playback.pause();
+		      playback.removeAttribute("src");
+		      playback.style.display = "none";
+		      downloadLink.style.display = "none";
+		      downloadLink.removeAttribute("href");
+		      chunks = [];
+		      transcriptText = "";
+		      transcriptBox.value = "";
+		      lastAudioAnalysis = null;
+		      lastTextAnalysis = null;
+
+      if (!window.isSecureContext) {
+        setStatus(
+          "error",
+          "<strong>Microphone blocked.</strong> This feature needs a secure context. Run a local server and open via <span class=\"kbd\">http://localhost</span>."
+        );
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setStatus(
+          "error",
+          "<strong>Unsupported browser.</strong> Your browser doesn’t support microphone recording on this page."
+        );
+        return;
+      }
+
+      await ensureAudioContext();
+      try {
+        await audioContext.resume();
+      } catch (_) {
+        // ignore
+      }
+
+		      const mimeType = getBestMimeType();
+		      const constraints = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
+
+      setStatus("ok", "<strong>Requesting microphone…</strong> If prompted, click “Allow”.");
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err) {
+        const msg = err && err.message ? String(err.message) : String(err);
+        setStatus("error", `<strong>Microphone error:</strong> ${msg}`);
+        return;
+      }
+
+		      const source = audioContext.createMediaStreamSource(mediaStream);
+		      source.connect(analyser);
+
+		      try {
+		        mediaRecorder = new MediaRecorder(mediaStream, mimeType ? { mimeType } : undefined);
+		      } catch (err) {
+		        const msg = err && err.message ? String(err.message) : String(err);
+		        setStatus("error", `<strong>Recorder error:</strong> ${msg}`);
+		        return;
+		      }
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      };
+
+	      mediaRecorder.onstop = async () => {
+	        isRecording = false;
+	        recStatus.textContent = "stopped";
+        stopBtn.disabled = true;
+        startBtn.disabled = false;
+        resetBtn.disabled = false;
+        stopViz();
+        stopClock();
+        stopSpeechRecognition();
+
+	        if (mediaStream) {
+	          for (const t of mediaStream.getTracks()) t.stop();
+		        }
+		        mediaStream = null;
+
+		        const blobType = mediaRecorder && mediaRecorder.mimeType ? mediaRecorder.mimeType : "audio/webm";
+		        const blob = new Blob(chunks, { type: blobType });
+		        chunks = [];
+		        const blobUrl = URL.createObjectURL(blob);
+		        lastBlobUrl = blobUrl;
+		        playback.src = blobUrl;
+		        playback.style.display = "block";
+		        downloadLink.href = blobUrl;
+		        downloadLink.download = blob.type.includes("ogg") ? "speech.ogg" : "speech.webm";
+		        downloadLink.style.display = "inline-flex";
+
+        setStatus("ok", "<strong>Recorded.</strong> Playback below. Computing feedback…");
+        try {
+	          const analysis = await analyzeBlob(blob);
+	          applyAnalysis(analysis);
+	          setStatus("ok", "<strong>Done.</strong> Review feedback on the right, then record again to improve.");
+		        } catch (err) {
+		          const msg = err && err.message ? String(err.message) : String(err);
+		          setStatus("error", `<strong>Analysis error:</strong> ${msg}`);
+		        }
+	      };
+
+      transcriptEnabled = Boolean(liveTranscriptToggle.checked);
+      if (transcriptEnabled) {
+        const ok = startSpeechRecognition();
+        if (!ok) {
+          transcriptEnabled = false;
+          liveTranscriptToggle.checked = false;
+          setStatus("error", "<strong>Transcript unavailable.</strong> Continuing without transcript.");
+        }
+      }
+
+      try {
+        mediaRecorder.start(200);
+      } catch (err) {
+        const msg = err && err.message ? String(err.message) : String(err);
+        setStatus("error", `<strong>Start error:</strong> ${msg}`);
+        return;
+      }
+
+      isRecording = true;
+      recordingStartMs = Date.now();
+      recStatus.textContent = "recording";
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      resetBtn.disabled = true;
+
+      startClock();
+      drawViz();
+      setStatus("ok", "<strong>Recording…</strong> Speak clearly for 20–60 seconds, then click Stop.");
+    }
+
+    function stopRecording() {
+      if (!mediaRecorder || mediaRecorder.state !== "recording") return;
+      try {
+        mediaRecorder.stop();
+      } catch (_) {
+        // ignore
+      }
+    }
+
+    function resetAll() {
+      stopRecording();
+      stopViz();
+      stopClock();
+      stopSpeechRecognition();
+
+      if (mediaStream) {
+        for (const t of mediaStream.getTracks()) t.stop();
+      }
+      mediaStream = null;
+      mediaRecorder = null;
+      isRecording = false;
+      recordingStartMs = null;
+
+		      cleanupBlobUrl();
+		      playback.pause();
+		      playback.removeAttribute("src");
+		      playback.style.display = "none";
+		      downloadLink.style.display = "none";
+		      downloadLink.removeAttribute("href");
+		      chunks = [];
+
+	      transcriptText = "";
+		      transcriptBox.value = "";
+		      lastAudioAnalysis = null;
+		      lastTextAnalysis = null;
+      recStatus.textContent = "idle";
+      setStatus(
+        "",
+        "<strong>Tip:</strong> For microphone access, open this page from <span class=\"kbd\">http://localhost</span> (not <span class=\"kbd\">file://</span>). You can start a local server with <span class=\"kbd\">python3 -m http.server</span>."
+      );
+      clearViz();
+      resetMetricsUI();
+
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      resetBtn.disabled = true;
+    }
+
+    async function analyzeBlob(blob) {
+      if (!audioContext) await ensureAudioContext();
+      const arrayBuffer = await blob.arrayBuffer();
+
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+      const channelData = audioBuffer.getChannelData(0);
+      const sampleRate = audioBuffer.sampleRate;
+      const durationSec = audioBuffer.duration;
+
+      let peakAbs = 0;
+      let sumSqAll = 0;
+      let clipped = 0;
+      for (let i = 0; i < channelData.length; i++) {
+        const v = channelData[i];
+        const av = Math.abs(v);
+        if (av > peakAbs) peakAbs = av;
+        sumSqAll += v * v;
+        if (av >= 0.98) clipped++;
+      }
+      const rmsAll = Math.sqrt(sumSqAll / channelData.length);
+
+      const frameMs = 20;
+      const frameSize = Math.max(1, Math.round((sampleRate * frameMs) / 1000));
+      const energies = [];
+      for (let i = 0; i < channelData.length; i += frameSize) {
+        const end = Math.min(channelData.length, i + frameSize);
+        let sumSq = 0;
+        for (let j = i; j < end; j++) sumSq += channelData[j] * channelData[j];
+        const n = end - i;
+        energies.push(Math.sqrt(sumSq / Math.max(1, n)));
+      }
+
+      const energiesSorted = energies.slice().sort((a, b) => a - b);
+      const noiseFloor = percentile(energiesSorted, 0.1);
+      const threshold = Math.max(noiseFloor * 3.5, 0.015);
+
+      let speechFrames = 0;
+      let silenceFrames = 0;
+      let longestPauseFrames = 0;
+      let currentSilenceFrames = 0;
+      let longPauseCount = 0;
+      let seenSpeech = false;
+
+      for (let idx = 0; idx < energies.length; idx++) {
+        const isSpeechFrame = energies[idx] > threshold;
+        if (isSpeechFrame) {
+          seenSpeech = true;
+          speechFrames++;
+          if (currentSilenceFrames > 0 && seenSpeech) {
+            if (currentSilenceFrames > longestPauseFrames) longestPauseFrames = currentSilenceFrames;
+            const pauseSec = (currentSilenceFrames * frameMs) / 1000;
+            if (pauseSec >= 1.0) longPauseCount++;
+          }
+          currentSilenceFrames = 0;
+        } else {
+          silenceFrames++;
+          if (seenSpeech) currentSilenceFrames++;
+        }
+      }
+      if (currentSilenceFrames > 0 && seenSpeech) {
+        if (currentSilenceFrames > longestPauseFrames) longestPauseFrames = currentSilenceFrames;
+        const pauseSec = (currentSilenceFrames * frameMs) / 1000;
+        if (pauseSec >= 1.0) longPauseCount++;
+      }
+
+      const speakingSec = (speechFrames * frameMs) / 1000;
+      const silenceSec = Math.max(0, durationSec - speakingSec);
+      const longestPauseSec = (longestPauseFrames * frameMs) / 1000;
+
+      const avgDbfs = safeDbfsFromRms(rmsAll);
+      const peakDbfs = safeDbfsFromRms(peakAbs);
+      const clippingPct = (clipped / channelData.length) * 100;
+
+	      const transcript = transcriptBox.value.trim();
+		      const textAnalysis = analyzeText(transcript, speakingSec);
+		      const wordCount = textAnalysis.hasTranscript ? textAnalysis.wordCount : 0;
+		      const fillers = textAnalysis.hasTranscript ? textAnalysis.fillers.total : NaN;
+		      const wpm = textAnalysis.hasTranscript ? textAnalysis.wpm : NaN;
+		      const confidenceScore = computeConfidenceScore({
+		        audio: { avgDbfs, clippingPct, longestPauseSec, longPauseCount },
+		        text: textAnalysis
+		      });
+
+      return {
+        durationSec,
+        speakingSec,
+        silenceSec,
+        speakingRatio: durationSec > 0 ? speakingSec / durationSec : NaN,
+        longestPauseSec,
+        longPauseCount,
+        avgDbfs,
+        peakDbfs,
+	        clippingPct,
+	        transcript,
+	        wordCount,
+		        fillers,
+		        wpm,
+		        textAnalysis,
+		        confidenceScore,
+		        threshold,
+		        noiseFloor
+	      };
+    }
+
+		    function applyAnalysis(a) {
+		      lastAudioAnalysis = a;
+		      lastTextAnalysis = a.textAnalysis || null;
+
+		      mDuration.textContent = `${a.durationSec.toFixed(1)}s`;
+	      mSpeaking.textContent = `${a.speakingSec.toFixed(1)}s`;
+	      mSilence.textContent = `${a.silenceSec.toFixed(1)}s`;
+	      mLongestPause.textContent = `${a.longestPauseSec.toFixed(1)}s`;
+	      mLongPauses.textContent = String(a.longPauseCount);
+      mLoudness.textContent = Number.isFinite(a.avgDbfs) ? `${a.avgDbfs.toFixed(1)} dBFS` : "—";
+      mPeak.textContent = Number.isFinite(a.peakDbfs) ? `${a.peakDbfs.toFixed(1)} dBFS` : "—";
+      mClipping.textContent = Number.isFinite(a.clippingPct) ? `${a.clippingPct.toFixed(3)}%` : "—";
+
+      if (Number.isFinite(a.wpm)) mWpm.textContent = `${Math.round(a.wpm)}`;
+      else mWpm.textContent = "—";
+
+	      if (Number.isFinite(a.fillers)) mFillers.textContent = String(a.fillers);
+	      else mFillers.textContent = "—";
+
+	      if (Number.isFinite(a.confidenceScore)) mConfidence.textContent = `${a.confidenceScore}/100`;
+	      else mConfidence.textContent = "—";
+
+	      const concise =
+	        a.textAnalysis && typeof a.textAnalysis.concisenessScore === "number" ? a.textAnalysis.concisenessScore : NaN;
+	      if (Number.isFinite(concise)) mConciseness.textContent = `${concise}/100`;
+	      else mConciseness.textContent = "—";
+
+		      const lex =
+		        a.textAnalysis && typeof a.textAnalysis.lexicalDiversity === "number" ? a.textAnalysis.lexicalDiversity : NaN;
+		      if (Number.isFinite(lex)) mLexical.textContent = `${Math.round(lex * 100)}%`;
+		      else mLexical.textContent = "—";
+
+		      renderSuggestions(a);
+		      renderContentSummary(a.textAnalysis, a.confidenceScore);
+		      renderWordChoice(a.textAnalysis);
+		    }
+
+	    function applyTranscriptFromBox() {
+	      transcriptBox.style.borderColor = "";
+	      const transcript = transcriptBox.value.trim();
+	      const speakingSec = lastAudioAnalysis ? lastAudioAnalysis.speakingSec : undefined;
+	      const text = analyzeText(transcript, speakingSec);
+	      lastTextAnalysis = text;
+
+		      const confidenceScore = computeConfidenceScore({
+		        audio: lastAudioAnalysis,
+		        text
+		      });
+	      if (Number.isFinite(confidenceScore)) mConfidence.textContent = `${confidenceScore}/100`;
+	      else mConfidence.textContent = "—";
+
+	      const concise = text.concisenessScore;
+	      if (Number.isFinite(concise)) mConciseness.textContent = `${concise}/100`;
+	      else mConciseness.textContent = "—";
+
+	      const lex = text.lexicalDiversity;
+	      if (Number.isFinite(lex)) mLexical.textContent = `${Math.round(lex * 100)}%`;
+	      else mLexical.textContent = "—";
+
+	      if (text.hasTranscript && Number.isFinite(text.wpm)) mWpm.textContent = `${Math.round(text.wpm)}`;
+	      else mWpm.textContent = "—";
+
+	      if (text.hasTranscript && text.fillers && Number.isFinite(text.fillers.total)) mFillers.textContent = String(text.fillers.total);
+	      else mFillers.textContent = "—";
+
+		      const combined = {
+		        ...(lastAudioAnalysis || {}),
+		        wpm: text.wpm,
+		        fillers: text.hasTranscript ? text.fillers.total : NaN,
+		        textAnalysis: text,
+		        confidenceScore
+		      };
+		      renderSuggestions(combined);
+		      renderContentSummary(text, confidenceScore);
+		      renderWordChoice(text);
+		    }
+
+		    startBtn.addEventListener("click", () => startRecording());
+		    stopBtn.addEventListener("click", () => stopRecording());
+		    resetBtn.addEventListener("click", () => resetAll());
+		    analyzeTranscriptBtn.addEventListener("click", () => {
+		      const transcript = transcriptBox.value.trim();
+		      if (!transcript) {
+		        setStatus(
+		          "error",
+		          "<strong>No transcript to analyze.</strong> Enable “Live transcript” before recording, or paste your transcript into the box."
+		        );
+		        transcriptBox.style.borderColor = "rgba(251, 113, 133, 0.85)";
+		        suggestionsEl.innerHTML =
+		          '<div style="font-weight: 800; margin-bottom: 6px;">Quick feedback</div>' +
+		          '<div class="muted"><strong>No transcript.</strong> Paste text into the transcript box, then click “Analyze transcript”.</div>';
+		        contentSummaryEl.innerHTML =
+		          '<div style="font-weight: 800; margin-bottom: 6px;">Content summary</div>' +
+		          '<div class="muted"><strong>No transcript.</strong> Paste text into the transcript box to generate a summary and key topics.</div>';
+		        wordChoiceEl.innerHTML =
+		          '<div style="font-weight: 800; margin-bottom: 6px;">Word choice</div>' +
+		          '<div class="muted"><strong>No transcript.</strong> Paste text into the transcript box to get filler/weak/overused word feedback.</div>';
+		        transcriptBox.focus();
+		        try {
+		          transcriptBox.scrollIntoView({ behavior: "smooth", block: "center" });
+		        } catch (_) {
+		          // ignore
+		        }
+		        return;
+		      }
+		      try {
+		        applyTranscriptFromBox();
+		        setStatus("ok", "<strong>Transcript analyzed.</strong> Review “Word choice” and “Content summary”.");
+		      } catch (err) {
+		        const msg = err && err.message ? String(err.message) : String(err);
+		        setStatus("error", `<strong>Transcript analysis error:</strong> <span class="mono">${escapeHtml(msg)}</span>`);
+		        console.error(err);
+		      }
+		    });
+		    clearTranscriptBtn.addEventListener("click", () => {
+		      transcriptBox.value = "";
+		      transcriptBox.style.borderColor = "";
+		      applyTranscriptFromBox();
+		      setStatus("ok", "<strong>Transcript cleared.</strong>");
+		    });
+
+		    transcriptBox.addEventListener("input", () => {
+		      transcriptBox.style.borderColor = "";
+		    });
+
+    liveTranscriptToggle.addEventListener("change", () => {
+      if (isRecording) {
+        liveTranscriptToggle.checked = transcriptEnabled;
+        return;
+      }
+	      transcriptEnabled = Boolean(liveTranscriptToggle.checked);
+	      if (!transcriptEnabled) {
+	        transcriptText = "";
+	        stopSpeechRecognition();
+	      }
+	    });
+
+		    window.addEventListener("beforeunload", () => {
+		      cleanupBlobUrl();
+		      stopSpeechRecognition();
+		      if (mediaStream) {
+		        for (const t of mediaStream.getTracks()) t.stop();
+		      }
+	      if (audioContext) {
+        try {
+          audioContext.close();
+        } catch (_) {
+          // ignore
+        }
+      }
+    });
+
+	    setTranscriptSupportText();
+	    transcriptEnabled = Boolean(liveTranscriptToggle.checked);
+	    clearViz();
+	    resetMetricsUI();
+	  </script>
+</body>
+</html>

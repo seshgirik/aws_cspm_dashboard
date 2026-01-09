@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SSRF Attack Demo - Educational</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #e4e4e4;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      padding: 30px 0;
+      border-bottom: 2px solid #e94560;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      color: #e94560;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #aab;
+      line-height: 1.5;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .warning-banner {
+      background: linear-gradient(90deg, #ff6b6b, #ee5a24);
+      padding: 15px 25px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+    }
+
+    .warning-banner .icon {
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .warning-banner p {
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .section {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    h2 {
+      color: #00d9ff;
+      margin-bottom: 18px;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    p {
+      color: #cdd;
+      line-height: 1.6;
+    }
+
+    .flowchart {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin: 18px 0 0;
+    }
+
+    .flow-step {
+      background: rgba(0, 217, 255, 0.16);
+      border: 1px solid rgba(0, 217, 255, 0.28);
+      padding: 14px 18px;
+      border-radius: 10px;
+      text-align: center;
+      width: 100%;
+      max-width: 720px;
+    }
+
+    .flow-arrow {
+      font-size: 1.4rem;
+      color: #00d9ff;
+    }
+
+    .demo-controls {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    @media (min-width: 900px) {
+      .demo-controls {
+        grid-template-columns: 1fr 1fr;
+        align-items: end;
+      }
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #aaa;
+      font-weight: 600;
+    }
+
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 12px 14px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    input::placeholder {
+      color: #778;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.18);
+      color: #cdd;
+      user-select: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .toggle input {
+      width: 16px;
+      height: 16px;
+    }
+
+    button {
+      background: linear-gradient(90deg, #00d9ff, #0099cc);
+      color: #000;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 1rem;
+      transition: transform 0.15s, box-shadow 0.15s;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 217, 255, 0.26);
+    }
+
+    .demo-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    @media (min-width: 900px) {
+      .demo-container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .demo-box {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      padding: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .demo-box.vulnerable {
+      border: 2px solid #e94560;
+    }
+
+    .demo-box.secure {
+      border: 2px solid #00ff88;
+    }
+
+    .demo-box h3 {
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .demo-box.vulnerable h3 {
+      color: #e94560;
+    }
+
+    .demo-box.secure h3 {
+      color: #00ff88;
+    }
+
+    .status {
+      margin: 10px 0 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #dfe;
+      line-height: 1.35;
+    }
+
+    .status.blocked {
+      border-color: rgba(233, 69, 96, 0.6);
+      background: rgba(233, 69, 96, 0.12);
+      color: #fff;
+    }
+
+    .status.allowed {
+      border-color: rgba(0, 255, 136, 0.45);
+      background: rgba(0, 255, 136, 0.08);
+      color: #fff;
+    }
+
+    .steps {
+      margin-top: 12px;
+      padding-left: 18px;
+      color: #cdd;
+      line-height: 1.55;
+    }
+
+    .code {
+      margin-top: 12px;
+      background: #0d1117;
+      border-radius: 10px;
+      padding: 14px;
+      font-family: "Courier New", monospace;
+      font-size: 0.88rem;
+      overflow-x: auto;
+      border-left: 3px solid rgba(0, 217, 255, 0.7);
+    }
+
+    .pillrow {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.16);
+      color: #cdd;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .mono {
+      font-family: "Courier New", monospace;
+      color: #fff;
+    }
+
+    .scenarios {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .card {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(233, 69, 96, 0.45);
+    }
+
+    .card h4 {
+      color: #ffd93d;
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .card p {
+      color: #bcd;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+    }
+
+    .small {
+      color: #99a;
+      font-size: 0.9rem;
+    }
+
+    .prevention-list {
+      list-style: none;
+      margin-top: 12px;
+    }
+
+    .prevention-list li {
+      padding: 14px;
+      margin-bottom: 10px;
+      background: rgba(0, 255, 136, 0.08);
+      border-radius: 10px;
+      border-left: 4px solid #00ff88;
+      color: #dfe;
+      line-height: 1.45;
+    }
+
+    .prevention-list li strong {
+      color: #00ff88;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: #889;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 30px;
+      line-height: 1.6;
+    }
+
+    a {
+      color: #00d9ff;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Server‑Side Request Forgery (SSRF) Demo</h1>
+      <p class="subtitle">
+        This is an educational, <strong>simulated</strong> SSRF lab. SSRF is a server‑side vulnerability where an attacker
+        tricks the server into making requests to internal resources (metadata services, admin panels, internal APIs).
+      </p>
+    </header>
+
+    <div class="warning-banner">
+      <div class="icon">⚠️</div>
+      <p>
+        Educational use only. Do not target systems you don’t own or have explicit permission to test.
+        This page does not make real internal network requests — it simulates what a vulnerable vs secure backend would do.
+      </p>
+    </div>
+
+    <section class="section">
+      <h2>🎯 What SSRF Looks Like</h2>
+      <p>
+        SSRF usually happens when a backend provides a “fetch/proxy/import by URL” feature and fails to validate the
+        destination. An attacker supplies a URL pointing to an internal service.
+      </p>
+
+      <div class="flowchart">
+        <div class="flow-step"><strong>Attacker</strong> sends URL input (e.g., import image by URL)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step"><strong>Backend</strong> fetches the URL server‑side (has internal network access)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step"><strong>Internal target</strong> responds (metadata / admin / internal API)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step"><strong>Backend</strong> returns data back to attacker</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>🧪 Interactive SSRF Simulator</h2>
+      <p class="small">
+        Tip: pick a scenario below, then click <strong>Run simulation</strong>. Use <span class="mono">evil.test</span> to
+        simulate redirect‑to‑internal behavior.
+      </p>
+
+      <div class="demo-controls">
+        <div>
+          <label for="urlInput">URL the attacker submits</label>
+          <input id="urlInput" type="text" placeholder="Example: http://169.254.169.254/latest/meta-data/" />
+          <div class="pillrow">
+            <span class="pill">Simulated server endpoint: <span class="mono">GET /fetch?url=…</span></span>
+          </div>
+        </div>
+
+        <div>
+          <label>Options</label>
+          <div class="row">
+            <label class="toggle" title="Vulnerable server follows redirects blindly (simulated).">
+              <input id="followRedirects" type="checkbox" checked />
+              Follow redirects
+            </label>
+            <label class="toggle" title="Logs inputs and results to the browser console.">
+              <input id="consoleLogging" type="checkbox" checked />
+              Console logging
+            </label>
+            <button id="runBtn" type="button">Run simulation</button>
+          </div>
+          <div class="pillrow">
+            <span class="pill">Host resolver: <span class="mono">demo DNS table</span></span>
+            <span class="pill">Blocklist checks: <span class="mono">private / loopback / link‑local</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-container">
+        <div class="demo-box vulnerable">
+          <h3>🚨 Vulnerable backend</h3>
+          <div id="vulnStatus" class="status blocked">Waiting…</div>
+          <div><strong>Execution steps</strong></div>
+          <ul id="vulnSteps" class="steps"></ul>
+          <div class="code" id="vulnCode"></div>
+        </div>
+
+        <div class="demo-box secure">
+          <h3>✅ Secure backend</h3>
+          <div id="secureStatus" class="status blocked">Waiting…</div>
+          <div><strong>Execution steps</strong></div>
+          <ul id="secureSteps" class="steps"></ul>
+          <div class="code" id="secureCode"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>🎛️ Preset Scenarios</h2>
+      <div class="scenarios" id="scenarioGrid"></div>
+    </section>
+
+    <section class="section">
+      <h2>🛡️ SSRF Defenses Checklist</h2>
+      <ul class="prevention-list">
+        <li><strong>Allowlist destinations</strong>: only allow known domains/URLs (best). Blocklists are fragile.</li>
+        <li><strong>Resolve & validate IPs</strong>: block <span class="mono">127.0.0.0/8</span>, <span class="mono">10.0.0.0/8</span>,
+          <span class="mono">172.16.0.0/12</span>, <span class="mono">192.168.0.0/16</span>, and <span class="mono">169.254.0.0/16</span>.</li>
+        <li><strong>Disable redirects</strong> or re‑validate every redirect hop before following.</li>
+        <li><strong>Restrict outbound network</strong>: egress firewall, VPC endpoints, proxy with strict policy.</li>
+        <li><strong>Harden cloud metadata</strong>: IMDSv2, hop limit, block metadata IP at the instance/host level.</li>
+        <li><strong>Don’t return raw responses</strong>: avoid “fetch and return body”; use server‑side parsing and minimal data exposure.</li>
+      </ul>
+    </section>
+
+    <footer>
+      Built for local education. Open from a local server (recommended): <span class="mono">python3 -m http.server</span> and navigate to
+      <a href="ssrf_demo.html">ssrf_demo.html</a>.
+    </footer>
+  </div>
+
+  <script>
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function isIpv4(host) {
+      return /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+    }
+
+    function ipv4ToInt(ip) {
+      var parts = ip.split(".").map(function (x) { return parseInt(x, 10); });
+      if (parts.length !== 4) return null;
+      for (var i = 0; i < 4; i++) {
+        if (isNaN(parts[i]) || parts[i] < 0 || parts[i] > 255) return null;
+      }
+      return ((parts[0] << 24) >>> 0) + (parts[1] << 16) + (parts[2] << 8) + parts[3];
+    }
+
+    function inCidr(ip, base, maskBits) {
+      var ipInt = ipv4ToInt(ip);
+      var baseInt = ipv4ToInt(base);
+      if (ipInt === null || baseInt === null) return false;
+      var mask = maskBits === 0 ? 0 : (~((1 << (32 - maskBits)) - 1)) >>> 0;
+      return (ipInt & mask) === (baseInt & mask);
+    }
+
+    function ipRiskClass(ip) {
+      if (!ip) return "unknown";
+      if (inCidr(ip, "127.0.0.0", 8)) return "loopback";
+      if (inCidr(ip, "10.0.0.0", 8)) return "private";
+      if (inCidr(ip, "172.16.0.0", 12)) return "private";
+      if (inCidr(ip, "192.168.0.0", 16)) return "private";
+      if (inCidr(ip, "169.254.0.0", 16)) return "link-local";
+      return "public";
+    }
+
+    var DNS_TABLE = {
+      "public.example": { ip: "93.184.216.34" },
+      "internal.service.local": { ip: "10.0.0.5" },
+      "localhost": { ip: "127.0.0.1" },
+      "metadata.local": { ip: "169.254.169.254" },
+      "evil.test": { ip: "203.0.113.10", redirectTo: "http://169.254.169.254/latest/meta-data/iam/security-credentials/" }
+    };
+
+    function resolveHost(host) {
+      var lower = String(host || "").toLowerCase();
+      if (isIpv4(lower)) return { host: lower, ip: lower, via: "direct-ip" };
+      if (DNS_TABLE[lower]) return { host: lower, ip: DNS_TABLE[lower].ip, via: "demo-dns" };
+      return { host: lower, ip: "93.184.216.34", via: "default-public" };
+    }
+
+    function simulatedResource(urlObj, resolved) {
+      var ip = resolved.ip;
+      var klass = ipRiskClass(ip);
+      var path = urlObj.pathname || "/";
+
+      // Demo redirect endpoint: http://evil.test/redirect-imds
+      if (resolved.host === "evil.test" && path === "/redirect-imds") {
+        return {
+          type: "redirect",
+          status: 302,
+          location: DNS_TABLE["evil.test"].redirectTo,
+          body: "302 Found (redirect)"
+        };
+      }
+
+      if (klass === "loopback") {
+        if (path.indexOf("/admin") === 0) {
+          return {
+            type: "data",
+            status: 200,
+            body:
+              "LOCAL ADMIN PANEL\\n\\n" +
+              "api_key=demo-localhost-admin-key\\n" +
+              "notes=This represents a common internal-only service exposed via SSRF."
+          };
+        }
+        return { type: "data", status: 200, body: "Localhost service OK" };
+      }
+
+      if (klass === "private") {
+        return {
+          type: "data",
+          status: 200,
+          body:
+            "INTERNAL SERVICE RESPONSE\\n\\n" +
+            "service=config-service\\n" +
+            "env=prod\\n" +
+            "db_password=demo-internal-secret\\n"
+        };
+      }
+
+      if (klass === "link-local") {
+        return {
+          type: "data",
+          status: 200,
+          body:
+            "CLOUD METADATA (SIMULATED)\\n\\n" +
+            "iam/security-credentials/role-name\\n" +
+            "AccessKeyId=ASIAXXXXXDEMO\\n" +
+            "SecretAccessKey=demo-secret-access-key\\n" +
+            "Token=demo-session-token\\n"
+        };
+      }
+
+      return {
+        type: "data",
+        status: 200,
+        body: "Public web response (simulated)."
+      };
+    }
+
+    function simulateBackend(label, urlStr, opts, secureMode) {
+      var steps = [];
+      var result = { allowed: false, steps: steps, status: 0, body: "", finalUrl: "", blockedReason: "" };
+
+      var urlObj;
+      try {
+        urlObj = new URL(urlStr);
+      } catch (e) {
+        result.blockedReason = "Invalid URL. Use a full URL like https://example.com/path.";
+        steps.push("❌ Parse URL failed: invalid format.");
+        return result;
+      }
+
+      steps.push("Parsed URL: " + urlObj.href);
+
+      if (secureMode) {
+        if (!(urlObj.protocol === "http:" || urlObj.protocol === "https:")) {
+          result.blockedReason = "Blocked: only http/https are allowed.";
+          steps.push("🛑 Blocked: protocol " + urlObj.protocol + " is not allowed.");
+          return result;
+        }
+        if (urlObj.username || urlObj.password) {
+          result.blockedReason = "Blocked: userinfo in URL is not allowed.";
+          steps.push("🛑 Blocked: URL contains username/password (userinfo).");
+          return result;
+        }
+      }
+
+      var resolved = resolveHost(urlObj.hostname);
+      steps.push("Resolved host (" + resolved.via + "): " + urlObj.hostname + " → " + resolved.ip);
+
+      var klass = ipRiskClass(resolved.ip);
+      if (secureMode) {
+        if (klass !== "public") {
+          result.blockedReason = "Blocked: destination resolves to " + klass + " IP (" + resolved.ip + ").";
+          steps.push("🛑 Blocked: " + klass + " IP range is not allowed.");
+          return result;
+        }
+      }
+
+      // Request
+      steps.push("Backend makes server-side request to " + resolved.ip + " (simulated).");
+      var hop = simulatedResource(urlObj, resolved);
+
+      // Redirect handling
+      if (hop.type === "redirect") {
+        steps.push("Received redirect (302) to: " + hop.location);
+        if (!opts.followRedirects) {
+          result.allowed = true;
+          result.status = hop.status;
+          result.body = hop.body;
+          result.finalUrl = urlObj.href;
+          steps.push("Stop: redirects disabled.");
+          return result;
+        }
+        steps.push("Follow redirect (simulated).");
+        var redirectedUrl;
+        try {
+          redirectedUrl = new URL(hop.location);
+        } catch (e2) {
+          result.blockedReason = "Redirect URL was invalid.";
+          steps.push("❌ Redirect target invalid.");
+          return result;
+        }
+        var redirectedResolved = resolveHost(redirectedUrl.hostname);
+        steps.push("Resolved redirect host: " + redirectedUrl.hostname + " → " + redirectedResolved.ip);
+
+        if (secureMode) {
+          var rk = ipRiskClass(redirectedResolved.ip);
+          if (rk !== "public") {
+            result.blockedReason = "Blocked: redirect leads to " + rk + " destination (" + redirectedResolved.ip + ").";
+            steps.push("🛑 Blocked: redirect-to-internal detected.");
+            return result;
+          }
+        }
+
+        steps.push("Backend requests redirect destination (simulated).");
+        var hop2 = simulatedResource(redirectedUrl, redirectedResolved);
+        result.allowed = true;
+        result.status = hop2.status;
+        result.body = hop2.body;
+        result.finalUrl = redirectedUrl.href;
+        steps.push("✅ Response returned to user.");
+        return result;
+      }
+
+      result.allowed = true;
+      result.status = hop.status;
+      result.body = hop.body;
+      result.finalUrl = urlObj.href;
+      steps.push("✅ Response returned to user.");
+      return result;
+    }
+
+    function renderResult(statusEl, stepsEl, codeEl, res, secureMode) {
+      stepsEl.innerHTML = "";
+      for (var i = 0; i < res.steps.length; i++) {
+        var li = document.createElement("li");
+        li.textContent = res.steps[i];
+        stepsEl.appendChild(li);
+      }
+
+      if (!res.allowed && res.blockedReason) {
+        statusEl.className = "status blocked";
+        statusEl.innerHTML = "<strong>Blocked.</strong> " + escapeHtml(res.blockedReason);
+      } else {
+        statusEl.className = "status allowed";
+        statusEl.innerHTML =
+          "<strong>Allowed.</strong> HTTP " +
+          escapeHtml(String(res.status)) +
+          " · Final URL: <span class=\"mono\">" +
+          escapeHtml(res.finalUrl || "—") +
+          "</span>";
+      }
+
+      var snippet = String(res.body || "");
+      if (snippet.length > 500) snippet = snippet.slice(0, 500) + "\\n…(truncated)…";
+
+      var code =
+        (secureMode
+          ? "/* Secure pattern (conceptual) */\\n" +
+            "validateProtocol(url);\\n" +
+            "ip = resolveDns(url.host);\\n" +
+            "blockPrivateIpRanges(ip);\\n" +
+            "disableOrRevalidateRedirects(url);\\n" +
+            "fetch(url) with timeouts;\\n"
+          : "/* Vulnerable pattern (conceptual) */\\n" +
+            "fetch(userSuppliedUrl)\\n" +
+            "  .then(returnBodyToUser);\\n") +
+        "\\n--- Response (simulated) ---\\n" +
+        "HTTP " +
+        String(res.status || 0) +
+        "\\n" +
+        snippet;
+
+      codeEl.textContent = code;
+    }
+
+    var urlInput = document.getElementById("urlInput");
+    var followRedirects = document.getElementById("followRedirects");
+    var consoleLogging = document.getElementById("consoleLogging");
+    var runBtn = document.getElementById("runBtn");
+
+    var vulnStatus = document.getElementById("vulnStatus");
+    var vulnSteps = document.getElementById("vulnSteps");
+    var vulnCode = document.getElementById("vulnCode");
+
+    var secureStatus = document.getElementById("secureStatus");
+    var secureSteps = document.getElementById("secureSteps");
+    var secureCode = document.getElementById("secureCode");
+
+    var scenarios = [
+      {
+        title: "Cloud metadata (link-local)",
+        url: "http://169.254.169.254/latest/meta-data/iam/security-credentials/",
+        description: "Simulates a classic cloud SSRF target (metadata service).",
+        hint: "Secure backend blocks link-local."
+      },
+      {
+        title: "Localhost admin panel",
+        url: "http://localhost/admin",
+        description: "Simulates SSRF into an internal-only admin UI running on localhost.",
+        hint: "Secure backend blocks loopback."
+      },
+      {
+        title: "Internal service (private IP)",
+        url: "http://internal.service.local/config",
+        description: "Simulates hitting an internal API on a private address.",
+        hint: "Secure backend blocks RFC1918 ranges."
+      },
+      {
+        title: "Redirect-to-internal bypass",
+        url: "http://evil.test/redirect-imds",
+        description: "Simulates a public URL that redirects to an internal target.",
+        hint: "Secure backend re-validates redirects."
+      },
+      {
+        title: "Benign public fetch",
+        url: "https://public.example/health",
+        description: "A normal use-case for URL fetching/proxying (simulated).",
+        hint: "Secure backend allows public destinations."
+      }
+    ];
+
+    function renderScenarioGrid() {
+      var grid = document.getElementById("scenarioGrid");
+      for (var i = 0; i < scenarios.length; i++) {
+        (function (scenario) {
+          var card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML =
+            "<h4>" +
+            escapeHtml(scenario.title) +
+            "</h4>" +
+            "<p>" +
+            escapeHtml(scenario.description) +
+            "</p>" +
+            "<div class=\"small\">URL: <span class=\"mono\">" +
+            escapeHtml(scenario.url) +
+            "</span></div>" +
+            "<div class=\"row\" style=\"margin-top:12px;\"><button type=\"button\">Load</button></div>" +
+            "<div class=\"small\" style=\"margin-top:10px;\">Hint: " +
+            escapeHtml(scenario.hint) +
+            "</div>";
+
+          var btn = card.querySelector("button");
+          btn.addEventListener("click", function () {
+            urlInput.value = scenario.url;
+            if (consoleLogging && consoleLogging.checked && typeof console !== "undefined" && console) {
+              console.log("[SSRF demo] Load scenario:", scenario.title, "→", scenario.url);
+            }
+            runSimulation();
+          });
+
+          grid.appendChild(card);
+        })(scenarios[i]);
+      }
+    }
+
+    function runSimulation() {
+      var url = urlInput.value.trim();
+      var opts = { followRedirects: Boolean(followRedirects.checked) };
+
+      var vuln = simulateBackend("vuln", url, opts, false);
+      var secure = simulateBackend("secure", url, opts, true);
+
+      renderResult(vulnStatus, vulnSteps, vulnCode, vuln, false);
+      renderResult(secureStatus, secureSteps, secureCode, secure, true);
+
+      if (consoleLogging && consoleLogging.checked && typeof console !== "undefined" && console) {
+        try {
+          console.groupCollapsed("[SSRF demo] Simulation");
+          console.log("Input URL:", url);
+          console.log("Options:", opts);
+          console.log("Vulnerable result:", vuln);
+          console.log("Secure result:", secure);
+          console.groupEnd();
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+
+    runBtn.addEventListener("click", function () {
+      runSimulation();
+    });
+
+    urlInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") runSimulation();
+    });
+
+    // Default scenario
+    urlInput.value = scenarios[0].url;
+    renderScenarioGrid();
+    runSimulation();
+  </script>
+</body>
+</html>

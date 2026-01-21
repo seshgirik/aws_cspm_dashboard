@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Client Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        textarea {
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .token-display {
+            word-break: break-all;
+            background: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+        }
+        .code-example {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 JWT Client Test - How to Send JWT Tokens</h1>
+
+        <!-- Step 1: Login -->
+        <div class="section">
+            <h2>Step 1: Login to Get JWT Token</h2>
+            <label>Username:</label>
+            <input type="text" id="username" value="admin" placeholder="admin">
+            
+            <label>Password:</label>
+            <input type="password" id="password" value="admin123" placeholder="admin123">
+            
+            <button onclick="login()">Login</button>
+            
+            <div id="loginStatus"></div>
+            
+            <div class="code-example" style="margin-top: 15px;">
+<strong>cURL Command:</strong>
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+
+<strong>JavaScript Code:</strong>
+fetch('http://localhost:8080/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    username: 'admin',
+    password: 'admin123'
+  })
+})
+.then(response => response.json())
+.then(data => {
+  localStorage.setItem('token', data.token);
+})
+            </div>
+        </div>
+
+        <!-- Step 2: Token Storage -->
+        <div class="section">
+            <h2>Step 2: Stored JWT Token</h2>
+            <label>Your JWT Token:</label>
+            <textarea id="tokenDisplay" rows="3" readonly></textarea>
+            
+            <div class="code-example">
+<strong>How Token is Stored:</strong>
+// Browser LocalStorage
+localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiJ9...');
+
+// Browser SessionStorage  
+sessionStorage.setItem('token', 'eyJhbGciOiJIUzI1NiJ9...');
+
+// Variable in memory
+const token = 'eyJhbGciOiJIUzI1NiJ9...';
+            </div>
+        </div>
+
+        <!-- Step 3: Using Token -->
+        <div class="section">
+            <h2>Step 3: Send Requests with JWT Token</h2>
+            
+            <div class="grid">
+                <button onclick="testGetProfile()">GET /api/user/profile</button>
+                <button onclick="testGetAdmin()">GET /api/admin/users</button>
+                <button onclick="testOwasp()">GET /api/owasp/web/demonstrations</button>
+                <button onclick="testWithoutToken()">Test WITHOUT Token (401)</button>
+            </div>
+            
+            <div id="requestStatus"></div>
+            
+            <label>Request Headers Sent:</label>
+            <div class="code-example" id="requestHeaders">
+Authorization: Bearer &lt;your-jwt-token&gt;
+Content-Type: application/json
+            </div>
+            
+            <label>API Response:</label>
+            <textarea id="response" rows="10" readonly></textarea>
+            
+            <div class="code-example" style="margin-top: 15px;">
+<strong>cURL Command with Token:</strong>
+TOKEN="eyJhbGciOiJIUzI1NiJ9..."
+
+curl -X GET http://localhost:8080/api/user/profile \
+  -H "Authorization: Bearer $TOKEN"
+
+<strong>JavaScript Code with Token:</strong>
+const token = localStorage.getItem('token');
+
+fetch('http://localhost:8080/api/user/profile', {
+  method: 'GET',
+  headers: {
+    'Authorization': `Bearer ${token}`  // ← JWT Token Here!
+  }
+})
+.then(response => response.json())
+.then(data => console.log(data))
+            </div>
+        </div>
+
+        <!-- Token Format Explanation -->
+        <div class="section">
+            <h2>JWT Token Format</h2>
+            <div class="code-example">
+<strong>JWT Structure:</strong>
+<span style="color: #e06c75;">eyJhbGciOiJIUzI1NiJ9</span>.<span style="color: #98c379;">eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc2ODA2MTY3OSwiZXhwIjoxNzY4MTQ4MDc5fQ</span>.<span style="color: #61afef;">wIH_YEiL1l7Ynoq_LXdqVJDZrGmDiSaC5ysvL1mgowc</span>
+
+<span style="color: #e06c75;">Header</span> . <span style="color: #98c379;">Payload</span> . <span style="color: #61afef;">Signature</span>
+
+<strong>Decoded:</strong>
+<span style="color: #e06c75;">Header:</span>  {"alg":"HS256","typ":"JWT"}
+<span style="color: #98c379;">Payload:</span> {"sub":"admin","iat":1768061679,"exp":1768148079}
+<span style="color: #61afef;">Signature:</span> HMAC-SHA256(header.payload, secret)
+
+<strong>How to Send:</strong>
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiI...
+                      ↑
+                      Must include "Bearer " prefix!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentToken = '';
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const statusDiv = document.getElementById('loginStatus');
+            
+            statusDiv.innerHTML = '<div class="status">Logging in...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:8080/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentToken = data.token;
+                    
+                    // Store in localStorage
+                    localStorage.setItem('jwt_token', currentToken);
+                    
+                    // Display token
+                    document.getElementById('tokenDisplay').value = currentToken;
+                    
+                    statusDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ Login Successful!<br>
+                            Token stored in localStorage and ready to use.
+                        </div>
+                    `;
+                } else {
+                    const error = await response.text();
+                    statusDiv.innerHTML = `
+                        <div class="status error">
+                            ❌ Login Failed: ${error}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function makeRequest(url, method = 'GET') {
+            const statusDiv = document.getElementById('requestStatus');
+            const responseDiv = document.getElementById('response');
+            const headersDiv = document.getElementById('requestHeaders');
+            
+            if (!currentToken) {
+                statusDiv.innerHTML = '<div class="status error">⚠️ Please login first!</div>';
+                return;
+            }
+            
+            statusDiv.innerHTML = '<div class="status">Sending request...</div>';
+            
+            // Show actual headers being sent
+            headersDiv.textContent = `Authorization: Bearer ${currentToken.substring(0, 50)}...\nContent-Type: application/json`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,  // ← JWT TOKEN HERE!
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                responseDiv.value = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ Request Successful (${response.status})<br>
+                            JWT token was validated successfully!
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `
+                        <div class="status error">
+                            ❌ Request Failed (${response.status})
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+                responseDiv.value = error.message;
+            }
+        }
+
+        async function testWithoutToken() {
+            const statusDiv = document.getElementById('requestStatus');
+            const responseDiv = document.getElementById('response');
+            const headersDiv = document.getElementById('requestHeaders');
+            
+            statusDiv.innerHTML = '<div class="status">Sending request WITHOUT token...</div>';
+            headersDiv.textContent = 'Content-Type: application/json\n(No Authorization header)';
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/user/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                        // ← NO Authorization header!
+                    }
+                });
+                
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Unauthorized (${response.status})<br>
+                        Request failed because no JWT token was provided!
+                    </div>
+                `;
+                responseDiv.value = 'Error: 401 Unauthorized - No JWT token provided';
+            } catch (error) {
+                responseDiv.value = error.message;
+            }
+        }
+
+        function testGetProfile() {
+            makeRequest('http://localhost:8080/api/user/profile');
+        }
+
+        function testGetAdmin() {
+            makeRequest('http://localhost:8080/api/admin/users');
+        }
+
+        function testOwasp() {
+            makeRequest('http://localhost:8080/api/owasp/web/demonstrations');
+        }
+
+        // Load token from localStorage on page load
+        window.onload = function() {
+            const savedToken = localStorage.getItem('jwt_token');
+            if (savedToken) {
+                currentToken = savedToken;
+                document.getElementById('tokenDisplay').value = savedToken;
+                document.getElementById('loginStatus').innerHTML = `
+                    <div class="status success">
+                        ✅ Token loaded from localStorage
+                    </div>
+                `;
+            }
+        };
+    </script>
+</body>
+</html>

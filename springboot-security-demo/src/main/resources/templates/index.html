@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Boot Security Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .info-banner {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .info-banner h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .info-banner p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .credentials {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .credentials h3 {
+            color: #764ba2;
+            margin-bottom: 10px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .response.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .response.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .response pre {
+            margin-top: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .endpoints {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .endpoints h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .endpoint-group {
+            margin-bottom: 20px;
+        }
+
+        .endpoint-group h3 {
+            color: #764ba2;
+            margin-bottom: 10px;
+        }
+
+        .endpoint {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .method {
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .method.get { background: #28a745; color: white; }
+        .method.post { background: #007bff; color: white; }
+        .method.put { background: #ffc107; color: black; }
+
+        .security-features {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .security-features h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .feature {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .feature h4 {
+            color: #764ba2;
+            margin-bottom: 8px;
+        }
+
+        .feature p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        #token-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            word-break: break-all;
+        }
+
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .test-buttons button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Spring Boot Security Demo Application</h1>
+
+        <div class="info-banner">
+            <h2>Welcome to the Security Demo!</h2>
+            <p>This application demonstrates comprehensive Spring Boot Security features including:</p>
+            <ul style="margin-left: 30px; line-height: 2;">
+                <li>JWT Authentication & Authorization</li>
+                <li>Role-Based Access Control (RBAC)</li>
+                <li>Method-Level Security with @PreAuthorize</li>
+                <li>CSRF Protection</li>
+                <li>Security Headers (CSP, XSS, Frame Options)</li>
+                <li>Password Encryption (BCrypt)</li>
+                <li>Session Management</li>
+            </ul>
+            
+            <div class="credentials">
+                <h3>Default Test Credentials:</h3>
+                <p><strong>Admin User:</strong> username: <code>admin</code>, password: <code>admin123</code></p>
+                <p><strong>Regular User:</strong> username: <code>user</code>, password: <code>user123</code></p>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- Login Form -->
+            <div class="card">
+                <h2>🔑 Login</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginUsername">Username</label>
+                        <input type="text" id="loginUsername" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" name="password" required>
+                    </div>
+                    <button type="submit">Login</button>
+                </form>
+                <div id="loginResponse" class="response"></div>
+                <div id="token-display"></div>
+            </div>
+
+            <!-- Register Form -->
+            <div class="card">
+                <h2>📝 Register</h2>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="registerUsername">Username</label>
+                        <input type="text" id="registerUsername" name="username" required minlength="3">
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <input type="email" id="registerEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <input type="password" id="registerPassword" name="password" required minlength="6">
+                    </div>
+                    <button type="submit">Register</button>
+                </form>
+                <div id="registerResponse" class="response"></div>
+            </div>
+        </div>
+
+        <!-- API Testing -->
+        <div class="card">
+            <h2>🧪 Test Protected Endpoints</h2>
+            <p style="margin-bottom: 15px; color: #666;">
+                Login first to get a JWT token, then test these protected endpoints:
+            </p>
+            <div class="test-buttons">
+                <button onclick="testUserProfile()">Test User Profile</button>
+                <button onclick="testUserDashboard()">Test User Dashboard</button>
+                <button onclick="testAdminDashboard()">Test Admin Dashboard</button>
+            </div>
+            <div id="testResponse" class="response"></div>
+        </div>
+
+        <!-- OWASP Demonstrations Section -->
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2>🛡️ OWASP Top 10 Security Demonstrations</h2>
+            <p style="margin-bottom: 20px; color: #666;">
+                Interactive demonstrations of common security vulnerabilities and their mitigations.
+                All demonstrations show both vulnerable and secure implementations.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <h3 style="color: #764ba2; margin-bottom: 15px;">OWASP Web Top 10 (2021)</h3>
+                    <div class="test-buttons" style="flex-direction: column;">
+                        <button onclick="testOwasp('web', 'access-control')">A01: Broken Access Control</button>
+                        <button onclick="testOwasp('web', 'crypto')">A02: Cryptographic Failures</button>
+                        <button onclick="testOwasp('web', 'injection')">A03: Injection</button>
+                        <button onclick="testOwasp('web', 'design')">A04: Insecure Design</button>
+                        <button onclick="testOwasp('web', 'misconfiguration')">A05: Security Misconfiguration</button>
+                        <button onclick="testOwasp('web', 'auth')">A07: Authentication Failures</button>
+                        <button onclick="testOwasp('web', 'logging')">A09: Logging Failures</button>
+                        <button onclick="testOwasp('web', 'ssrf')">A10: SSRF</button>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 style="color: #764ba2; margin-bottom: 15px;">OWASP API Security Top 10 (2023)</h3>
+                    <div class="test-buttons" style="flex-direction: column;">
+                        <button onclick="testOwasp('api', 'bola')">API1: Broken Object Level Authorization</button>
+                        <button onclick="testOwasp('api', 'auth')">API2: Broken Authentication</button>
+                        <button onclick="testOwasp('api', 'property-auth')">API3: Property Level Authorization</button>
+                        <button onclick="testOwasp('api', 'resource')">API4: Resource Consumption</button>
+                        <button onclick="testOwasp('api', 'function-auth')">API5: Function Level Authorization</button>
+                        <button onclick="testOwasp('api', 'business-flow')">API6: Business Flow Access</button>
+                        <button onclick="testOwasp('api', 'misconfiguration')">API8: Security Misconfiguration</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="owaspResponse" class="response"></div>
+        </div>
+
+        <!-- Available Endpoints -->
+        <div class="endpoints">
+            <h2>📡 Available API Endpoints</h2>
+            
+            <div class="endpoint-group">
+                <h3>🌍 Public Endpoints (No Authentication Required)</h3>
+                <div class="endpoint">
+                    <span><span class="method get">GET</span> /</span>
+                    <span>Home page</span>
+                </div>
+                <div class="endpoint">
+                    <span><span class="method get">GET</span> /public/info</span>
+                    <span>Public information</span>
+                </div>
+                <div class="endpoint">
+                    <span><span class="method post">POST</span> /auth/register</span>
+                    <span>Register new user</span>
+                </div>
+                <div class="endpoint">
+                    <span><span class="method post">POST</span> /auth/login</span>
+                    <span>User login</span>
+                </div>
+            </div>
+
+            <div class="endpoint-group">
+                <h3>👤 User Endpoints (USER or ADMIN role)</h3>
+                <div class="endpoint">
+                    <span><span class="method get">GET</span> /api/user/profile</span>
+                    <span>Get user profile</span>
+                </div>
+                <div class="endpoint">
+                    <span><span class="method get">GET</span> /api/user/dashboard</span>
+                    <span>User dashboard</span>
+                </div>
+                <div class="endpoint">
+                    <span><span class="method put">PUT</span> /api/user/settings</span>
+                    <span>Update user settings</span>
+                </div>
+                <div class="endpoint">
+                    <span><span class="method get">GET</span> /api/user/data</span>
+                    <span>Get user data (USER:READ permission)</span>
+                </div>
+            </div>
+
+            <div class="endpoint-group">
+                <h3>🛡️ Admin Endpoints (ADMIN role only)</h3>
+                <div class="endpoint">
+                    <span><span class="method get">GET</span> /api/admin/dashboard</span>
+                    <span>Admin dashboard</span>
+                </div>
+                <div class="endpoint">
+                    <span><span class="method get">GET</span> /api/admin/users</span>
+                    <span>List all users (ADMIN:READ permission)</span>
+                </div>
+                <div class="endpoint">
+                    <span><span class="method get">GET</span> /api/admin/audit-logs</span>
+                    <span>View audit logs</span>
+                </div>
+                <div class="endpoint">
+                    <span><span class="method get">GET</span> /api/admin/system-config</span>
+                    <span>System configuration (ADMIN:WRITE permission)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Features -->
+        <div class="security-features">
+            <h2>🛡️ Implemented Security Features</h2>
+            <div class="feature-list">
+                <div class="feature">
+                    <h4>JWT Authentication</h4>
+                    <p>Stateless authentication using JSON Web Tokens with 24-hour expiration</p>
+                </div>
+                <div class="feature">
+                    <h4>BCrypt Password Encoding</h4>
+                    <p>Passwords encrypted with BCrypt (strength 12) before storage</p>
+                </div>
+                <div class="feature">
+                    <h4>Role-Based Access Control</h4>
+                    <p>USER and ADMIN roles with hierarchical permissions</p>
+                </div>
+                <div class="feature">
+                    <h4>Method-Level Security</h4>
+                    <p>@PreAuthorize annotations for fine-grained access control</p>
+                </div>
+                <div class="feature">
+                    <h4>CSRF Protection</h4>
+                    <p>Cross-Site Request Forgery protection (disabled for APIs, enabled for forms)</p>
+                </div>
+                <div class="feature">
+                    <h4>CORS Configuration</h4>
+                    <p>Configured to allow specific origins with credentials</p>
+                </div>
+                <div class="feature">
+                    <h4>Security Headers</h4>
+                    <p>CSP, X-Frame-Options, XSS-Protection, HSTS headers configured</p>
+                </div>
+                <div class="feature">
+                    <h4>Session Management</h4>
+                    <p>Stateless sessions with maximum 1 concurrent session per user</p>
+                </div>
+                <div class="feature">
+                    <h4>Input Validation</h4>
+                    <p>Jakarta Validation for request DTOs with custom constraints</p>
+                </div>
+                <div class="feature">
+                    <h4>Exception Handling</h4>
+                    <p>Custom authentication entry point for unauthorized access</p>
+                </div>
+                <div class="feature">
+                    <h4>H2 Console Security</h4>
+                    <p>Frame options configured for development database access</p>
+                </div>
+                <div class="feature">
+                    <h4>Actuator Security</h4>
+                    <p>Health and metrics endpoints secured with admin-only access</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let jwtToken = '';
+
+        // Login Form Handler
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                const responseDiv = document.getElementById('loginResponse');
+                
+                if (response.ok) {
+                    jwtToken = data.token;
+                    responseDiv.className = 'response success';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `
+                        <strong>✅ ${data.message}</strong><br>
+                        Username: ${data.username}<br>
+                        Role: ${data.role}
+                    `;
+                    
+                    // Display token
+                    const tokenDisplay = document.getElementById('token-display');
+                    tokenDisplay.style.display = 'block';
+                    tokenDisplay.innerHTML = `<strong>JWT Token:</strong><br>${data.token}`;
+                } else {
+                    responseDiv.className = 'response error';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `<strong>❌ Login Failed</strong><br>${data.message || 'Invalid credentials'}`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                const responseDiv = document.getElementById('loginResponse');
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `<strong>❌ Error</strong><br>${error.message}`;
+            }
+        });
+
+        // Register Form Handler
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            
+            try {
+                const response = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                const data = await response.json();
+                const responseDiv = document.getElementById('registerResponse');
+                
+                if (response.ok) {
+                    jwtToken = data.token;
+                    responseDiv.className = 'response success';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `
+                        <strong>✅ ${data.message}</strong><br>
+                        Username: ${data.username}<br>
+                        Role: ${data.role}<br>
+                        You can now use the protected endpoints!
+                    `;
+                } else {
+                    responseDiv.className = 'response error';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `<strong>❌ Registration Failed</strong><br>${data.message || 'Please check your input'}`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                const responseDiv = document.getElementById('registerResponse');
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `<strong>❌ Error</strong><br>${error.message}`;
+            }
+        });
+
+        // Test User Profile
+        async function testUserProfile() {
+            await testEndpoint('/api/user/profile', 'User Profile');
+        }
+
+        // Test User Dashboard
+        async function testUserDashboard() {
+            await testEndpoint('/api/user/dashboard', 'User Dashboard');
+        }
+
+        // Test Admin Dashboard
+        async function testAdminDashboard() {
+            await testEndpoint('/api/admin/dashboard', 'Admin Dashboard');
+        }
+
+        // Generic test endpoint function
+        async function testEndpoint(url, name) {
+            if (!jwtToken) {
+                const responseDiv = document.getElementById('testResponse');
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = '<strong>❌ Error</strong><br>Please login first to get a JWT token!';
+
+        // Test OWASP demonstrations
+        async function testOwasp(type, category) {
+            if (!jwtToken) {
+                const responseDiv = document.getElementById('owaspResponse');
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = '<strong>❌ Error</strong><br>Please login first to get a JWT token!';
+                return;
+            }
+
+            const responseDiv = document.getElementById('owaspResponse');
+            responseDiv.className = 'response';
+            responseDiv.style.display = 'block';
+            responseDiv.innerHTML = '<strong>Loading...</strong>';
+
+            let url, method = 'GET', body = null;
+
+            // Web demonstrations
+            if (type === 'web') {
+                switch(category) {
+                    case 'access-control':
+                        url = '/api/owasp/web/access-control/secure/1';
+                        break;
+                    case 'crypto':
+                        url = '/api/owasp/web/crypto/weak-password';
+                        break;
+                    case 'injection':
+                        url = '/api/owasp/web/injection/search?username=admin&mode=secure';
+                        break;
+                    case 'design':
+                        url = '/api/owasp/web/design/password-reset?email=test@example.com&mode=secure';
+                        method = 'POST';
+                        break;
+                    case 'misconfiguration':
+                        url = '/api/owasp/web/misconfiguration/info';
+                        break;
+                    case 'auth':
+                        url = '/api/owasp/web/auth/weak-password-check';
+                        method = 'POST';
+                        body = JSON.stringify({password: 'Test123!@#'});
+                        break;
+                    case 'logging':
+                        url = '/api/owasp/web/logging/demo';
+                        break;
+                    case 'ssrf':
+                        url = '/api/owasp/web/ssrf/fetch-url?url=http://example.com&mode=secure';
+                        break;
+                }
+            } 
+            // API demonstrations
+            else if (type === 'api') {
+                switch(category) {
+                    case 'bola':
+                        url = '/api/owasp/api/bola/secure/users/1/data';
+                        break;
+                    case 'auth':
+                        url = '/api/owasp/api/auth/demo';
+                        method = 'POST';
+                        body = JSON.stringify({username: 'test', password: 'test'});
+                        break;
+                    case 'property-auth':
+                        url = '/api/owasp/api/property-auth/secure/users/1';
+                        method = 'PUT';
+                        body = JSON.stringify({email: 'new@example.com', role: 'ADMIN'});
+                        break;
+                    case 'resource':
+                        url = '/api/owasp/api/resource/secure/export?limit=10&offset=0';
+                        break;
+                    case 'function-auth':
+                        url = '/api/owasp/api/function-auth/secure/admin/stats';
+                        break;
+                    case 'business-flow':
+                        url = '/api/owasp/api/business-flow/secure/purchase';
+                        method = 'POST';
+                        body = JSON.stringify({item: 'ticket', quantity: 1});
+                        break;
+                    case 'misconfiguration':
+                        url = '/api/owasp/api/misconfiguration/demo';
+                        break;
+                }
+            }
+
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                };
+
+                if (body) {
+                    options.body = body;
+                }
+
+                const response = await fetch(url, options);
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.className = 'response success';
+                    responseDiv.innerHTML = `
+                        <strong>✅ ${data.vulnerability || data.protection || 'Success'}</strong>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else if (response.status === 429) {
+                    responseDiv.className = 'response error';
+                    responseDiv.innerHTML = `
+                        <strong>⚠️ Rate Limited</strong><br>
+                        Status: ${response.status}<br>
+                        This demonstrates rate limiting protection!<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    responseDiv.className = 'response error';
+                    responseDiv.innerHTML = `
+                        <strong>❌ Access Denied or Error</strong><br>
+                        Status: ${response.status}<br>
+                        ${data.message || 'Request failed'}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                responseDiv.className = 'response error';
+                responseDiv.innerHTML = `<strong>❌ Error</strong><br>${error.message}`;
+            }
+        }
+                return;
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const responseDiv = document.getElementById('testResponse');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    responseDiv.className = 'response success';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `
+                        <strong>✅ ${name} - Success</strong>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    const data = await response.json();
+                    responseDiv.className = 'response error';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `
+                        <strong>❌ ${name} - Access Denied</strong><br>
+                        Status: ${response.status}<br>
+                        ${data.message || 'You do not have permission to access this endpoint'}
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                const responseDiv = document.getElementById('testResponse');
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `<strong>❌ Error</strong><br>${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Demos & Analysis Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f4f6fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 32px 24px;
+        }
+        h1 {
+            text-align: center;
+            color: #2d3a4b;
+            margin-bottom: 32px;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+        .dashboard-item {
+            background: #f9fafc;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            padding: 18px 14px;
+            text-align: center;
+            transition: box-shadow 0.2s;
+        }
+        .dashboard-item:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+        }
+        .dashboard-link {
+            text-decoration: none;
+            color: #1a73e8;
+            font-size: 1.08em;
+            font-weight: 500;
+        }
+        .dashboard-link:visited {
+            color: #5c6bc0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Security Demos & Analysis Dashboard</h1>
+        <div class="dashboard-grid">
+            <div class="dashboard-item"><a class="dashboard-link" href="deserialization_attack_demo.html">Deserialization Attack Demo</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="atlassian_cisco_sso_flow.html">Atlassian Cisco SSO Flow</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="viewer_ultimate.html">Viewer Ultimate</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="security_findings_visual_story.html">Security Findings Visual Story</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="sagemaker_debugger_model_extraction.html">Sagemaker Debugger Model Extraction</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="cors_demo.html">CORS Demo</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="ssrf_demo.html">SSRF Demo</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="xss-vulnerability-demo.html">XSS Vulnerability Demo</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="speech_coach.html">Speech Coach</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="viewer.html">Viewer</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="critical_findings_complete.html">Critical Findings Complete</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="test_vectordb.html">Test VectorDB</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="ssrf_redirect_flow.html">SSRF Redirect Flow</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="lambda_dlq_analysis.html">Lambda DLQ Analysis</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="bedrock_security_flow.html">Bedrock Security Flow</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="data_exfiltration_techniques.html">Data Exfiltration Techniques</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="reflected_xss_flow.html">Reflected XSS Flow</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="viewer_enhanced.html">Viewer Enhanced</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="sql_injection_demo.html">SQL Injection Demo</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="symmetric_vs_asymmetric_signatures.html">Symmetric vs Asymmetric Signatures</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="xxe_injection_demo.html">XXE Injection Demo</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="security_findings_analysis.html">Security Findings Analysis</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="malware_security_analysis.html">Malware Security Analysis</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="security_findings_visual_analysis.html">Security Findings Visual Analysis</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="elb_load_balancer_finding.html">ELB Load Balancer Finding</a></div>
+            <div class="dashboard-item"><a class="dashboard-link" href="index.html">Index</a></div>
+        </div>
+    </div>
+</body>
+</html>

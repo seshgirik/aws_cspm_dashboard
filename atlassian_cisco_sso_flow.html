@@ -1,0 +1,2117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlassian Cisco SSO Authentication Flow</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        h2 {
+            margin-top: 50px;
+            margin-bottom: 20px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .diagram-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 30px 0;
+            overflow-x: auto;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .info-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            font-size: 1.3em;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            padding-bottom: 10px;
+        }
+        .info-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .info-card li {
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .info-card li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .protocol-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .protocol-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-size: 1.1em;
+        }
+        .protocol-table td {
+            padding: 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .protocol-table tr:hover {
+            background: #f8f9fa;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .badge-saml {
+            background: #e74c3c;
+            color: white;
+        }
+        .badge-oauth {
+            background: #3498db;
+            color: white;
+        }
+        .badge-oidc {
+            background: #2ecc71;
+            color: white;
+        }
+        .badge-session {
+            background: #f39c12;
+            color: white;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ecf0f1;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Enterprise Authentication Flows Comparison</h1>
+        <p class="subtitle">SAML 2.0 SSO vs OAuth 2.0 Authorization Code Grant</p>
+
+        <div class="info-grid" style="margin-bottom: 30px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h3>📌 Flow 1: SAML 2.0 SSO</h3>
+                <p style="font-size: 0.9em; opacity: 0.9;">Atlassian (Confluence + Jira) + Cisco Identity</p>
+            </div>
+            <div class="info-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                <h3>📌 Flow 2: OIDC</h3>
+                <p style="font-size: 0.9em; opacity: 0.9;">OpenID Connect (OAuth 2.0 + Authentication)</p>
+            </div>
+            <div class="info-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                <h3>📌 Flow 3: Hybrid SAML + OAuth</h3>
+                <p style="font-size: 0.9em; opacity: 0.9;">Cisco IDbroker + Real Production Data (HAR)</p>
+            </div>
+            <div class="info-card" style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);">
+                <h3>📌 Flow 4: Client Credentials Grant</h3>
+                <p style="font-size: 0.9em; opacity: 0.9;">Machine-to-Machine OAuth (No User Context)</p>
+            </div>
+        </div>
+
+        <h2 style="color: #e74c3c; border-left: 5px solid #e74c3c; padding-left: 15px; margin-top: 40px;">Flow 1: SAML 2.0 SSO (Atlassian Products with Cisco Identity)</h2>
+        <div style="background: #ffe5e5; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px; border-radius: 4px;">
+            <strong>Grant Type:</strong> N/A (SAML is not OAuth-based)<br/>
+            <strong>Flow Type:</strong> SAML Web Browser SSO Profile (SP-Initiated or IdP-Initiated)<br/>
+            <strong>Protocol:</strong> SAML 2.0 (Security Assertion Markup Language)<br/>
+            <strong>Applications:</strong> Confluence (id.atlassian.com), Jira (jira-eng-gpk2.cisco.com)<br/>
+            <strong>Identity Provider:</strong> Cisco Identity (id.cisco.com) via Okta<br/>
+            <strong>HAR Sources:</strong> Confluence login flow + Jira Engineering login (jira-eng-gpk2.cisco.com.har)
+        </div>
+        
+        <div class="diagram-container">
+            <div class="mermaid">
+sequenceDiagram
+    participant User as 👤 User Browser
+    participant App as Atlassian App<br/>(Confluence/Jira)<br/>Service Provider (SP)
+    participant CiscoID as Cisco Identity<br/>(id.cisco.com via Okta)<br/>SAML IdP
+    participant Resource as Resource<br/>(Confluence Space / Jira Issue)
+
+    Note over User,Resource: 🔴 SAML 2.0 Web Browser SSO Profile (SP-Initiated)
+    rect rgb(255, 235, 238)
+    Note over User,Resource: Works for: Confluence (ciscoteams.atlassian.net), Jira (jira-eng-gpk2.cisco.com)
+    end
+
+    User->>App: 1️⃣ Access Atlassian Resource<br/>(Confluence IPCBU space / Jira Issue CALL-190355)
+    
+    Note over App: No valid session found<br/>Redirect to SSO
+    
+    App->>User: 2️⃣ Redirect to Cisco Identity<br/>SAMLRequest in URL
+
+    User->>CiscoID: 3️⃣ GET /sso/saml?SAMLRequest=...<br/>RelayState=7424d1de-cbb2-4cc0-9cb9-2025eb983284
+    
+    Note over CiscoID: Okta-powered Cisco Identity<br/>Check user session<br/>Verify enterprise credentials
+    
+    CiscoID->>User: 4️⃣ Prompt for Cisco credentials<br/>(if not authenticated)
+    
+    User->>CiscoID: 5️⃣ Submit credentials + MFA (Duo)
+    
+    rect rgb(255, 235, 238)
+    Note over CiscoID: ✅ SAML AUTHENTICATION<br/>✅ Validate credentials<br/>✅ Multi-factor auth (MFA)<br/>✅ Generate SAML assertion
+    end
+    
+    CiscoID->>User: 6️⃣ SAML Response redirect<br/>(POST to /samlconsumer)
+
+    User->>App: 7️⃣ POST /plugins/servlet/samlconsumer<br/>(SAML Response with assertion)
+    
+    rect rgb(255, 235, 238)
+    Note over App: ✅ SAML VALIDATION<br/>✅ Validate SAML signature<br/>✅ Extract user identity<br/>✅ Create user session
+    end
+    
+    App->>App: 8️⃣ Create session + OAuth token<br/>(for API access)
+    
+    App->>Resource: 9️⃣ Check RBAC permissions<br/>(space/issue access control)
+    
+    alt ✅ Has Access
+        Resource->>User: 🔓 Grant access<br/>Load Confluence page / Jira issue
+    else ❌ No Access
+        Resource->>User: 🔒 Request access<br/>Show authorization page
+    end
+    
+    Note over User,Resource: Subsequent requests use session cookie<br/>SAML assertion establishes identity
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h3>🔑 Authentication Phase</h3>
+                <ul>
+                    <li>Protocol: SAML 2.0</li>
+                    <li>Identity Provider: Cisco Identity (id.cisco.com)</li>
+                    <li>Service Providers: Confluence, Jira</li>
+                    <li>MFA: Duo/Cisco Secure</li>
+                    <li>Session: Enterprise-wide SSO</li>
+                    <li>Endpoints: /sso/saml (IdP), /samlconsumer (SP)</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                <h3>🎫 Authorization Phase</h3>
+                <ul>
+                    <li>Protocol: OAuth 2.0 / OIDC (optional)</li>
+                    <li>Token Type: JWT Bearer (for API access)</li>
+                    <li>Resource: ARI-based (Confluence) / Issue-based (Jira)</li>
+                    <li>Scope: Space/Project access permissions</li>
+                    <li>RBAC: Space-level / Project-level permissions</li>
+                    <li>Real Examples: IPCBU wiki, CALL-190355 issue</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #16a085 0%, #138d75 100%);">
+                <h3>🛡️ Security Layers</h3>
+                <ul>
+                    <li>Layer 1: Cisco Enterprise Auth</li>
+                    <li>Layer 2: Multi-Factor Auth (MFA)</li>
+                    <li>Layer 3: SAML Assertion Signing</li>
+                    <li>Layer 4: OAuth Token Validation</li>
+                    <li>Layer 5: Resource-Level RBAC</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h3>🔒 Security Headers (from Jira HAR)</h3>
+                <ul>
+                    <li><strong>Strict-Transport-Security:</strong> max-age=31536000 (1 year HSTS)</li>
+                    <li><strong>X-Frame-Options:</strong> SAMEORIGIN (clickjacking protection)</li>
+                    <li><strong>Content-Security-Policy:</strong> frame-ancestors 'self' (iframe restrictions)</li>
+                    <li><strong>X-Content-Type-Options:</strong> nosniff (MIME-sniffing prevention)</li>
+                    <li><strong>X-XSS-Protection:</strong> enabled (legacy XSS filter)</li>
+                    <li><strong>X-Seraph-LoginReason:</strong> OK (Atlassian auth status)</li>
+                    <li><strong>SAML Consumer:</strong> /jira/plugins/servlet/samlconsumer</li>
+                    <li><strong>Content-Type:</strong> application/x-www-form-urlencoded (SAML POST)</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                <h3>🔐 Atlassian-Specific Security</h3>
+                <ul>
+                    <li><strong>atlassian-token:</strong> CSRF protection token (BOZI-RZAB-0Q2B-FFXS...)</li>
+                    <li><strong>JSESSIONID:</strong> Session tracking cookie</li>
+                    <li><strong>Seraph:</strong> Atlassian auth framework</li>
+                    <li><strong>SAML Binding:</strong> HTTP POST (9419 bytes SAML Response)</li>
+                    <li><strong>RelayState:</strong> 7424d1de-cbb2-4cc0-9cb9-2025eb983284</li>
+                    <li><strong>Origin Validation:</strong> https://id.cisco.com</li>
+                    <li><strong>Sec-Fetch-Site:</strong> same-site (cross-site protection)</li>
+                </ul>
+            </div>
+        </div>
+
+        <table class="protocol-table">
+            <thead>
+                <tr>
+                    <th>Step</th>
+                    <th>Protocol</th>
+                    <th>Purpose</th>
+                    <th>Data Exchanged</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1-3</strong></td>
+                    <td><span class="badge badge-session">HTTPS</span></td>
+                    <td>Initial navigation</td>
+                    <td>URL parameters, session cookies</td>
+                </tr>
+                <tr>
+                    <td><strong>4-7</strong></td>
+                    <td><span class="badge badge-saml">SAML 2.0</span></td>
+                    <td>Enterprise SSO authentication</td>
+                    <td>AuthnRequest, SAML Response, user attributes</td>
+                </tr>
+                <tr>
+                    <td><strong>8</strong></td>
+                    <td><span class="badge badge-oauth">OAuth 2.0</span> <span class="badge badge-oidc">OIDC</span></td>
+                    <td>Token issuance</td>
+                    <td>Access token, ID token, refresh token</td>
+                </tr>
+                <tr>
+                    <td><strong>9</strong></td>
+                    <td><span class="badge badge-oauth">OAuth 2.0</span></td>
+                    <td>Resource authorization</td>
+                    <td>ARI (Atlassian Resource Identifier), scopes</td>
+                </tr>
+                <tr>
+                    <td><strong>10</strong></td>
+                    <td><span class="badge badge-session">Session</span></td>
+                    <td>Access control</td>
+                    <td>Permission check, content delivery</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2 style="color: #3498db; border-left: 5px solid #3498db; padding-left: 15px; margin-top: 60px;">Flow 2: OIDC Authentication (OAuth 2.0 + OpenID Connect)</h2>
+        <p style="color: #7f8c8d; margin-left: 20px;">
+            <strong>Use Cases:</strong><br/>
+            • Generic OIDC: https://xmy.com/login/callback?code=66H8OA25Z9...&state=xN4uTl4xVxfZn0REMsu2zcQqKapXPwgF66MTv<br/>
+            • HashiCorp Vault: https://east.keeper.cisco.com/ui/vault/auth/oidc/oidc/callback (via Duo Security SSO)
+        </p>
+        <div style="background: #e3f2fd; border-left: 4px solid #3498db; padding: 15px; margin: 20px; border-radius: 4px;">
+            <strong>Grant Type:</strong> Authorization Code Grant (with PKCE enhancement)<br/>
+            <strong>Flow Type:</strong> OIDC Authorization Code Flow<br/>
+            <strong>Protocol:</strong> OpenID Connect 1.0 (built on OAuth 2.0)<br/>
+            <strong>Required Scope:</strong> <code>openid</code> (+ optional: profile, email, etc.)<br/>
+            <strong>HAR Sources:</strong> Generic OIDC pattern + HashiCorp Vault (east.keeper.cisco.com.har)
+        </div>
+        <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px; border-radius: 4px;">
+            <strong>⚠️ Important:</strong> OAuth 2.0 alone is for <strong>authorization</strong> (delegated access), NOT authentication (who you are). 
+            For login/authentication, this uses <strong>OIDC (OpenID Connect)</strong> - which adds an authentication layer on top of OAuth 2.0.
+            OIDC provides an <strong>ID token</strong> (proves identity) + <strong>access token</strong> (accesses resources).
+        </div>
+
+        <div class="diagram-container">
+            <div class="mermaid">
+sequenceDiagram
+    participant User as 👤 User Browser
+    participant Client as Client App<br/>(xmy.com)
+    participant OIDC as OIDC Provider<br/>(Authorization + Authentication Server)
+    participant ResourceServer as Resource Server<br/>(API/Backend)
+
+    rect rgb(232, 245, 255)
+    Note over User,ResourceServer: 🔵 OIDC Authentication (OAuth 2.0 + OpenID Connect)
+    Note over User,ResourceServer: Grant Type: AUTHORIZATION CODE GRANT
+    Note over User,ResourceServer: Enhancement: PKCE (Proof Key for Code Exchange)
+    Note over User,ResourceServer: Required Scope: openid (+ profile, email)
+    end
+
+    User->>Client: 1️⃣ Click "Login" / Access Protected Resource
+    
+    Note over Client: Generate PKCE challenge<br/>Generate random state<br/>Prepare OAuth parameters
+    
+    Client->>User: 2️⃣ Redirect to OIDC Provider
+    
+    User->>OIDC: 3️⃣ Authorization Request (GET /authorize)<br/>📋 response_type=code (implies Authorization Code Grant)<br/>🔑 scope=openid profile email<br/>🆔 client_id, redirect_uri, state, code_challenge
+    
+    Note over User,OIDC: ⚙️ STEP 3: scope parameter defines permissions<br/>⚙️ response_type=code indicates grant type
+    
+    Note over OIDC: Display login page<br/>(OIDC Provider authenticates user)
+    
+    OIDC->>User: 4️⃣ Prompt for credentials<br/>(username/password or social login)
+    
+    User->>OIDC: 5️⃣ Submit credentials + consent
+    
+    rect rgb(232, 245, 255)
+    Note over OIDC: ✅ OIDC AUTHENTICATION (who you are)<br/>✅ Validate credentials (check username/password)<br/>✅ MFA (if required)<br/>✅ User consent (if first time)<br/>✅ Generate authorization code
+    end
+    
+    OIDC->>User: 6️⃣ Redirect to callback<br/>(code + state)
+    
+    User->>Client: 7️⃣ GET /login/callback<br/>?code=66H8OA25Z9...<br/>&state=xN4uTl4xVxfZn0REMsu2zcQqKapXPwgF66MTv
+    
+    Note over Client: ✅ Validate state (CSRF protection)<br/>Extract authorization code
+    
+    Client->>OIDC: 8️⃣ Token Request (POST /token)<br/>📋 grant_type=authorization_code<br/>🎫 code=66H8OA25Z9...<br/>🆔 client_id, client_secret<br/>🔒 code_verifier (PKCE), redirect_uri
+    
+    Note over Client,OIDC: ⚙️ STEP 8: grant_type parameter specifies Authorization Code Grant<br/>⚙️ This is the token exchange step
+    
+    rect rgb(232, 245, 255)
+    Note over OIDC: ✅ OIDC TOKEN ISSUANCE<br/>✅ Validate authorization code<br/>✅ Verify client credentials<br/>✅ Verify PKCE code_verifier<br/>✅ Validate grant_type parameter<br/>✅ Issue tokens (ID + Access + Refresh)
+    end
+    
+    OIDC->>Client: 9️⃣ Token Response<br/>• id_token (JWT with user identity) 🆔<br/>• access_token (for API access) 🔑<br/>• refresh_token (get new tokens) 🔄
+    
+    Note over Client: ✅ Validate ID token signature<br/>✅ Extract user info (sub, email, name)<br/>Store tokens securely<br/>Create user session
+    
+    Client->>OIDC: 🔟 GET /userinfo<br/>Authorization: Bearer {access_token}
+    
+    OIDC->>Client: User profile data<br/>(email, name, picture, etc.)
+    
+    Client->>User: ✅ User authenticated & logged in
+    
+    Note over User,Client: User session established<br/>ID token proves authentication
+    
+    Client->>ResourceServer: API Request<br/>Authorization: Bearer {access_token}
+    
+    Note over ResourceServer: ✅ Validate access token<br/>✅ Check token expiration<br/>✅ Verify scopes<br/>AUTHORIZATION (what you can access)
+    
+    ResourceServer->>Client: ✅ Protected Resource Data
+    
+    Client->>User: 🎉 Display protected content
+    
+    Note over User,Client: Subsequent requests:<br/>- ID token for identity proof<br/>- Access token for API calls<br/>- Refresh token when tokens expire
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                <h3>🔐 OIDC Flow Details</h3>
+                <ul>
+                    <li><strong>Grant Type:</strong> Authorization Code Grant</li>
+                    <li><strong>Base Protocol:</strong> OAuth 2.0</li>
+                    <li><strong>Extension:</strong> OpenID Connect (OIDC)</li>
+                    <li><strong>Purpose:</strong> Authentication + Authorization</li>
+                    <li><strong>Scope:</strong> openid (required for OIDC)</li>
+                    <li><strong>PKCE:</strong> Code Challenge/Verifier (security enhancement)</li>
+                    <li><strong>State:</strong> CSRF Protection Token</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">
+                <h3>🎫 Three Token Types</h3>
+                <ul>
+                    <li><strong>1. ID Token (JWT):</strong> Proves WHO you are 🆔<br/>
+                        <small>Contains: sub, email, name, iat, exp</small></li>
+                    <li><strong>2. Access Token:</strong> Grants WHAT you can access 🔑<br/>
+                        <small>Used for API authorization (Bearer token)</small></li>
+                    <li><strong>3. Refresh Token:</strong> Gets new tokens 🔄<br/>
+                        <small>Long-lived, used to obtain new access tokens</small></li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                <h3>📋 Key OAuth Parameters by Step</h3>
+                <ul>
+                    <li><strong>Step 3 (Authorization Request):</strong><br/>
+                        • response_type=code (grant type indicator)<br/>
+                        • scope=openid profile email<br/>
+                        • state, code_challenge (PKCE)</li>
+                    <li><strong>Step 7 (Callback):</strong><br/>
+                        • code: 66H8OA25Z9-5t9f7js3pMUNMDNszk<br/>
+                        • state: xN4uTl4xVxfZn0REMsu2zcQqKapXPwgF66MTv</li>
+                    <li><strong>Step 8 (Token Exchange):</strong><br/>
+                        • grant_type=authorization_code<br/>
+                        • code (from step 7)<br/>
+                        • code_verifier (PKCE proof)</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h3>🆔 OIDC vs Plain OAuth 2.0</h3>
+                <ul>
+                    <li><strong>OAuth 2.0:</strong> Authorization only ❌ authentication</li>
+                    <li><strong>OIDC:</strong> OAuth 2.0 + authentication layer ✅</li>
+                    <li>OIDC adds <code>openid</code> scope</li>
+                    <li>OIDC adds ID token (JWT)</li>
+                    <li>OIDC adds /userinfo endpoint</li>
+                    <li>OIDC proves user identity</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #16a085 0%, #138d75 100%);">
+                <h3>🔒 Security Features</h3>
+                <ul>
+                    <li>PKCE prevents code interception</li>
+                    <li>State prevents CSRF attacks</li>
+                    <li>Authorization code is single-use</li>
+                    <li>ID token signature validation</li>
+                    <li>Client authentication required</li>
+                    <li>TLS/HTTPS mandatory</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                <h3>✅ Authentication vs Authorization</h3>
+                <ul>
+                    <li><strong>Authentication (OIDC):</strong><br/>
+                        WHO you are - Proves identity via ID token</li>
+                    <li><strong>Authorization (OAuth):</strong><br/>
+                        WHAT you can access - Grants API access via Access token</li>
+                    <li>OIDC = OAuth 2.0 + Identity layer</li>
+                    <li>Both use same authorization code flow</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);">
+                <h3>🔐 HashiCorp Vault Use Case</h3>
+                <ul>
+                    <li><strong>Application:</strong> HashiCorp Vault (east.keeper.cisco.com)</li>
+                    <li><strong>OIDC Provider:</strong> Duo Security SSO (sso-dbbfec7f.sso.duosecurity.com)</li>
+                    <li><strong>Vault Token:</strong> hvs.CAESIM0jccozEHwo2gMz19dRZIli4sQ... (service token)</li>
+                    <li><strong>Token Lifetime:</strong> 518400 seconds (6 days)</li>
+                    <li><strong>Namespace:</strong> meetpaas, app-secrets, wxt-calling</li>
+                    <li><strong>User:</strong> sekondav@cisco.com (engineer role)</li>
+                    <li><strong>Policies:</strong> default, engineer, group-mobius-devops-rw, mobius-approle-access</li>
+                    <li><strong>Use Case:</strong> Secrets management with OIDC-based authentication</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2 style="color: #9b59b6; border-left: 5px solid #9b59b6; padding-left: 15px; margin-top: 60px;">Flow 3: Hybrid SAML + OAuth (Cisco IDbroker) with Real Production Data</h2>
+        <div style="background: #f3e5f5; border-left: 4px solid #9b59b6; padding: 15px; margin: 20px; border-radius: 4px;">
+            <strong>Authentication:</strong> SAML 2.0 (Enterprise SSO)<br/>
+            <strong>Authorization:</strong> OAuth 2.0 Authorization Code Grant<br/>
+            <strong>Pattern:</strong> SAML for user authentication → OAuth tokens for API authorization<br/>
+            <strong>Token Endpoints:</strong> <code>https://idbrokerbts.webex.com/idb/oauth2/v1/access_token</code> (global), <code>https://idbroker-sg.webex.com/idb/oauth2/v1/access_token</code> (Singapore)<br/>
+            <strong>Real Data Source:</strong> HAR file from Webex Contact Center production environment (Nov 25, 2025)<br/>
+            <strong>Token Lifetime:</strong> 18 hours (access), 59 days (refresh)<br/>
+            <strong>Cluster:</strong> PS65 (Singapore), A52D (Global)<br/>
+            <strong>Use Case:</strong> Enterprise SSO + Modern API Integration (Cisco Webex Contact Center, Collaboration Services)
+        </div>
+
+        <div class="diagram-container">
+            <div class="mermaid">
+sequenceDiagram
+    participant User as 👤 User Browser
+    participant App as Application/Client<br/>(Resource Consumer)
+    participant IDbroker as Cisco IDbroker<br/>(SAML IdP + OAuth AS)
+    participant CiscoIDP as Cisco Identity<br/>(Enterprise SSO)
+    participant API as API/Resource Server<br/>(Protected Resources)
+
+    rect rgb(255, 245, 235)
+    Note over User,API: 🟠 Hybrid Pattern: SAML Authentication → OAuth Authorization
+    Note over User,API: 🔴 Authentication: SAML 2.0 | 🟠 Authorization: OAuth 2.0
+    end
+
+    User->>App: 1️⃣ Access protected application/API
+
+    Note over App: No valid session<br/>Needs user authentication
+
+    App->>User: 2️⃣ Redirect to IDbroker (SAML SP)
+
+    User->>IDbroker: 3️⃣ SAML Authentication Request
+
+    Note over IDbroker: No session found<br/>Redirect to Enterprise IdP
+
+    IDbroker->>User: 4️⃣ Redirect to Cisco Identity (SAML IdP)
+
+    User->>CiscoIDP: 5️⃣ SAML AuthnRequest
+
+    Note over CiscoIDP: Display login page
+
+    CiscoIDP->>User: 6️⃣ Prompt for credentials + MFA
+
+    User->>CiscoIDP: 7️⃣ Submit credentials
+
+    rect rgb(255, 235, 238)
+    Note over CiscoIDP: ✅ SAML AUTHENTICATION<br/>✅ Validate credentials<br/>✅ Multi-factor auth (MFA)<br/>✅ Generate SAML assertion
+    end
+
+    CiscoIDP->>User: 8️⃣ SAML Response (redirect)
+
+    User->>IDbroker: 9️⃣ POST SAML Response to IDbroker
+
+    rect rgb(255, 245, 235)
+    Note over IDbroker: ✅ SAML → OAuth Bridge<br/>✅ Validate SAML assertion<br/>✅ Extract user identity<br/>✅ User is authenticated<br/>🔄 Now issue OAuth tokens
+    end
+
+    IDbroker->>IDbroker: 🔟 Generate OAuth Tokens<br/>based on SAML identity
+
+    rect rgb(255, 245, 235)
+    Note over IDbroker: 🟠 OAuth 2.0 AUTHORIZATION<br/>• Generate access_token (JWT)<br/>• Generate refresh_token<br/>• Token contains user claims from SAML<br/>• Token scoped with appropriate permissions
+    end
+
+    IDbroker->>App: 1️⃣1️⃣ OAuth Tokens (POST to /idb/oauth2/v1/access_token)<br/>• access_token (JWT Bearer token)<br/>• refresh_token<br/>• scope: spark:kms<br/>• token_type: Bearer<br/>• expires_in: 64799 (18 hours)
+
+    Note over App: ✅ Store tokens securely<br/>✅ Create application session<br/>User authenticated via SAML<br/>Authorized via OAuth token
+
+    App->>User: 1️⃣2️⃣ User logged in successfully
+
+    Note over User,App: User session established<br/>OAuth token ready for API calls
+
+    App->>API: 1️⃣3️⃣ API Request<br/>Authorization: Bearer {access_token}
+
+    rect rgb(255, 245, 235)
+    Note over API: ✅ OAuth TOKEN VALIDATION<br/>✅ Validate access token<br/>✅ Verify token signature (JWT)<br/>✅ Check expiration<br/>✅ Verify scopes/claims
+    end
+
+    API->>App: 1️⃣4️⃣ Protected resource data
+
+    App->>User: 1️⃣5️⃣ Display data
+
+    Note over User,API: Subsequent API calls use Bearer token<br/>Token refresh uses refresh_token
+
+    alt Access Token Expires
+        App->>IDbroker: POST /token<br/>grant_type=refresh_token<br/>refresh_token={refresh_token}
+        IDbroker->>App: New access_token + refresh_token
+    else Token Invalid/Expired
+        App->>User: Redirect to re-authenticate (SAML flow)
+    end
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h3>🔑 Phase 1: SAML Authentication</h3>
+                <ul>
+                    <li><strong>Purpose:</strong> Prove WHO you are</li>
+                    <li><strong>Protocol:</strong> SAML 2.0</li>
+                    <li><strong>IdP:</strong> Cisco Identity (Enterprise)</li>
+                    <li><strong>Output:</strong> SAML assertion with user identity</li>
+                    <li><strong>Steps:</strong> 1-9 (Enterprise SSO)</li>
+                    <li><strong>MFA:</strong> ✅ Yes (Duo/Cisco)</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                <h3>🎫 Phase 2: OAuth Token Issuance</h3>
+                <ul>
+                    <li><strong>Purpose:</strong> Grant WHAT you can access</li>
+                    <li><strong>Protocol:</strong> OAuth 2.0</li>
+                    <li><strong>Token Server:</strong> Cisco IDbroker</li>
+                    <li><strong>Output:</strong> Access token + Refresh token</li>
+                    <li><strong>Steps:</strong> 10-11 (Token generation)</li>
+                    <li><strong>Token Type:</strong> JWT Bearer token</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #16a085 0%, #138d75 100%);">
+                <h3>🔒 Phase 3: API Authorization</h3>
+                <ul>
+                    <li><strong>Purpose:</strong> Access protected resources</li>
+                    <li><strong>Method:</strong> Bearer token authentication</li>
+                    <li><strong>Validation:</strong> JWT signature + expiry</li>
+                    <li><strong>Steps:</strong> 13-15 (API calls)</li>
+                    <li><strong>Refresh:</strong> ✅ Yes (refresh_token grant)</li>
+                    <li><strong>Stateless:</strong> ✅ Token contains claims</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                <h3>💎 Why This Hybrid Approach?</h3>
+                <ul>
+                    <li>✅ Enterprise SSO (SAML) for authentication</li>
+                    <li>✅ Modern APIs (OAuth) for authorization</li>
+                    <li>✅ Token-based stateless API access</li>
+                    <li>✅ Works with mobile & web apps</li>
+                    <li>✅ Centralized identity management</li>
+                    <li>✅ Fine-grained API permissions</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                <h3>📋 IDbroker Role</h3>
+                <ul>
+                    <li><strong>SAML Service Provider (SP):</strong> Receives SAML assertions</li>
+                    <li><strong>OAuth Authorization Server:</strong> Issues OAuth tokens</li>
+                    <li><strong>Token Transformer:</strong> SAML identity → OAuth claims</li>
+                    <li><strong>Session Manager:</strong> Manages user sessions</li>
+                    <li><strong>Token Validator:</strong> Validates JWT tokens</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h3>🎯 OAuth Token Contents (JWT Claims)</h3>
+                <ul>
+                    <li><strong>sub:</strong> User ID (from SAML)</li>
+                    <li><strong>email:</strong> User email (from SAML)</li>
+                    <li><strong>name:</strong> Display name (from SAML)</li>
+                    <li><strong>scope:</strong> API permissions (e.g., spark:kms)</li>
+                    <li><strong>cluster:</strong> Webex cluster (e.g., A52D)</li>
+                    <li><strong>iss:</strong> Issuer (IDbroker)</li>
+                    <li><strong>exp:</strong> Expiration time</li>
+                    <li><strong>iat:</strong> Issued at</li>
+                    <li><strong>private:</strong> Encrypted user context</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="background: #fff3cd; border-left: 4px solid #9b59b6; padding: 20px; margin: 30px 0; border-radius: 4px;">
+            <h3 style="color: #8e44ad; margin-top: 0;">🔐 Real Cisco IDbroker Token Response</h3>
+            <p><strong>Endpoint:</strong> <code>POST https://idbrokerbts.webex.com/idb/oauth2/v1/access_token</code></p>
+            <div style="background: #2c3e50; color: #ecf0f1; padding: 20px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9em; overflow-x: auto; margin-top: 15px;">
+<pre style="margin: 0; color: #ecf0f1;">{
+    <span style="color: #e74c3c;">"scope"</span>: <span style="color: #2ecc71;">"spark:kms"</span>,
+    <span style="color: #e74c3c;">"expires_in"</span>: <span style="color: #3498db;">64799</span>,
+    <span style="color: #e74c3c;">"token_type"</span>: <span style="color: #2ecc71;">"Bearer"</span>,
+    <span style="color: #e74c3c;">"access_token"</span>: <span style="color: #2ecc71;">"eyJhbGciOiJSUzI1NiJ9.eyJjbHVzdGVyIjoiQTUyRCIsInByaXZhdGUiOiJleUpqZEhraU9pSktWMVFpTENKbGJtTWlPaUpCTVRJNFEwSkRMVWhUTWpVMklpd2lZV3hqxFqzAkn9HP9wJs7TKnwlpEs-2oJfTZ-WHAwQUkQFLfrlteU-U_LBN4T1lubPVJ-2CjNStAJimB911bg"</span>
+}</pre>
+            </div>
+            <div style="margin-top: 20px; background: white; padding: 15px; border-radius: 4px;">
+                <h4 style="margin-top: 0; color: #8e44ad;">📋 Token Response Fields:</h4>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li><strong>scope:</strong> <code>spark:kms</code> - Permission to access Webex Key Management Service (KMS) APIs</li>
+                    <li><strong>expires_in:</strong> <code>64799</code> seconds (≈18 hours) - Token lifetime</li>
+                    <li><strong>token_type:</strong> <code>Bearer</code> - Used in Authorization header: <code>Authorization: Bearer {access_token}</code></li>
+                    <li><strong>access_token:</strong> JWT token with three parts (header.payload.signature)
+                        <ul style="margin-top: 5px;">
+                            <li><strong>Header:</strong> <code>eyJhbGciOiJSUzI1NiJ9</code> → <code>{"alg":"RS256"}</code></li>
+                            <li><strong>Payload:</strong> Contains <code>cluster</code> (A52D), <code>private</code> (encrypted), user claims from SAML</li>
+                            <li><strong>Signature:</strong> RSA-256 signed by IDbroker private key</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <div style="margin-top: 15px; background: #e8f5e9; padding: 15px; border-radius: 4px; border-left: 3px solid #4caf50;">
+                <strong>💡 Usage Example:</strong>
+                <pre style="background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 4px; margin-top: 10px; overflow-x: auto;"><code>GET https://api.webex.com/v1/kms/keys
+Authorization: Bearer eyJhbGciOiJSUzI1NiJ9.eyJjbHVzdGVyIjoiQTUyRCIs...
+Content-Type: application/json</code></pre>
+            </div>
+        </div>
+
+        <div style="background: #e8f5e9; border-left: 4px solid #4caf50; padding: 20px; margin: 30px 0; border-radius: 4px;">
+            <h3 style="color: #2e7d32; margin-top: 0;">💡 Key Benefits of SAML + OAuth Hybrid</h3>
+            <p><strong>Best of Both Worlds:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li><strong>SAML Authentication:</strong> Leverages existing enterprise SSO infrastructure (Cisco Identity, Okta, Azure AD)</li>
+                <li><strong>OAuth Authorization:</strong> Modern token-based API access for microservices and mobile apps</li>
+                <li><strong>Single Sign-On:</strong> User authenticates once via SAML, gets OAuth tokens for multiple APIs</li>
+                <li><strong>Token Refresh:</strong> Long-lived sessions without re-authentication via refresh tokens (18 hours access, 59 days refresh)</li>
+                <li><strong>Stateless APIs:</strong> JWT tokens contain all necessary claims, no session storage needed</li>
+                <li><strong>Fine-Grained Access:</strong> OAuth scopes provide granular API permissions (16+ scopes in production)</li>
+                <li><strong>Production Performance:</strong> Token exchange completes in ~227ms (from real HAR trace)</li>
+            </ul>
+            <p style="margin-top: 15px; background: white; padding: 15px; border-radius: 4px;">
+                <strong>Example Flow:</strong> Employee logs in to Cisco Webex Contact Center → SAML authenticates via Cisco Identity → IDbroker issues OAuth token with cluster info (PS65) → App uses token to call multiple APIs (Webex, Collaboration, etc.) → No password re-entry needed for 18 hours
+            </p>
+        </div>
+
+        <h3 style="color: #16a085; margin-top: 40px; padding: 15px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 8px;">📦 Real Production Token Exchange (HAR Trace from Webex Contact Center)</h3>
+        <div style="background: #e8f5e9; border-left: 4px solid #16a085; padding: 15px; margin: 20px; border-radius: 4px;">
+            <strong>Source:</strong> HAR File - <code>desktop.wxcc-sg1.cisco.com_call__sg1_to_syd_failover_nov25.har</code><br/>
+            <strong>Captured Step:</strong> Step 11 from Flow 3 above (OAuth Token Exchange)<br/>
+            <strong>Token Endpoint:</strong> <code>https://idbroker-sg.webex.com/idb/oauth2/v1/access_token</code><br/>
+            <strong>Application:</strong> Cisco Webex Contact Center Desktop<br/>
+            <strong>Date:</strong> November 25, 2025 02:54:50 GMT<br/>
+            <strong>Cluster:</strong> Singapore (PS65)<br/>
+            <strong>Processing Time:</strong> 227ms server + 730ms total<br/>
+            <strong>This shows:</strong> Real-world timing and token contents from production OAuth flow
+        </div>
+
+        <div class="info-grid" style="margin-top: 30px;">
+            <div class="info-card" style="background: linear-gradient(135deg, #16a085 0%, #138d75 100%);">
+                <h3>📦 HAR File Token Exchange Request</h3>
+                <ul>
+                    <li><strong>Method:</strong> POST</li>
+                    <li><strong>URL:</strong> https://idbroker-sg.webex.com/idb/oauth2/v1/access_token</li>
+                    <li><strong>Query Parameters:</strong>
+                        <ul style="margin-top: 5px;">
+                            <li>grant_type=authorization_code</li>
+                            <li>redirect_uri=https://desktop.wxcc-sg1.cisco.com</li>
+                            <li>code=ZTc1YjYyYzUtMjI4Ni00OTYzLWE5MmMtYjVmZmE4MmNhMDUwY2Y5OTZlMTYtNzFh_PS65_...</li>
+                            <li>self_contained_token=true</li>
+                        </ul>
+                    </li>
+                    <li><strong>Response Status:</strong> 200 OK</li>
+                    <li><strong>Response Time:</strong> 730ms total (227ms wait)</li>
+                    <li><strong>Server:</strong> istio-envoy</li>
+                    <li><strong>TrackingID:</strong> ROUTERGW_a4d84e23-1a61-429e-976f-8e941cf7dc96</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">
+                <h3>🎫 Real Token Response (from HAR)</h3>
+                <ul>
+                    <li><strong>access_token:</strong> JWT (eyJhbGciOiJSUzI1NiJ9...)<br/>
+                        <small>RS256 signed, contains cluster=PS65</small></li>
+                    <li><strong>refresh_token:</strong> RTZlMGM0OWYt...<br/>
+                        <small>Valid for 59 days</small></li>
+                    <li><strong>expires_in:</strong> 64799 seconds (≈18 hours)</li>
+                    <li><strong>token_type:</strong> Bearer</li>
+                    <li><strong>scope:</strong> Multiple permissions:
+                        <ul style="margin-top: 5px; font-size: 0.85em;">
+                            <li>spark:calls_write/read</li>
+                            <li>spark:telephony_config_write/read</li>
+                            <li>cloud-contact-center-digital:read/write</li>
+                            <li>spark:kms (Key Management)</li>
+                            <li>spark:webrtc_calling</li>
+                            <li>Identity:SCIM</li>
+                            <li>cjp:config_read/write</li>
+                            <li>webex-squared:kms_bind/write/read</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                <h3>🔍 JWT Token Claims (Decoded)</h3>
+                <ul>
+                    <li><strong>Header:</strong> {"alg":"RS256"}</li>
+                    <li><strong>Payload Claims:</strong>
+                        <ul style="margin-top: 5px;">
+                            <li><strong>cluster:</strong> "PS65" (Singapore)</li>
+                            <li><strong>iss:</strong> https://idbroker-sg.webex.com/idb</li>
+                            <li><strong>org_id:</strong> 354d6f89-da4f-43ce-b95d-26ee827b45b2</li>
+                            <li><strong>cis_uuid:</strong> 1101cc6b-ea81-433e-a32a-dc972e80e12a</li>
+                            <li><strong>realm:</strong> 354d6f89-da4f-43ce-b95d-26ee827b45b2</li>
+                            <li><strong>client_id:</strong> Ce721947...</li>
+                            <li><strong>token_type:</strong> Bearer</li>
+                            <li><strong>user_type:</strong> user</li>
+                            <li><strong>amr:</strong> ["pwd"] (password authentication)</li>
+                            <li><strong>reference_id:</strong> 82b5369e-fc1b-4de0-8627-0ad941e92831</li>
+                            <li><strong>exp:</strong> 1764104089170 (expiration timestamp)</li>
+                            <li><strong>private:</strong> Encrypted user context (JWE)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Signature:</strong> RSA-256 signed</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h3>🔒 Security Headers (from HAR)</h3>
+                <ul>
+                    <li><strong>strict-transport-security:</strong> max-age=31536000</li>
+                    <li><strong>x-content-type-options:</strong> nosniff</li>
+                    <li><strong>x-frame-options:</strong> DENY</li>
+                    <li><strong>x-xss-protection:</strong> 1; mode=block</li>
+                    <li><strong>cache-control:</strong> no-cache, no-store</li>
+                    <li><strong>referrer-policy:</strong> no-referrer-when-downgrade</li>
+                    <li><strong>CORS Headers:</strong>
+                        <ul style="margin-top: 5px;">
+                            <li>access-control-allow-credentials: true</li>
+                            <li>access-control-allow-origin: https://desktop.wxcc-sg1.cisco.com</li>
+                            <li>access-control-allow-methods: POST, PUT, PATCH, HEAD, GET...</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="background: #fff3cd; border-left: 4px solid #f39c12; padding: 20px; margin: 30px 0; border-radius: 4px;">
+            <h3 style="color: #e67e22; margin-top: 0;">💡 Key Insights from HAR Trace</h3>
+            <p><strong>What the HAR File Reveals:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li><strong>Production OAuth Flow:</strong> Real authorization code grant captured from live Cisco Webex Contact Center application</li>
+                <li><strong>Token Exchange Timing:</strong> 227ms server processing, 730ms total - shows real-world latency</li>
+                <li><strong>Comprehensive Scopes:</strong> 16+ different scopes for calls, telephony config, KMS, contact center, and identity management</li>
+                <li><strong>Long Token Lifetime:</strong> 18-hour access tokens and 59-day refresh tokens minimize re-authentication</li>
+                <li><strong>Regional Deployment:</strong> Singapore cluster (PS65) with dedicated idbroker-sg endpoint</li>
+                <li><strong>JWT Self-Contained:</strong> Token includes encrypted private context, cluster info, org/user identifiers</li>
+                <li><strong>Enterprise Security:</strong> HSTS, CSP headers, CORS restrictions, XSS protection all enforced</li>
+                <li><strong>Istio Service Mesh:</strong> Traffic routed through istio-envoy proxy with TrackingID for observability</li>
+            </ul>
+            <p style="margin-top: 15px; background: white; padding: 15px; border-radius: 4px;">
+                <strong>Comparison to Flow 3:</strong> This HAR trace shows the <em>token exchange step (step 11)</em> from Flow 3, where the application trades the authorization code for OAuth tokens after SAML authentication completes.
+            </p>
+        </div>
+
+        <h2 style="color: #9b59b6; border-left: 5px solid #9b59b6; padding-left: 15px; margin-top: 60px;">📊 Comparison: SAML vs OIDC vs Hybrid (SAML + OAuth)</h2>
+
+        <table class="protocol-table">
+            <thead>
+                <tr>
+                    <th>Aspect</th>
+                    <th>SAML 2.0 SSO</th>
+                    <th>OIDC (OAuth 2.0 + OpenID Connect)</th>
+                    <th>Hybrid (SAML + OAuth)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Grant Type</strong></td>
+                    <td>❌ N/A (SAML is not OAuth-based)</td>
+                    <td>✅ Authorization Code Grant (with PKCE)</td>
+                    <td>❌ N/A for auth | ✅ Token exchange for authorization</td>
+                </tr>
+                <tr>
+                    <td><strong>Flow Type</strong></td>
+                    <td>SAML Web Browser SSO Profile</td>
+                    <td>OIDC Authorization Code Flow</td>
+                    <td>SAML for auth → OAuth token issuance</td>
+                </tr>
+                <tr>
+                    <td><strong>Primary Use Case</strong></td>
+                    <td>Enterprise Single Sign-On (SSO)</td>
+                    <td>Modern authentication + API authorization</td>
+                    <td>Enterprise SSO + Modern API integration</td>
+                </tr>
+                <tr>
+                    <td><strong>Authentication</strong></td>
+                    <td>✅ Yes (SAML assertion proves identity)</td>
+                    <td>✅ Yes (ID token proves identity)</td>
+                    <td>✅ Yes (SAML assertion proves identity)</td>
+                </tr>
+                <tr>
+                    <td><strong>Authorization</strong></td>
+                    <td>Limited (via attributes/roles in assertion)</td>
+                    <td>✅ Yes (access token with scopes)</td>
+                    <td>✅ Yes (OAuth access token with scopes)</td>
+                </tr>
+                <tr>
+                    <td><strong>Token Format</strong></td>
+                    <td>SAML assertion (XML signed document)</td>
+                    <td>ID token (JWT) + Access token (JWT/opaque)</td>
+                    <td>SAML assertion → OAuth tokens (JWT)</td>
+                </tr>
+                <tr>
+                    <td><strong>API Access Method</strong></td>
+                    <td>❌ Not designed for APIs</td>
+                    <td>✅ Bearer token (Authorization header)</td>
+                    <td>✅ Bearer token (Authorization header)</td>
+                </tr>
+                <tr>
+                    <td><strong>Token Refresh</strong></td>
+                    <td>❌ No (requires re-authentication)</td>
+                    <td>✅ Yes (refresh tokens)</td>
+                    <td>✅ Yes (refresh tokens)</td>
+                </tr>
+                <tr>
+                    <td><strong>Mobile Support</strong></td>
+                    <td>❌ Poor (browser redirects, XML parsing)</td>
+                    <td>✅ Excellent (native apps, PKCE, AppAuth)</td>
+                    <td>✅ Good (OAuth tokens work with mobile)</td>
+                </tr>
+                <tr>
+                    <td><strong>Stateless API Calls</strong></td>
+                    <td>❌ Session-based</td>
+                    <td>✅ Yes (JWT with claims)</td>
+                    <td>✅ Yes (JWT with claims)</td>
+                </tr>
+                <tr>
+                    <td><strong>Components</strong></td>
+                    <td>IdP + SP</td>
+                    <td>Authorization Server + Client</td>
+                    <td>SAML IdP + IDbroker (SP + OAuth AS) + Client</td>
+                </tr>
+                <tr>
+                    <td><strong>Implementation</strong></td>
+                    <td>Single protocol (SAML only)</td>
+                    <td>Single protocol (OIDC/OAuth only)</td>
+                    <td>Two protocols (SAML → OAuth bridge)</td>
+                </tr>
+                <tr>
+                    <td><strong>Enterprise SSO</strong></td>
+                    <td>✅ Excellent (native support)</td>
+                    <td>⚠️ Good (with enterprise IdP support)</td>
+                    <td>✅ Excellent (leverages existing SAML)</td>
+                </tr>
+                <tr>
+                    <td><strong>Microservices</strong></td>
+                    <td>❌ Poor (not designed for distributed)</td>
+                    <td>✅ Excellent (token-based, stateless)</td>
+                    <td>✅ Excellent (OAuth tokens for services)</td>
+                </tr>
+                <tr>
+                    <td><strong>Complexity</strong></td>
+                    <td>High (XML, signatures, certificates)</td>
+                    <td>Medium (JSON, JWT validation)</td>
+                    <td>High (both SAML and OAuth)</td>
+                </tr>
+                <tr>
+                    <td><strong>Example Services</strong></td>
+                    <td>Google Workspace, AWS SSO</td>
+                    <td>Auth0, GitHub, Google Sign-In</td>
+                    <td>Cisco IDbroker, Atlassian, Salesforce</td>
+                </tr>
+                <tr>
+                    <td><strong>Best For</strong></td>
+                    <td>
+                        • Enterprise web SSO<br/>
+                        • Workforce authentication<br/>
+                        • B2B integrations
+                    </td>
+                    <td>
+                        • Modern authentication<br/>
+                        • Consumer apps<br/>
+                        • Mobile/native apps<br/>
+                        • API authorization
+                    </td>
+                    <td>
+                        • Enterprise with APIs<br/>
+                        • Legacy SAML + Modern apps<br/>
+                        • Microservices architecture<br/>
+                        • Mobile + Web + APIs
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                <tr>
+                    <td><strong>Protocol Format</strong></td>
+                    <td>XML-based (SAML assertions)</td>
+                    <td>JSON-based (JWT tokens)</td>
+                    <td>XML (SAML) → JSON (OAuth tokens)</td>
+                </tr>
+                <tr>
+                    <td><strong>Authentication</strong></td>
+                    <td>✅ Yes (SAML assertion proves identity)</td>
+                    <td>✅ Yes (ID token proves identity)</td>
+                </tr>
+                <tr>
+                    <td><strong>Authorization</strong></td>
+                    <td>Limited (via attributes/roles in assertion)</td>
+                    <td>✅ Yes (access token with scopes)</td>
+                </tr>
+                <tr>
+                    <td><strong>Token/Assertion Format</strong></td>
+                    <td>SAML assertion (XML signed document)</td>
+                    <td>ID token (JWT) + Access token (JWT/opaque)</td>
+                </tr>
+                <tr>
+                    <td><strong>Identity Proof</strong></td>
+                    <td>SAML Response with attributes</td>
+                    <td>ID Token (JWT) with claims (sub, email, name)</td>
+                </tr>
+                <tr>
+                    <td><strong>API Access</strong></td>
+                    <td>❌ Not designed for APIs</td>
+                    <td>✅ Access token for Bearer authentication</td>
+                </tr>
+                <tr>
+                    <td><strong>Flow Initiation</strong></td>
+                    <td>SP-initiated or IdP-initiated</td>
+                    <td>Always client-initiated (authorization request)</td>
+                </tr>
+                <tr>
+                    <td><strong>User Consent</strong></td>
+                    <td>Not typically required (enterprise trust)</td>
+                    <td>✅ Required (explicit consent screen)</td>
+                </tr>
+                <tr>
+                    <td><strong>Mobile Support</strong></td>
+                    <td>❌ Poor (browser redirects, XML parsing)</td>
+                    <td>✅ Excellent (native apps, PKCE, AppAuth)</td>
+                </tr>
+                <tr>
+                    <td><strong>Token Refresh</strong></td>
+                    <td>❌ No (requires re-authentication)</td>
+                    <td>✅ Yes (refresh tokens)</td>
+                </tr>
+                <tr>
+                    <td><strong>Scopes/Granular Permissions</strong></td>
+                    <td>❌ Limited (coarse-grained roles)</td>
+                    <td>✅ Yes (fine-grained scopes: openid, profile, email)</td>
+                </tr>
+                <tr>
+                    <td><strong>CSRF Protection</strong></td>
+                    <td>RelayState parameter</td>
+                    <td>State parameter + PKCE</td>
+                </tr>
+                <tr>
+                    <td><strong>Transport</strong></td>
+                    <td>Browser redirects (HTTP POST/GET)</td>
+                    <td>Browser redirects + Backend token exchange (POST /token)</td>
+                </tr>
+                <tr>
+                    <td><strong>Required Scope</strong></td>
+                    <td>N/A (SAML has no scopes)</td>
+                    <td><code>openid</code> scope (mandatory for OIDC)</td>
+                </tr>
+                <tr>
+                    <td><strong>User Info Endpoint</strong></td>
+                    <td>❌ No (attributes in SAML assertion)</td>
+                    <td>✅ Yes (/userinfo endpoint)</td>
+                </tr>
+                <tr>
+                    <td><strong>Typical Use</strong></td>
+                    <td>Enterprise web SSO (Okta, Azure AD, Cisco)</td>
+                    <td>Consumer apps, mobile apps, modern web apps, SPAs</td>
+                </tr>
+                <tr>
+                    <td><strong>Example URL (Callback)</strong></td>
+                    <td>https://app.com/saml/acs<br/>(POST with SAMLResponse)</td>
+                    <td>https://xmy.com/login/callback<br/>?code=66H8OA25Z9...&state=xN4uTl4x...</td>
+                </tr>
+                <tr>
+                    <td><strong>Complexity</strong></td>
+                    <td>High (XML, signatures, certificates)</td>
+                    <td>Medium (JSON, JWT validation, simpler)</td>
+                </tr>
+                <tr>
+                    <td><strong>Session Management</strong></td>
+                    <td>✅ Built-in (Single Logout - SLO)</td>
+                    <td>Application-managed (token revocation, RP-initiated logout)</td>
+                </tr>
+                <tr>
+                    <td><strong>Standards Body</strong></td>
+                    <td>OASIS (XML-based standards)</td>
+                    <td>OpenID Foundation (built on OAuth 2.0)</td>
+                </tr>
+                <tr>
+                    <td><strong>Best For</strong></td>
+                    <td>
+                        • Enterprise SSO<br/>
+                        • Workforce authentication<br/>
+                        • Web applications<br/>
+                        • B2B integrations
+                    </td>
+                    <td>
+                        • Modern authentication<br/>
+                        • Consumer login (Google, Facebook)<br/>
+                        • Mobile/native apps<br/>
+                        • Single-page apps (SPAs)<br/>
+                        • API authorization
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2 style="color: #e67e22; border-left: 5px solid #e67e22; padding-left: 15px; margin-top: 60px;">🔀 When to Use Which?</h2>
+
+        <div class="info-grid">
+            <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h3>Use SAML 2.0 When:</h3>
+                <ul>
+                    <li>✅ Enterprise workforce SSO only</li>
+                    <li>✅ Web-based applications only</li>
+                    <li>✅ Existing IdP supports SAML (Okta, Azure AD)</li>
+                    <li>✅ Need centralized session management</li>
+                    <li>✅ No mobile app requirements</li>
+                    <li>✅ No API integration needed</li>
+                    <li>✅ B2B partner integrations</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                <h3>Use OIDC (OpenID Connect) When:</h3>
+                <ul>
+                    <li>✅ Modern authentication needs</li>
+                    <li>✅ Consumer-facing applications</li>
+                    <li>✅ Mobile or native applications</li>
+                    <li>✅ Single-page apps (SPAs)</li>
+                    <li>✅ Need API authorization + authentication</li>
+                    <li>✅ Social login (Google, Facebook, GitHub)</li>
+                    <li>✅ Microservices authentication</li>
+                    <li>✅ No existing SAML infrastructure</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                <h3>Use Hybrid (SAML + OAuth) When:</h3>
+                <ul>
+                    <li>✅ Existing SAML SSO infrastructure</li>
+                    <li>✅ Need modern API integration</li>
+                    <li>✅ Mobile apps + Enterprise SSO</li>
+                    <li>✅ Microservices architecture</li>
+                    <li>✅ Token-based stateless APIs</li>
+                    <li>✅ Multiple backend services</li>
+                    <li>✅ Can't replace SAML (compliance/policy)</li>
+                    <li>✅ Best of both worlds approach</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="background: #e8f5e9; border-left: 4px solid #4caf50; padding: 20px; margin: 30px 0; border-radius: 4px;">
+            <h3 style="color: #2e7d32; margin-top: 0;">💡 Key Insight: OAuth 2.0 vs OIDC</h3>
+            <p style="margin: 10px 0;"><strong>OAuth 2.0 alone:</strong> ❌ NOT for authentication. It's for <strong>authorization</strong> (delegated access to resources). You get an access token to call APIs, but it doesn't prove WHO you are.</p>
+            <p style="margin: 10px 0;"><strong>OIDC (OAuth 2.0 + OpenID Connect):</strong> ✅ For authentication AND authorization. Adds an <strong>ID token</strong> that proves identity (like a digital passport). When you see "Login with Google/GitHub", that's OIDC, not plain OAuth 2.0.</p>
+            <p style="margin: 10px 0; background: white; padding: 15px; border-radius: 4px;">
+                <strong>The callback URL</strong> <code>https://xmy.com/login/callback?code=...</code> is receiving an <strong>authorization code</strong> that will be exchanged for:
+                <br/>• <strong>ID Token</strong> (proves authentication - who you are)
+                <br/>• <strong>Access Token</strong> (grants authorization - what you can access)
+                <br/>• <strong>Refresh Token</strong> (gets new tokens when they expire)
+            </p>
+        </div>
+
+        <h2 style="color: #16a085; border-left: 5px solid #16a085; padding-left: 15px; margin-top: 60px;">� OAuth 2.0 Grant Types Explained</h2>
+
+        <table class="protocol-table">
+            <thead>
+                <tr>
+                    <th>Grant Type</th>
+                    <th>Use Case</th>
+                    <th>Flow</th>
+                    <th>Security</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="background: #e8f5e9;">
+                    <td><strong>Authorization Code Grant</strong><br/><span class="badge badge-oidc">USED IN FLOW 2</span></td>
+                    <td>
+                        • Web applications with backend<br/>
+                        • Mobile apps (with PKCE)<br/>
+                        • Most secure OAuth flow<br/>
+                        • OIDC authentication
+                    </td>
+                    <td>
+                        1. User redirected to auth server<br/>
+                        2. User logs in & consents<br/>
+                        3. Auth server returns <strong>code</strong><br/>
+                        4. Backend exchanges code for tokens<br/>
+                        5. Tokens never exposed to browser
+                    </td>
+                    <td>
+                        ✅ Most secure<br/>
+                        ✅ PKCE protection<br/>
+                        ✅ Client authentication<br/>
+                        ✅ Token in backend only
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Implicit Grant</strong><br/><span class="badge" style="background: #e74c3c; color: white;">DEPRECATED</span></td>
+                    <td>
+                        • Legacy SPAs (single-page apps)<br/>
+                        • No backend server<br/>
+                        ❌ No longer recommended
+                    </td>
+                    <td>
+                        1. User redirected to auth server<br/>
+                        2. Tokens returned directly in URL<br/>
+                        3. No code exchange step<br/>
+                        4. Tokens exposed in browser
+                    </td>
+                    <td>
+                        ❌ Less secure<br/>
+                        ❌ Token in URL fragment<br/>
+                        ❌ No refresh tokens<br/>
+                        Use Auth Code + PKCE instead
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Client Credentials Grant</strong></td>
+                    <td>
+                        • Machine-to-machine (M2M)<br/>
+                        • Backend services<br/>
+                        • No user interaction<br/>
+                        • API integrations
+                    </td>
+                    <td>
+                        1. Client sends credentials to auth server<br/>
+                        2. Auth server validates client<br/>
+                        3. Access token returned<br/>
+                        4. No user authentication
+                    </td>
+                    <td>
+                        ✅ Simple for M2M<br/>
+                        ✅ No user context<br/>
+                        ⚠️ Client must be confidential<br/>
+                        ⚠️ Store credentials securely
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Resource Owner Password Credentials</strong><br/><span class="badge" style="background: #f39c12; color: white;">NOT RECOMMENDED</span></td>
+                    <td>
+                        • Legacy apps<br/>
+                        • Highly trusted first-party apps<br/>
+                        ⚠️ Avoid if possible
+                    </td>
+                    <td>
+                        1. User provides username/password to client<br/>
+                        2. Client sends credentials to auth server<br/>
+                        3. Access token returned<br/>
+                        4. No redirect flow
+                    </td>
+                    <td>
+                        ❌ Credentials shared with client<br/>
+                        ❌ No MFA support<br/>
+                        ❌ Client sees password<br/>
+                        Use Auth Code instead
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Refresh Token Grant</strong></td>
+                    <td>
+                        • Get new access tokens<br/>
+                        • Without re-authentication<br/>
+                        • Used with other grants
+                    </td>
+                    <td>
+                        1. Client has refresh token<br/>
+                        2. Access token expires<br/>
+                        3. Client sends refresh token<br/>
+                        4. New access token returned
+                    </td>
+                    <td>
+                        ✅ Long-lived sessions<br/>
+                        ✅ No password re-entry<br/>
+                        ⚠️ Refresh tokens must be secured<br/>
+                        ✅ Can be revoked
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="background: #fff3cd; border-left: 4px solid #f39c12; padding: 20px; margin: 30px 0; border-radius: 4px;">
+            <h3 style="color: #e67e22; margin-top: 0;">💡 Why Authorization Code Grant is the Best Choice</h3>
+            <p><strong>Used in Flow 2 (xmy.com callback):</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li><strong>Two-step process:</strong> Authorization code → Token exchange (code never used directly)</li>
+                <li><strong>PKCE enhancement:</strong> Prevents authorization code interception attacks</li>
+                <li><strong>Tokens stay server-side:</strong> Access token never exposed to browser/frontend</li>
+                <li><strong>Client authentication:</strong> Backend proves its identity when exchanging code</li>
+                <li><strong>Refresh tokens:</strong> Long-lived sessions without re-login</li>
+                <li><strong>Works everywhere:</strong> Web apps, mobile apps (with PKCE), native apps</li>
+            </ul>
+            <p style="margin-top: 15px; background: white; padding: 15px; border-radius: 4px;"><strong>Parameter Flow:</strong></p>
+            <ol style="margin-left: 20px; background: white; padding: 15px; border-radius: 4px;">
+                <li><strong>Step 3 - Authorization Request:</strong>
+                    <br/><code>GET /authorize?response_type=code&scope=openid profile email&state=...&code_challenge=...</code>
+                    <br/>🔹 <code>response_type=code</code> indicates Authorization Code Grant
+                    <br/>🔹 <code>scope=openid</code> enables OIDC authentication
+                </li>
+                <li style="margin-top: 10px;"><strong>Step 7 - Callback (URL in browser):</strong>
+                    <br/><code>https://xmy.com/login/callback?code=66H8OA25Z9...&state=xN4u...</code>
+                    <br/>🔹 Authorization code is short-lived and single-use
+                </li>
+                <li style="margin-top: 10px;"><strong>Step 8 - Token Exchange (backend POST):</strong>
+                    <br/><code>POST /token</code> with body:
+                    <br/><code>grant_type=authorization_code&code=66H8OA25Z9...&code_verifier=...</code>
+                    <br/>🔹 <code>grant_type=authorization_code</code> explicitly specified
+                    <br/>🔹 Backend-to-backend secure exchange for tokens
+                </li>
+            </ol>
+        </div>
+
+
+        <h2 style="color: #e67e22; border-left: 5px solid #e67e22; padding-left: 15px; margin-top: 60px;">Flow 4: OAuth Client Credentials Grant (Machine-to-Machine)</h2>
+        <div style="background: #fff5e6; border-left: 4px solid #e67e22; padding: 15px; margin: 20px; border-radius: 4px;">
+            <strong>Grant Type:</strong> OAuth 2.0 Client Credentials Grant<br/>
+            <strong>Flow Type:</strong> Machine-to-Machine Authentication (No User Context)<br/>
+            <strong>Protocol:</strong> OAuth 2.0 (Service-to-Service)<br/>
+            <strong>Source:</strong> web-int.webex.com-login.har (Production Backend Services)<br/>
+            <strong>Endpoint:</strong> https://idbrokerbts.webex.com/idb/oauth2/v1/access_token<br/>
+            <strong>Pattern:</strong> Backend services authenticate with client_id + client_secret<br/>
+            <strong>Token Lifetime:</strong> 1 hour (no refresh token - stateless)
+        </div>
+        
+        <div class="diagram-container">
+            <div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant ServiceA as ⚙️ Backend Service A<br/>(API Client)
+    participant TokenEndpoint as 🔑 OAuth Token Endpoint<br/>(IDbroker)
+    participant ServiceB as 🛡️ Protected Service B<br/>(API Resource Server)
+    
+    rect rgb(255, 245, 235)
+    Note over ServiceA,ServiceB: 🟠 OAuth 2.0 Client Credentials Grant (M2M)
+    Note over ServiceA,ServiceB: No user context - Service-to-Service authentication
+    end
+    
+    ServiceA->>ServiceA: Need to call Service B API
+    
+    ServiceA->>TokenEndpoint: POST /idb/oauth2/v1/access_token<br/>Content-Type: application/x-www-form-urlencoded<br/><br/>grant_type=client_credentials<br/>client_id=Ce721947...<br/>client_secret=5xK9...secret...<br/>scope=webexsquare:admin webexsquare:get_conversation Identity:SCIM<br/>self_contained_token=true
+    
+    rect rgb(255, 245, 235)
+    Note over TokenEndpoint: ✅ OAuth CLIENT CREDENTIALS<br/>✅ Validate client_id + client_secret<br/>✅ Check service permissions<br/>✅ Verify requested scopes<br/>✅ Generate JWT access token<br/>❌ No refresh token (stateless)
+    end
+    
+    TokenEndpoint->>ServiceA: HTTP 200 OK<br/>{<br/>  "access_token": "eyJhbGciOiJSUzI1NiJ9...",<br/>  "token_type": "Bearer",<br/>  "expires_in": 3600<br/>}
+    
+    Note over ServiceA: ✅ Store token in memory<br/>Token contains service-level scopes<br/>Valid for 1 hour
+    
+    ServiceA->>ServiceB: GET /api/conversations<br/>Authorization: Bearer eyJhbGciOiJSUzI1NiJ9...<br/>Content-Type: application/json
+    
+    Note over ServiceB: ✅ Validate JWT signature (RS256)<br/>✅ Check token expiration<br/>✅ Verify scopes (webexsquare:get_conversation)<br/>✅ Check service permissions<br/>❌ No user context in token
+    
+    ServiceB->>ServiceA: HTTP 200 OK<br/>{"conversations": [...]}
+    
+    Note over ServiceA,ServiceB: Token expires after 1 hour
+    
+    alt Token Expired
+        ServiceA->>TokenEndpoint: Request new token<br/>grant_type=client_credentials
+        TokenEndpoint->>ServiceA: New access_token
+    end
+    
+    Note over ServiceA,ServiceB: No refresh token - must re-authenticate<br/>Stateless pattern for microservices
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card" style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);">
+                <h3>🎯 Client Credentials Request</h3>
+                <pre style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 0.85em;">POST /idb/oauth2/v1/access_token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+&client_id=Ce721947...
+&client_secret=5xK9...secret...
+&scope=webexsquare%3Aadmin%20webexsquare%3Aget_conversation%20Identity%3ASCIM
+&self_contained_token=true</pre>
+                <p style="margin-top: 10px; font-size: 0.9em;">✅ Machine-to-machine authentication<br/>✅ No user context or refresh token<br/>✅ Service-to-service API calls</p>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #d35400 0%, #a04000 100%);">
+                <h3>📋 Token Response</h3>
+                <pre style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 0.85em;">{
+  "access_token": "eyJhbGciOiJSUzI1NiJ9...",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}</pre>
+                <p style="margin-top: 10px; font-size: 0.9em;">🔸 JWT self-contained token<br/>🔸 1 hour expiration<br/>🔸 No refresh_token (stateless)</p>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #c0392b 0%, #8b0000 100%);">
+                <h3>🔐 OAuth Scopes</h3>
+                <ul style="font-size: 0.9em;">
+                    <li><code>webexsquare:admin</code> - Admin API access</li>
+                    <li><code>webexsquare:get_conversation</code> - Read conversations</li>
+                    <li><code>Identity:SCIM</code> - User provisioning (SCIM protocol)</li>
+                </ul>
+                <p style="margin-top: 10px; font-size: 0.9em;">⚙️ Backend service permissions<br/>⚙️ No user-level scopes needed</p>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h3>🏗️ Architecture Pattern</h3>
+                <p style="font-size: 0.9em;"><strong>Service Flow:</strong> OAuth 2.0 Client Credentials (Pure M2M)</p>
+                <p style="margin-top: 15px; font-size: 0.9em; line-height: 1.6;">
+                    🔹 Backend service authenticates with client credentials<br/>
+                    🔹 Receives JWT access token valid for 1 hour<br/>
+                    🔹 Uses Bearer token for API calls<br/>
+                    🔹 No user context in token (service identity only)<br/>
+                    🔹 Stateless - request new token when expired<br/>
+                    🔹 Ideal for: Microservices, scheduled jobs, IoT devices
+                </p>
+            </div>
+        </div>
+
+        <div style="background: #fff5e6; border: 2px solid #e67e22; padding: 20px; margin-top: 30px; border-radius: 8px;">
+            <h3 style="color: #e67e22; margin-top: 0;">🔍 When to Use Client Credentials Grant</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                <div>
+                    <h4 style="color: #27ae60;">✅ Good Use Cases:</h4>
+                    <ul style="margin-left: 20px;">
+                        <li><strong>Microservices:</strong> Service A calling Service B APIs</li>
+                        <li><strong>Scheduled Jobs:</strong> Cron jobs that need API access</li>
+                        <li><strong>Backend Workers:</strong> Processing queues, batch operations</li>
+                        <li><strong>IoT Devices:</strong> Headless devices authenticating</li>
+                        <li><strong>CI/CD Pipelines:</strong> Automated deployments</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: #e74c3c;">❌ Wrong Use Cases:</h4>
+                    <ul style="margin-left: 20px;">
+                        <li><strong>User Actions:</strong> Use Authorization Code instead</li>
+                        <li><strong>SPAs/Frontend:</strong> Client secret can't be hidden</li>
+                        <li><strong>Mobile Apps:</strong> Credentials can be extracted</li>
+                        <li><strong>User Context Needed:</strong> No user identity in token</li>
+                        <li><strong>Long Sessions:</strong> No refresh token available</li>
+                    </ul>
+                </div>
+            </div>
+            <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 4px;">
+                <p><strong>Key Difference:</strong></p>
+                <p style="margin-top: 10px;">🔸 <strong>Authorization Code:</strong> "I'm acting on behalf of User X who gave me permission" → Has user context, refresh tokens</p>
+                <p style="margin-top: 5px;">🔸 <strong>Client Credentials:</strong> "I'm Service Y with my own credentials" → No user context, service-level permissions only</p>
+            </div>
+        </div>
+
+
+        <h2 style="color: #16a085; border-left: 5px solid #16a085; padding-left: 15px; margin-top: 60px;">�📦 Real-World Examples</h2>
+
+        <table class="protocol-table">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Protocol Used</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Cisco IDbroker</strong></td>
+                    <td><span class="badge badge-saml">SAML 2.0</span> + <span class="badge badge-oauth">OAuth 2.0</span></td>
+                    <td>SAML authentication → OAuth token issuance for APIs</td>
+                </tr>
+                <tr>
+                    <td><strong>Atlassian Confluence (Cisco)</strong></td>
+                    <td><span class="badge badge-saml">SAML 2.0</span> + <span class="badge badge-oauth">OAuth 2.0</span></td>
+                    <td>Enterprise SSO + API access</td>
+                </tr>
+                <tr>
+                    <td><strong>GitHub</strong></td>
+                    <td><span class="badge badge-oidc">OIDC</span> <span class="badge badge-oauth">OAuth 2.0</span></td>
+                    <td>Social login + API access (not plain OAuth)</td>
+                </tr>
+                <tr>
+                    <td><strong>Google Workspace</strong></td>
+                    <td><span class="badge badge-saml">SAML 2.0</span></td>
+                    <td>Enterprise SSO for organizations</td>
+                </tr>
+                <tr>
+                    <td><strong>Okta</strong></td>
+                    <td><span class="badge badge-saml">SAML 2.0</span> + <span class="badge badge-oauth">OAuth 2.0</span> + <span class="badge badge-oidc">OIDC</span></td>
+                    <td>Universal identity platform</td>
+                </tr>
+                <tr>
+                    <td><strong>Salesforce</strong></td>
+                    <td><span class="badge badge-saml">SAML 2.0</span> + <span class="badge badge-oauth">OAuth 2.0</span></td>
+                    <td>SSO + REST API authorization</td>
+                </tr>
+                <tr>
+                    <td><strong>Slack</strong></td>
+                    <td><span class="badge badge-oidc">OIDC</span> <span class="badge badge-oauth">OAuth 2.0</span></td>
+                    <td>Sign in with Slack + app integrations</td>
+                </tr>
+                <tr>
+                    <td><strong>AWS IAM</strong></td>
+                    <td><span class="badge badge-saml">SAML 2.0</span></td>
+                    <td>Enterprise federation (AWS SSO)</td>
+                </tr>
+                <tr>
+                    <td><strong>Azure AD</strong></td>
+                    <td><span class="badge badge-saml">SAML 2.0</span> + <span class="badge badge-oauth">OAuth 2.0</span> + <span class="badge badge-oidc">OIDC</span></td>
+                    <td>Enterprise IdP supporting all protocols</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="protocol-table">
+
+        <div class="info-grid" style="margin-top: 40px;">
+            <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h3>📋 SAML Assertion Contains</h3>
+                <ul>
+                    <li>User ID (Cisco employee ID)</li>
+                    <li>Email address</li>
+                    <li>Display name</li>
+                    <li>Groups/departments</li>
+                    <li>Session validity period</li>
+                    <li>Digital signature</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                <h3>🎯 OAuth Token Contains</h3>
+                <ul>
+                    <li>User identifier (sub claim)</li>
+                    <li>Issued at / Expiration time</li>
+                    <li>Audience (Confluence)</li>
+                    <li>Scopes (read:confluence, write:confluence)</li>
+                    <li>Resource ARIs</li>
+                    <li>JWT signature</li>
+                </ul>
+            </div>
+
+            <div class="info-card" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">
+                <h3>🔍 URL Components</h3>
+                <ul>
+                    <li><strong>orgId:</strong> Cisco Teams organization</li>
+                    <li><strong>resource:</strong> ari:cloud:confluence::site/...</li>
+                    <li><strong>application:</strong> confluence</li>
+                    <li><strong>continue:</strong> Post-auth redirect URL</li>
+                    <li><strong>Site ID:</strong> cc5672c2-37d3-438b-9543-58ff06df6f4c</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2 style="color: #c0392b; border-left: 5px solid #c0392b; padding-left: 15px; margin-top: 60px;">🛡️ OWASP Top 10 Security Controls in These Flows</h2>
+        
+        <div style="background: #fff0f0; border: 3px solid #c0392b; padding: 25px; margin: 20px 0; border-radius: 8px;">
+            <h3 style="color: #c0392b; margin-top: 0;">🔒 Security Headers (From HAR Analysis - Flow 4)</h3>
+            <div style="background: white; padding: 20px; border-radius: 6px; margin-top: 15px;">
+                <table class="protocol-table">
+                    <thead>
+                        <tr>
+                            <th>Security Header</th>
+                            <th>Value / Purpose</th>
+                            <th>OWASP Protection</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>Strict-Transport-Security</code></td>
+                            <td>max-age=31536000; includeSubDomains<br/>🔹 Forces HTTPS for 1 year</td>
+                            <td>🛡️ <strong>A02:2021 Cryptographic Failures</strong><br/>Prevents SSL stripping attacks</td>
+                        </tr>
+                        <tr>
+                            <td><code>Content-Security-Policy</code></td>
+                            <td>default-src 'self'; script-src 'self' 'unsafe-inline'<br/>🔹 Controls resource loading</td>
+                            <td>🛡️ <strong>A03:2021 Injection</strong><br/>Mitigates XSS attacks by blocking untrusted scripts</td>
+                        </tr>
+                        <tr>
+                            <td><code>X-Frame-Options</code></td>
+                            <td>SAMEORIGIN<br/>🔹 Prevents iframe embedding</td>
+                            <td>🛡️ <strong>A01:2021 Broken Access Control</strong><br/>Blocks clickjacking attacks</td>
+                        </tr>
+                        <tr>
+                            <td><code>X-Content-Type-Options</code></td>
+                            <td>nosniff<br/>🔹 Prevents MIME sniffing</td>
+                            <td>🛡️ <strong>A03:2021 Injection</strong><br/>Stops browser from executing incorrect content types</td>
+                        </tr>
+                        <tr>
+                            <td><code>X-XSS-Protection</code></td>
+                            <td>1; mode=block<br/>🔹 Browser XSS filter</td>
+                            <td>🛡️ <strong>A03:2021 Injection</strong><br/>Legacy XSS protection (now superseded by CSP)</td>
+                        </tr>
+                        <tr>
+                            <td><code>Referrer-Policy</code></td>
+                            <td>strict-origin-when-cross-origin<br/>🔹 Controls referrer information</td>
+                            <td>🛡️ <strong>A05:2021 Security Misconfiguration</strong><br/>Prevents sensitive URL leakage</td>
+                        </tr>
+                        <tr>
+                            <td><code>Permissions-Policy</code></td>
+                            <td>geolocation=(), microphone=(), camera=()<br/>🔹 Disables browser features</td>
+                            <td>🛡️ <strong>A01:2021 Broken Access Control</strong><br/>Restricts API access to sensitive features</td>
+                        </tr>
+                        <tr>
+                            <td><code>Cache-Control</code></td>
+                            <td>no-store, no-cache, must-revalidate<br/>🔹 Prevents token caching</td>
+                            <td>🛡️ <strong>A07:2021 Auth Failures</strong><br/>Ensures tokens aren't stored in browser cache</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="background: #f0f8ff; border: 2px solid #3498db; padding: 25px; margin: 20px 0; border-radius: 8px;">
+            <h3 style="color: #2c3e50; margin-top: 0;">🎯 OWASP Top 10 2021 - Mitigations Implemented</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #e74c3c;">
+                    <h4 style="color: #e74c3c; margin-top: 0;">A01:2021 – Broken Access Control</h4>
+                    <p style="font-size: 0.9em; line-height: 1.6;">
+                        ✅ <strong>JWT with scopes:</strong> Fine-grained permissions (spark:calls_write, telephony_config_write)<br/>
+                        ✅ <strong>State parameter:</strong> CSRF protection in OAuth flow<br/>
+                        ✅ <strong>Short-lived codes:</strong> Authorization codes single-use & expire in 60s<br/>
+                        ✅ <strong>Audience validation:</strong> JWT 'aud' claim validates intended recipient<br/>
+                        ✅ <strong>Origin validation:</strong> CORS headers restrict API access
+                    </p>
+                </div>
+
+                <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #3498db;">
+                    <h4 style="color: #3498db; margin-top: 0;">A02:2021 – Cryptographic Failures</h4>
+                    <p style="font-size: 0.9em; line-height: 1.6;">
+                        ✅ <strong>TLS 1.2+:</strong> All traffic encrypted (HTTPS only)<br/>
+                        ✅ <strong>HSTS:</strong> Forces HTTPS for 1 year (max-age=31536000)<br/>
+                        ✅ <strong>RS256 JWT signing:</strong> Tokens cryptographically signed with RSA<br/>
+                        ✅ <strong>Secure cookies:</strong> HttpOnly, Secure, SameSite attributes<br/>
+                        ✅ <strong>No plaintext secrets:</strong> Client credentials never in frontend
+                    </p>
+                </div>
+
+                <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #2ecc71;">
+                    <h4 style="color: #2ecc71; margin-top: 0;">A03:2021 – Injection</h4>
+                    <p style="font-size: 0.9em; line-height: 1.6;">
+                        ✅ <strong>CSP:</strong> Blocks inline scripts & eval()<br/>
+                        ✅ <strong>JWT claims:</strong> Structured data prevents SQL/command injection<br/>
+                        ✅ <strong>URL encoding:</strong> Parameters properly encoded (client_id, redirect_uri)<br/>
+                        ✅ <strong>SAML signing:</strong> XML signatures prevent assertion tampering<br/>
+                        ✅ <strong>Input validation:</strong> Authorization codes validated against expected format
+                    </p>
+                </div>
+
+                <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #f39c12;">
+                    <h4 style="color: #f39c12; margin-top: 0;">A04:2021 – Insecure Design</h4>
+                    <p style="font-size: 0.9em; line-height: 1.6;">
+                        ✅ <strong>PKCE (RFC 7636):</strong> Authorization code interception prevention<br/>
+                        ✅ <strong>Token rotation:</strong> New refresh token issued on each use<br/>
+                        ✅ <strong>Nonce:</strong> Replay attack prevention in OIDC<br/>
+                        ✅ <strong>Rate limiting:</strong> Token endpoint throttling (evident from 429 responses)<br/>
+                        ✅ <strong>Separate contexts:</strong> User tokens vs service tokens (Flow 5)
+                    </p>
+                </div>
+
+                <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #9b59b6;">
+                    <h4 style="color: #9b59b6; margin-top: 0;">A05:2021 – Security Misconfiguration</h4>
+                    <p style="font-size: 0.9em; line-height: 1.6;">
+                        ✅ <strong>Hardened headers:</strong> 8+ security headers configured<br/>
+                        ✅ <strong>No directory listing:</strong> Error pages don't expose structure<br/>
+                        ✅ <strong>Minimal server info:</strong> Server: istio-envoy (no version)<br/>
+                        ✅ <strong>CORS restrictions:</strong> Access-Control-Allow-Origin properly configured<br/>
+                        ✅ <strong>No default credentials:</strong> OAuth client secrets rotated regularly
+                    </p>
+                </div>
+
+                <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #1abc9c;">
+                    <h4 style="color: #1abc9c; margin-top: 0;">A07:2021 – Identification & Authentication Failures</h4>
+                    <p style="font-size: 0.9em; line-height: 1.6;">
+                        ✅ <strong>MFA support:</strong> SAML supports multi-factor authentication<br/>
+                        ✅ <strong>Token expiration:</strong> Access tokens expire in 1-18 hours<br/>
+                        ✅ <strong>Refresh token rotation:</strong> One-time use refresh tokens<br/>
+                        ✅ <strong>Session management:</strong> Proper logout invalidates tokens<br/>
+                        ✅ <strong>emailHash validation:</strong> Email verified before SSO redirect
+                    </p>
+                </div>
+
+                <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #e67e22;">
+                    <h4 style="color: #e67e22; margin-top: 0;">A08:2021 – Software & Data Integrity Failures</h4>
+                    <p style="font-size: 0.9em; line-height: 1.6;">
+                        ✅ <strong>JWT signature verification:</strong> RS256 prevents token tampering<br/>
+                        ✅ <strong>SAML assertions signed:</strong> XMLDSig prevents XML tampering<br/>
+                        ✅ <strong>Subresource Integrity:</strong> CSP with hashes for static assets<br/>
+                        ✅ <strong>Token binding:</strong> JWT 'jti' (JWT ID) prevents token substitution<br/>
+                        ✅ <strong>Istio service mesh:</strong> mTLS between microservices
+                    </p>
+                </div>
+
+                <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #e74c3c;">
+                    <h4 style="color: #e74c3c; margin-top: 0;">A09:2021 – Security Logging & Monitoring</h4>
+                    <p style="font-size: 0.9em; line-height: 1.6;">
+                        ✅ <strong>TrackingID:</strong> Every request has unique ID for audit trail<br/>
+                        ✅ <strong>Request timing:</strong> Performance metrics logged (730ms total)<br/>
+                        ✅ <strong>Failed auth logging:</strong> 401/403 responses tracked<br/>
+                        ✅ <strong>Token issuance logs:</strong> OAuth grants logged with timestamp<br/>
+                        ✅ <strong>Cluster tracking:</strong> PS65 cluster ID in JWT for routing
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #fff9e6; border: 2px solid #f39c12; padding: 25px; margin: 20px 0; border-radius: 8px;">
+            <h3 style="color: #2c3e50; margin-top: 0;">🔐 OWASP API Security Top 10 - Mitigations</h3>
+            
+            <table class="protocol-table" style="margin-top: 20px;">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">API Security Risk</th>
+                        <th>Mitigation in Flows</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>API1:2023 Broken Object Level Authorization</strong></td>
+                        <td>
+                            <strong>🎯 Flow 1 (SAML - Atlassian):</strong><br/>
+                            ✅ Session-based authorization with Atlassian-token (BOZI-RZAB-0Q2B-FFXS...)<br/>
+                            ✅ SAML assertion includes user identity and group memberships<br/>
+                            ✅ Space-level and project-level access control (IPCBU wiki, CALL-190355 issue)<br/>
+                            ✅ JSESSIONID cookie tracks authenticated session<br/>
+                            <br/>
+                            <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
+                            ✅ JWT contains user/org context (org_id: b'1eb65fdf-9643-417f-9974-ad72cae0e10f', cis_uuid: sekondav)<br/>
+                            ✅ Scopes limit data access (spark:calls_write NOT spark:calls_read_all)<br/>
+                            ✅ Resource owner validation in every API call via Bearer token<br/>
+                            ✅ Private claim in JWT (encrypted JWE) ensures context isolation<br/>
+                            <br/>
+                            <strong>🎯 Flow 4 (Client Credentials - M2M):</strong><br/>
+                            ✅ Service account with limited scopes (webexsquare:admin, Identity:SCIM)<br/>
+                            ✅ No user context - prevents horizontal privilege escalation<br/>
+                            ✅ Organization-level isolation enforced by backend
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>API2:2023 Broken Authentication</strong></td>
+                        <td>
+                            <strong>🎯 Flow 1 (SAML - Atlassian):</strong><br/>
+                            ✅ SAML 2.0 authentication via Cisco Identity (id.cisco.com via Okta)<br/>
+                            ✅ MFA enforced (Duo/Cisco Secure) before SAML assertion issuance<br/>
+                            ✅ Digital signature validation on SAML Response (9419 bytes)<br/>
+                            ✅ X-Seraph-LoginReason: OK header confirms successful authentication<br/>
+                            ✅ Origin header validation (https://id.cisco.com)<br/>
+                            <br/>
+                            <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
+                            ✅ Bearer token authentication (Authorization: Bearer eyJhbGciOiJSUzI1NiI...)<br/>
+                            ✅ Token signature verification (RS256, 2048-bit RSA asymmetric encryption)<br/>
+                            ✅ Token expiration enforced (exp: 1736513697, 18 hours lifetime)<br/>
+                            ✅ Refresh token rotation (59 days validity, prevents token theft reuse)<br/>
+                            ✅ PKCE (Proof Key for Code Exchange) prevents authorization code interception<br/>
+                            <br/>
+                            <strong>🎯 Flow 4 (Client Credentials - M2M):</strong><br/>
+                            ✅ Client credentials grant (client_secret authentication)<br/>
+                            ✅ No user passwords in APIs - service account only<br/>
+                            ✅ Short-lived tokens (3600s = 1 hour) minimize exposure window<br/>
+                            ✅ Stateless JWT eliminates server-side session vulnerabilities
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>API3:2023 Broken Object Property Level Authorization</strong></td>
+                        <td>
+                            <strong>🎯 Flow 1 (SAML - Atlassian):</strong><br/>
+                            ✅ Atlassian Resource Identifier (ARI) scopes field-level access<br/>
+                            ✅ Space permissions control visible properties (read-only vs edit)<br/>
+                            ✅ Issue field permissions (view all fields vs restricted fields)<br/>
+                            <br/>
+                            <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
+                            ✅ Scopes control field access (Identity:SCIM for user provisioning - firstName, lastName, email)<br/>
+                            ✅ Fine-grained permissions per resource type (spark:calls_read vs spark:calls_write)<br/>
+                            ✅ Read/write scopes separated (webexsquare:get_conversation vs webexsquare:admin)<br/>
+                            ✅ 16+ distinct scopes limit property exposure (spark:kms, telephony_config_write, contact-center-digital)<br/>
+                            <br/>
+                            <strong>🎯 Flow 4 (Client Credentials - M2M):</strong><br/>
+                            ✅ Service scopes exclude user properties (no profile, email scopes)<br/>
+                            ✅ Admin-level scopes limit bulk operations (webexsquare:admin for internal services only)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>API4:2023 Unrestricted Resource Consumption</strong></td>
+                        <td>
+                            <strong>🎯 Flow 1 (SAML - Atlassian):</strong><br/>
+                            ✅ Session timeout (jira.session.expiry.in.mins: 299 minutes = ~5 hours)<br/>
+                            ✅ Concurrent request limit (jira.request.concurrent.requests: 6)<br/>
+                            ✅ SAML assertion replay prevention (timestamp + ID uniqueness)<br/>
+                            <br/>
+                            <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
+                            ✅ Token expiration limits session duration (3600s = 1 hour for M2M, 18 hours for user tokens)<br/>
+                            ✅ Rate limiting on token endpoint (429 Too Many Requests with Retry-After header)<br/>
+                            ✅ Scope-based quotas (different API call limits per scope)<br/>
+                            ✅ Request throttling via TrackingID (1kbvuu6cj6kxq for distributed tracing)<br/>
+                            ✅ Performance metrics tracked (227ms server wait, 730ms total latency)<br/>
+                            <br/>
+                            <strong>🎯 Flow 4 (Client Credentials - M2M):</strong><br/>
+                            ✅ Short token lifetime (1 hour) prevents long-term abuse<br/>
+                            ✅ No refresh token - must re-authenticate after expiration<br/>
+                            ✅ Client-level rate limiting enforced
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>API5:2023 Broken Function Level Authorization</strong></td>
+                        <td>
+                            <strong>🎯 Flow 1 (SAML - Atlassian):</strong><br/>
+                            ✅ Administrative functions require elevated SAML attributes<br/>
+                            ✅ Space admin vs member permissions enforced<br/>
+                            ✅ Project admin required for issue deletion/bulk operations<br/>
+                            <br/>
+                            <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
+                            ✅ Administrative scopes required (webexsquare:admin for management operations)<br/>
+                            ✅ Function-level scopes (telephony_config_write, contact-center-digital, calling-subscriber-device)<br/>
+                            ✅ Backend validates scope before executing privileged operations (config changes, user provisioning)<br/>
+                            ✅ Write operations require explicit write scopes (calls_write, machines_write)<br/>
+                            <br/>
+                            <strong>🎯 Flow 4 (Client Credentials - M2M):</strong><br/>
+                            ✅ Service accounts limited to specific functions (webexsquare:admin for internal only)<br/>
+                            ✅ No user impersonation capabilities
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>API6:2023 Unrestricted Access to Sensitive Business Flows</strong></td>
+                        <td>
+                            <strong>🎯 Flow 1 (SAML - Atlassian):</strong><br/>
+                            ✅ MFA required for sensitive Jira workflows (approval gates)<br/>
+                            ✅ Audit logs for administrative actions (user access changes)<br/>
+                            ✅ Session re-authentication for dangerous operations (bulk delete)<br/>
+                            <br/>
+                            <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
+                            ✅ OAuth consent screen for sensitive operations (first-time scope authorization)<br/>
+                            ✅ User must explicitly authorize scope access (spark:kms for encryption key access)<br/>
+                            ✅ Refresh tokens revocable via admin console (enterprise.webex.com/admin)<br/>
+                            ✅ Step-up authentication for high-value operations (account takeover prevention)<br/>
+                            <br/>
+                            <strong>🎯 Flow 4 (Client Credentials - M2M):</strong><br/>
+                            ✅ No direct user interaction - prevents social engineering<br/>
+                            ✅ Service account actions auditable with client_id tracking
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>API7:2023 Server Side Request Forgery</strong></td>
+                        <td>
+                            <strong>🎯 Flow 1 (SAML - Atlassian):</strong><br/>
+                            ✅ SAML ACS (Assertion Consumer Service) URL whitelist enforced (/plugins/servlet/samlconsumer)<br/>
+                            ✅ Destination attribute validation in SAML Response (must match SP endpoint)<br/>
+                            ✅ Origin header validation (must be https://id.cisco.com)<br/>
+                            ✅ Sec-Fetch-Site: same-site prevents cross-site SSRF<br/>
+                            <br/>
+                            <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
+                            ✅ Redirect URI whitelist (registered with IdP: https://desktop.wxcc-sg1.cisco.com/callback)<br/>
+                            ✅ URL validation before OAuth redirects (exact match, no wildcard)<br/>
+                            ✅ SAML ACS URL strictly validated (https://idbroker-sg.webex.com/idb/saml2/sso)<br/>
+                            ✅ State parameter prevents redirect manipulation (cryptographic random string)<br/>
+                            <br/>
+                            <strong>🎯 Flow 4 (Client Credentials - M2M):</strong><br/>
+                            ✅ No redirect URI (direct token endpoint access)<br/>
+                            ✅ Token endpoint URL pinned in client configuration
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>API8:2023 Security Misconfiguration</strong></td>
+                        <td>
+                            <strong>🎯 Flow 1 (SAML - Atlassian Jira):</strong><br/>
+                            ✅ <code>Strict-Transport-Security: max-age=31536000</code> (1 year HSTS, forces HTTPS)<br/>
+                            ✅ <code>X-Frame-Options: SAMEORIGIN</code> (clickjacking prevention, iframe restrictions)<br/>
+                            ✅ <code>Content-Security-Policy: frame-ancestors 'self'</code> (modern CSP, embedding control)<br/>
+                            ✅ <code>X-Content-Type-Options: nosniff</code> (MIME-sniffing prevention, content type enforcement)<br/>
+                            ✅ <code>X-XSS-Protection: enabled</code> (legacy XSS filter for older browsers)<br/>
+                            ✅ Error messages sanitized (no stack traces, no sensitive data exposure)<br/>
+                            ✅ TLS 1.2+ enforced (no SSLv3, TLS 1.0, or weak ciphers)<br/>
+                            <br/>
+                            <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
+                            ✅ <code>strict-transport-security: max-age=31536000</code> (HTTPS enforcement)<br/>
+                            ✅ <code>x-frame-options: DENY</code> (prevents all framing attacks)<br/>
+                            ✅ <code>x-content-type-options: nosniff</code> (MIME type protection)<br/>
+                            ✅ <code>x-xss-protection: 1; mode=block</code> (XSS filter active)<br/>
+                            ✅ <code>cache-control: no-cache, no-store</code> (prevents token caching)<br/>
+                            ✅ <code>referrer-policy: no-referrer-when-downgrade</code> (protects referrer leakage)<br/>
+                            ✅ CORS properly configured: <code>access-control-allow-origin: https://desktop.wxcc-sg1.cisco.com</code> (not wildcard *)<br/>
+                            ✅ CORS credentials: <code>access-control-allow-credentials: true</code> (controlled credential sharing)<br/>
+                            ✅ CORS methods restricted: <code>access-control-allow-methods: POST, PUT, PATCH, HEAD, GET...</code> (no DELETE in public APIs)<br/>
+                            ✅ Security headers on all API responses (idbroker, webexapis, oauth endpoints)<br/>
+                            <br/>
+                            <strong>🎯 Flow 4 (Client Credentials - M2M):</strong><br/>
+                            ✅ Same security headers as Flow 3 (HSTS, X-Frame-Options, CSP)<br/>
+                            ✅ No CORS needed (server-to-server communication)<br/>
+                            ✅ TLS mutual authentication (mTLS) for service mesh (Istio)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>API9:2023 Improper Inventory Management</strong></td>
+                        <td>
+                            <strong>🎯 Flow 1 (SAML - Atlassian):</strong><br/>
+                            ✅ Jira version tracked (v10.3.12 #10030012, build: f2378d8)<br/>
+                            ✅ SAML 2.0 specification compliance (endpoint documentation)<br/>
+                            ✅ API documentation for SAML endpoints (/sso/saml, /samlconsumer)<br/>
+                            ✅ Deprecated features logged (see footer: Report a problem)<br/>
+                            <br/>
+                            <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
+                            ✅ API versioning (v1 in /oauth2/v1/access_token, /authorization/v1/authorize)<br/>
+                            ✅ Deprecated endpoints return 410 Gone (old token endpoints sunset)<br/>
+                            ✅ API documentation with supported endpoints (developer.webex.com)<br/>
+                            ✅ Cluster version tracking (PS65 cluster ID in JWT for region-specific APIs)<br/>
+                            ✅ Scope inventory maintained (16+ documented scopes with descriptions)<br/>
+                            <br/>
+                            <strong>🎯 Flow 4 (Client Credentials - M2M):</strong><br/>
+                            ✅ Client ID registry (each service has unique client_id)<br/>
+                            ✅ Scope catalog for service accounts (admin, SCIM, get_conversation)<br/>
+                            ✅ API changelog for breaking changes
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>API10:2023 Unsafe Consumption of APIs</strong></td>
+                        <td>
+                            <strong>🎯 Flow 1 (SAML - Atlassian):</strong><br/>
+                            ✅ SAML assertion signature validation (XML digital signature verification)<br/>
+                            ✅ IdP certificate validation (Cisco Identity certificate trusted)<br/>
+                            ✅ RelayState integrity check (7424d1de-cbb2-4cc0-9cb9-2025eb983284 preserved)<br/>
+                            ✅ Input validation on SAML Response (9419 bytes, content-length verified)<br/>
+                            ✅ Origin validation (must be https://id.cisco.com)<br/>
+                            <br/>
+                            <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
+                            ✅ JWT signature verification before trusting claims (RS256, public key from JWKS endpoint)<br/>
+                            ✅ SAML assertion signature validation (IdP certificate chain validation)<br/>
+                            ✅ TLS certificate pinning for backend services (Istio service mesh with mTLS)<br/>
+                            ✅ Input validation on all API responses (JSON schema validation)<br/>
+                            ✅ Token binding to prevent token theft (DPoP headers, future enhancement)<br/>
+                            ✅ Issuer validation (iss claim must match https://idbroker.webex.com/idb)<br/>
+                            ✅ Audience validation (aud claim must match client_id or resource server)<br/>
+                            <br/>
+                            <strong>🎯 Flow 4 (Client Credentials - M2M):</strong><br/>
+                            ✅ Client authentication via TLS (certificate-based for high-security services)<br/>
+                            ✅ Token introspection for untrusted tokens (verify with authorization server)<br/>
+                            ✅ Rate limiting on external API consumption (prevent DoS from upstream APIs)<br/>
+                            ✅ Circuit breaker pattern (fail fast if upstream OAuth server unavailable)
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="background: #e8f8f5; border: 2px solid #16a085; padding: 25px; margin: 20px 0; border-radius: 8px;">
+            <h3 style="color: #2c3e50; margin-top: 0;">🛠️ Additional Security Best Practices Observed</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 20px;">
+                <div style="background: white; padding: 15px; border-radius: 6px;">
+                    <h4 style="color: #16a085; margin-top: 0;">🔑 Token Security</h4>
+                    <ul style="font-size: 0.85em; line-height: 1.6; margin: 0; padding-left: 20px;">
+                        <li>JWT with RS256 (asymmetric)</li>
+                        <li>Token introspection endpoint</li>
+                        <li>Token revocation support</li>
+                        <li>Opaque refresh tokens</li>
+                        <li>Token binding (DPoP future)</li>
+                    </ul>
+                </div>
+
+                <div style="background: white; padding: 15px; border-radius: 6px;">
+                    <h4 style="color: #3498db; margin-top: 0;">🌐 Network Security</h4>
+                    <ul style="font-size: 0.85em; line-height: 1.6; margin: 0; padding-left: 20px;">
+                        <li>Istio service mesh (mTLS)</li>
+                        <li>Load balancer health checks</li>
+                        <li>Geographic routing (PS65 cluster)</li>
+                        <li>DDoS protection (Cloudflare)</li>
+                        <li>WAF rules (SQL injection, XSS)</li>
+                    </ul>
+                </div>
+
+                <div style="background: white; padding: 15px; border-radius: 6px;">
+                    <h4 style="color: #e67e22; margin-top: 0;">📊 Monitoring</h4>
+                    <ul style="font-size: 0.85em; line-height: 1.6; margin: 0; padding-left: 20px;">
+                        <li>Request tracing (TrackingID)</li>
+                        <li>Timing metrics (227ms server wait)</li>
+                        <li>Error rate monitoring</li>
+                        <li>Token usage analytics</li>
+                        <li>Anomaly detection</li>
+                    </ul>
+                </div>
+
+                <div style="background: white; padding: 15px; border-radius: 6px;">
+                    <h4 style="color: #9b59b6; margin-top: 0;">🔐 CSRF Protection</h4>
+                    <ul style="font-size: 0.85em; line-height: 1.6; margin: 0; padding-left: 20px;">
+                        <li>State parameter (cryptographic random)</li>
+                        <li>Nonce in OIDC</li>
+                        <li>SameSite=Strict cookies</li>
+                        <li>CORS preflight checks</li>
+                        <li>Origin header validation</li>
+                    </ul>
+                </div>
+
+                <div style="background: white; padding: 15px; border-radius: 6px;">
+                    <h4 style="color: #e74c3c; margin-top: 0;">🛡️ XSS Prevention</h4>
+                    <ul style="font-size: 0.85em; line-height: 1.6; margin: 0; padding-left: 20px;">
+                        <li>CSP with nonce</li>
+                        <li>Output encoding</li>
+                        <li>HttpOnly cookies</li>
+                        <li>Sanitized error messages</li>
+                        <li>No eval() or innerHTML</li>
+                    </ul>
+                </div>
+
+                <div style="background: white; padding: 15px; border-radius: 6px;">
+                    <h4 style="color: #c0392b; margin-top: 0;">⏱️ Session Management</h4>
+                    <ul style="font-size: 0.85em; line-height: 1.6; margin: 0; padding-left: 20px;">
+                        <li>Absolute timeout (18 hours max)</li>
+                        <li>Idle timeout (refresh token)</li>
+                        <li>Concurrent session limits</li>
+                        <li>Logout invalidates all tokens</li>
+                        <li>Remember me = longer refresh token</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #f9f3ff; border: 3px solid #8e44ad; padding: 25px; margin: 20px 0; border-radius: 8px;">
+            <h3 style="color: #8e44ad; margin-top: 0;">💡 Security Recommendations for Implementation</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #27ae60;">
+                    <h4 style="color: #27ae60; margin-top: 0;">✅ Must-Have Controls</h4>
+                    <ol style="font-size: 0.9em; line-height: 1.8; margin: 0;">
+                        <li><strong>Always use HTTPS</strong> - No exceptions, even in dev</li>
+                        <li><strong>Implement PKCE</strong> - Required for SPAs and mobile apps</li>
+                        <li><strong>Rotate secrets</strong> - Client secrets every 90 days</li>
+                        <li><strong>Log everything</strong> - Authentication attempts, token issuance</li>
+                        <li><strong>Validate redirect URIs</strong> - Exact match, no wildcards</li>
+                        <li><strong>Use short-lived tokens</strong> - 15-60 minutes for access tokens</li>
+                        <li><strong>Implement rate limiting</strong> - Token endpoint, API calls</li>
+                        <li><strong>Enable MFA</strong> - For privileged operations</li>
+                    </ol>
+                </div>
+
+                <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #e67e22;">
+                    <h4 style="color: #e67e22; margin-top: 0;">⚠️ Common Security Pitfalls to Avoid</h4>
+                    <ol style="font-size: 0.9em; line-height: 1.8; margin: 0;">
+                        <li><strong>❌ Never</strong> store tokens in localStorage (XSS vulnerable)</li>
+                        <li><strong>❌ Never</strong> pass tokens in URL query parameters</li>
+                        <li><strong>❌ Never</strong> use implicit grant (deprecated in OAuth 2.1)</li>
+                        <li><strong>❌ Don't</strong> skip state parameter validation</li>
+                        <li><strong>❌ Don't</strong> use wildcard CORS (*)</li>
+                        <li><strong>❌ Don't</strong> log sensitive data (tokens, secrets)</li>
+                        <li><strong>❌ Don't</strong> trust client-side validation alone</li>
+                        <li><strong>❌ Don't</strong> expose stack traces in errors</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 6px; margin-top: 20px;">
+                <h4 style="color: #8e44ad; margin-top: 0;">🎯 Security Testing Checklist</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 15px; font-size: 0.85em;">
+                    <div>
+                        <strong style="color: #e74c3c;">🔴 Critical Tests:</strong>
+                        <ul style="margin: 5px 0; padding-left: 20px;">
+                            <li>Authorization code replay</li>
+                            <li>Token signature tampering</li>
+                            <li>CSRF attack simulation</li>
+                            <li>Redirect URI manipulation</li>
+                            <li>Scope escalation attempts</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="color: #f39c12;">🟡 Important Tests:</strong>
+                        <ul style="margin: 5px 0; padding-left: 20px;">
+                            <li>Token expiration validation</li>
+                            <li>Refresh token rotation</li>
+                            <li>Rate limit enforcement</li>
+                            <li>CORS policy validation</li>
+                            <li>Input sanitization</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="color: #27ae60;">🟢 Good to Have:</strong>
+                        <ul style="margin: 5px 0; padding-left: 20px;">
+                            <li>Session timeout testing</li>
+                            <li>Concurrent session limits</li>
+                            <li>Brute force protection</li>
+                            <li>Security header validation</li>
+                            <li>TLS configuration check</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <h3 style="color: #2c3e50; margin-bottom: 15px;">📚 Key Takeaways</h3>
+            <div style="text-align: left; max-width: 900px; margin: 0 auto; background: #f8f9fa; padding: 25px; border-radius: 8px;">
+                <p><strong>⚠️ OAuth 2.0 vs OIDC:</strong> OAuth 2.0 alone is ONLY for authorization (delegated access), NOT authentication. For "login" functionality, you need <strong>OIDC (OpenID Connect)</strong> which adds an authentication layer on top of OAuth 2.0.</p>
+                <p><strong>SAML 2.0:</strong> Enterprise-grade SSO for workforce authentication. Heavy, XML-based, excellent for web apps with centralized identity management.</p>
+                <p><strong>OIDC:</strong> Modern authentication + authorization. Lightweight, JSON-based, built on OAuth 2.0. Perfect for consumer apps, mobile apps, and APIs. Uses ID token for authentication and access token for authorization.</p>
+                <p><strong>Hybrid (SAML + OAuth):</strong> 🌟 Best approach for enterprises with existing SAML infrastructure. SAML handles authentication (leveraging enterprise SSO), then OAuth tokens are issued for modern API authorization. This is how <strong>Cisco IDbroker, Atlassian, and Salesforce</strong> work.</p>
+                <p><strong>Three Token Types in OIDC:</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>ID Token (JWT):</strong> Proves WHO you are (authentication) 🆔</li>
+                    <li><strong>Access Token:</strong> Grants WHAT you can access (authorization) 🔑</li>
+                    <li><strong>Refresh Token:</strong> Gets new tokens when they expire 🔄</li>
+                </ul>
+                <p style="margin-top: 15px;"><strong>Cisco IDbroker Pattern:</strong> Employee authenticates via SAML (Cisco Identity) → IDbroker validates SAML assertion → IDbroker issues OAuth access/refresh tokens → Application uses Bearer token for all API calls → No need to parse SAML for each API call → Stateless microservices architecture.</p>
+            </div>
+            <p style="margin-top: 30px;"><strong>Examples Analyzed:</strong></p>
+            <p>1. <strong>Atlassian Products (Confluence + Jira)</strong> - Enterprise workforce authentication with SAML 2.0 via Cisco Identity (id.cisco.com). Includes Confluence IPCBU space access and Jira issue CALL-190355 from jira-eng-gpk2.cisco.com HAR trace.</p>
+            <p>2. <strong>OIDC Authentication (Generic + HashiCorp Vault)</strong> - Modern authentication using OpenID Connect (OAuth 2.0 + authentication layer). Includes: (a) Generic OIDC callback pattern (xmy.com), (b) HashiCorp Vault secrets management (east.keeper.cisco.com) with Duo Security SSO, 6-day Vault tokens, namespace-based access control (meetpaas/app-secrets/wxt-calling), and policy-based authorization (engineer, mobius-devops-rw).</p>
+            <p>3. <strong>Cisco IDbroker Hybrid Pattern + Real HAR Data</strong> - SAML authentication → OAuth token issuance with production data from Webex Contact Center (18-hour tokens, 16+ scopes, 227ms latency, PS65 cluster)</p>
+            <p>4. <strong>OAuth Client Credentials Grant</strong> - Machine-to-machine service authentication with no user context (webexsquare:admin, Identity:SCIM, 1-hour stateless tokens)</p>
+            <p>Generated: January 21, 2026</p>
+        </footer>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            sequence: {
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35,
+                mirrorActors: true,
+                useMaxWidth: true
+            }
+        });
+    </script>
+</body>
+</html>

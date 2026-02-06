@@ -8,7 +8,6 @@ ehthumbs.db
 Thumbs.db
 
 # Log files
-*.log
 
 # WebRTC dumps (large files)
 webrtc_internals_dump*

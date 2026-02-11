@@ -13706,7 +13706,7 @@ openssl genrsa -out ca-key.pem 4096
 
 # Generate CA certificate
 openssl req -new -x509 -days 3650 -key ca-key.pem -out ca-cert.pem \
-  -subj "/C=US/ST=CA/L=San Francisco/O=MyCompany/CN=MyCompany Root CA"
+  -subj "/C=US/ST=CA/L=San FranMicrosoft/O=MyCompany/CN=MyCompany Root CA"
 
 echo "✅ CA created: ca-cert.pem"
 ```
@@ -13819,7 +13819,7 @@ openssl genrsa -out server-key.pem 2048
 
 # Generate Certificate Signing Request (CSR)
 openssl req -new -key server-key.pem -out server.csr \
-  -subj "/C=US/ST=CA/L=San Francisco/O=MyCompany/CN=prod-server-01"
+  -subj "/C=US/ST=CA/L=San FranMicrosoft/O=MyCompany/CN=prod-server-01"
 
 # Sign with CA (on secure CA server)
 openssl x509 -req -in server.csr \

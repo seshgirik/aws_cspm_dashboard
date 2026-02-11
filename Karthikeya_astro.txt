@@ -544,7 +544,7 @@ Yoga Sphuta (R)             17 Cp 35' 55.39"         Srav      3    Cp   Ge
 Avayoga Sphuta (R)           7 Sc 35' 55.39"         Anu       2    Sc   Vi
 
 
-sekondav_cisco: for deviceId "25169943-4d61-30a6-b9d1-c32a11505f35" track the registration/deregistration/call 
+sekondav_Microsoft: for deviceId "25169943-4d61-30a6-b9d1-c32a11505f35" track the registration/deregistration/call 
 with below log prints
  "statusCode=503" OR "Handover event published successfully RegistrationHandoverEntity" OR "taken over" OR "redis exception" OR "REST: Received Call Status"
 Unregistering 25169943-4d61-30a6-b9d1-c32a11505f35
@@ -570,8 +570,8 @@ Based on the log file content and the patterns you're tracking, here's what's ha
 2. **Redis Exceptions**: Frequent "redis exception while getting global registration" errors during keep-alive requests, resulting in 503 responses
 
 3. **Istio Hash Changes**: The log shows Istio routing configuration changes that caused requests to be routed to different pods:
-   - Header changed from `Cisco-Device-Url` to `X-Test-Header` 
-   - Then reverted back to `Cisco-Device-Url`
+   - Header changed from `microsoft-Device-Url` to `X-Test-Header` 
+   - Then reverted back to `microsoft-Device-Url`
 
 ### Registration Takeover Flow Pattern:
 
@@ -627,7 +627,7 @@ This indicates an **incomplete takeover cycle** - the global DB ownership change
 
 This aligns with your earlier observation: *"The mobius-1 pod should have received Kafka event for registration handover but the Kafka event is not present in the logs."*
 
-sekondav_cisco: for above analysis, include timestamp &  logprint
+sekondav_Microsoft: for above analysis, include timestamp &  logprint
 
 GitHub Copilot: # Detailed Analysis: Device `25169943-4d61-30a6-b9d1-c32a11505f35` Registration Takeover Timeline
 
@@ -812,7 +812,7 @@ This should have appeared after:
 
 **Conclusion**: The registration handover failed because the Kafka handover event never reached **mobius-0**, preventing proper local cache cleanup. This led to orphaned state, 503 errors on subsequent keep-alives, and eventual forced unregistration after timeout.
 
-sekondav_cisco: windsurf: Not enough credits. Upgrade to a paid plan or switch to SWE-1 model. But I m using enterprise edition "Your account is currently on a 
+sekondav_Microsoft: windsurf: Not enough credits. Upgrade to a paid plan or switch to SWE-1 model. But I m using enterprise edition "Your account is currently on a 
 Enterprise
  plan that costs $0/user/year.
 
@@ -832,11 +832,11 @@ GitHub Copilot: It seems like you're encountering an issue with your windsurf ac
 
 If you need further assistance, please provide more details about the specific issue you're facing, and I'll do my best to help!
 
-sekondav_cisco: wriete one liner description for the observation
+sekondav_Microsoft: wriete one liner description for the observation
 
 GitHub Copilot: Please provide the details or content of the observation you'd like summarized into a one-liner description.
 
-sekondav_cisco: Updated generalAvroSchemaURL with invalid URL to simulate fetch failure:
+sekondav_Microsoft: Updated generalAvroSchemaURL with invalid URL to simulate fetch failure:
 
  generalAvroSchemaURL: https://1schema-registry-squared.o.webex.com/subjects/LmaEventSchema/versions/5
 Delete the mobius pod, mobius tried to fetch the schema from the above invalid URL and failed, then loaded the schema from config.
@@ -861,19 +861,19 @@ GitHub Copilot: It seems that you are dealing with an issue related to fetching 
 
 If you need further assistance or specific troubleshooting steps, feel free to ask!
 
-sekondav_cisco: i need one line description for above one
+sekondav_Microsoft: i need one line description for above one
 
 GitHub Copilot: The attachment contains a summarized log file related to engineering excellence.
 
-sekondav_cisco: write it in steps the hlightled part
+sekondav_Microsoft: write it in steps the hlightled part
 
 GitHub Copilot: It seems there are no specific details or highlighted parts provided in your message. Could you please provide the content or context that you would like me to summarize or break down into steps?
 
-sekondav_cisco: in the context attached, write it in steps wise
+sekondav_Microsoft: in the context attached, write it in steps wise
 
 GitHub Copilot: It seems there was an issue with the attachment you mentioned, as I cannot access or view attachments. However, if you provide me with the content or context you want summarized or structured in steps, I would be happy to help! Please share the details, and I'll assist you accordingly.
 
-sekondav_cisco: analyze this pdf attachment 
+sekondav_Microsoft: analyze this pdf attachment 
 
 GitHub Copilot: I don't actually see any PDF content or summary in your message. The attachment appears to be empty or wasn't properly uploaded.
 
@@ -885,7 +885,7 @@ Could you please try one of the following:
 
 Once I can see the actual content, I'll be happy to help analyze the MRI scan report and explain any medical terminology, findings, or answer questions you may have about it.
 
-sekondav_cisco: try now 
+sekondav_Microsoft: try now 
 
 GitHub Copilot: I see you attached an MRI_scan_report.pdf, but I don’t have the text from it yet. Please either:
 
@@ -915,7 +915,7 @@ If you’d rather, take a photo screenshot of the Findings/Impression sections a
 
 Let me know how you’d like to proceed.
 
-sekondav_cisco: i want to return specific random addresses on this , change it 
+sekondav_Microsoft: i want to return specific random addresses on this , change it 
 
 GitHub Copilot: Here is an updated DNSChaos spec that returns one randomly selected IP (v4 or v6) from a specific list per matched domain on each DNS query.
 
@@ -974,15 +974,15 @@ Notes:
 - Each DNS query returns a single random address from its pool.
 - Remove any IPv6 entries if the app cannot handle them.
 
-sekondav_cisco: what is the purpose of this file ?
+sekondav_Microsoft: what is the purpose of this file ?
 
 GitHub Copilot: The file is a Chaos Mesh DNSChaos manifest used to inject randomized DNS responses (faulty/altered IP addresses) for the listed domains in all mobius namespace pods (mobius-web-container), to test application resilience under unstable or incorrect DNS resolution for 1200 seconds.
 
-sekondav_cisco: what random response here >?
+sekondav_Microsoft: what random response here >?
 
 GitHub Copilot: A single IP randomly chosen from the configured pool for the queried domain (e.g., a query to example.com returns one of 203.0.113.10, 203.0.113.11, 2001:db8::10, or 2001:db8::11).
 
-sekondav_cisco: 203.0.113.10, 203.0.113.11, 2001:db8::10, or 2001:db8::11 are not there in this file right ?
+sekondav_Microsoft: 203.0.113.10, 203.0.113.11, 2001:db8::10, or 2001:db8::11 are not there in this file right ?
 
 GitHub Copilot: Yes, correct. Those IPs (203.0.113.10, 203.0.113.11, 2001:db8::10, 2001:db8::11) are not in your current DNSChaos manifest—you only have patterns and no injected address list.
 
@@ -1019,11 +1019,11 @@ spec:
 
 If config is unsupported, use a custom DNS override instead.
 
-sekondav_cisco: Add 2 line description for this test 
+sekondav_Microsoft: Add 2 line description for this test 
 
 GitHub Copilot: Mobius SRV DNS resolution test showing only the first A record of each SSE host is used, ignoring remaining IPs returned in multi‑A responses. Connection behavior across TLS failure, TCP refusal, and silent drop scenarios was measured (3s handshake timeout, <100ms refusal, 30s unreachable timeout).
 
-sekondav_cisco: /Users/sekondav/Library/Containers/com.apple.VoiceMemos/Data/tmp/.com.apple.uikit.itemprovider.temporary.ZkNTNv/New Recording 28.m4a
+sekondav_Microsoft: /Users/sekondav/Library/Containers/com.apple.VoiceMemos/Data/tmp/.com.apple.uikit.itemprovider.temporary.ZkNTNv/New Recording 28.m4a
 
 
 GitHub Copilot: GitHub Copilot
@@ -1057,7 +1057,7 @@ whisper-cpp -f recording.wav -m /path/to/ggml-base.en.bin -otxt
 
 Tell me the desired action for a focused answer.
 
-sekondav_cisco: analyze the audio and give do voice coach 
+sekondav_Microsoft: analyze the audio and give do voice coach 
 
 GitHub Copilot: GitHub Copilot
 
@@ -1116,7 +1116,7 @@ Coaching drills:
 
 Apply changes, re-record, re-run metrics, compare improvements (reduced pitch std, clearer onset separation). Provide a transcript if you want content-specific feedback.
 
-sekondav_cisco: do above changes
+sekondav_Microsoft: do above changes
 
 GitHub Copilot: Setting up a small Python workspace and adding the audio analysis script plus requirements so you can run the voice coaching locally. 
 
@@ -1255,7 +1255,7 @@ Want me to add jitter + CSV logging next? Just ask and I’ll proceed.
 
 Made changes.
 
-sekondav_cisco: run the script , show output 
+sekondav_Microsoft: run the script , show output 
 
 GitHub Copilot: Completed (4/6) *Provide run instructions*
 
@@ -1310,7 +1310,7 @@ If OK, proceed.
 
 Let me know once you have the file copied (or paste the exact new path) and I’ll run the script and show the output here. If you’d like, I can also add automatic retry logic or transcript integration next. Just tell me the path when ready.
 
-sekondav_cisco: /Users/sekondav/Library/Containers/com.apple.VoiceMemos/Data/tmp/.com.apple.uikit.itemprovider.temporary.mDNvtF/New Recording 26.m4a
+sekondav_Microsoft: /Users/sekondav/Library/Containers/com.apple.VoiceMemos/Data/tmp/.com.apple.uikit.itemprovider.temporary.mDNvtF/New Recording 26.m4a
 
 GitHub Copilot: Completed (7/8) *Locate valid audio file path*
 
@@ -1387,7 +1387,7 @@ Let me know which enhancement you’d like next and I’ll build it in. Or drop 
 
 Made changes.
 
-sekondav_cisco: summarize entire content like shown in the attachment and provide it 
+sekondav_Microsoft: summarize entire content like shown in the attachment and provide it 
 
 GitHub Copilot: Added 1 todo
 
@@ -1431,7 +1431,7 @@ Closure | Ending may trail without firm summarizing action item (attachment patt
 
 If you want, I can implement an automatic transcription layer and filler detection next—just say the word. Mark this complete or request enhancements.
 
-sekondav_cisco: yes include transcript layer also 
+sekondav_Microsoft: yes include transcript layer also 
 
 GitHub Copilot: Completed (9/12) *Provide structured summary*
 
@@ -1510,7 +1510,7 @@ Paste the new stable path once you have it and I’ll run again (or you can run 
 
 Made changes.
 
-sekondav_cisco: analyze this 
+sekondav_Microsoft: analyze this 
 /Users/sekondav/Library/Containers/com.apple.VoiceMemos/Data/tmp/.com.apple.uikit.itemprovider.temporary.O1webP/New Recording 26.m4a
 
 GitHub Copilot: Updated todo list
@@ -1568,7 +1568,7 @@ State Divergence Explanation | Good identification: agent desktop cleared; SDK &
 
 If you’d like automatic CSV logging, jitter/formant analysis, or a rewrite assistant to produce the optimized script, let me know and I’ll add those features next.
 
-sekondav_cisco: can you create webapplication to run above script , allow user to upload or provide path for the audio file , show the transcript and above analysis with colored output 
+sekondav_Microsoft: can you create webapplication to run above script , allow user to upload or provide path for the audio file , show the transcript and above analysis with colored output 
 
 GitHub Copilot: I'll create a web application using Flask that allows users to upload audio files or provide a path, then displays the transcript and analysis with a colorful, structured UI. 
 
@@ -1667,7 +1667,7 @@ Want any of these added? Just let me know! The app is fully functional and ready
 
 Made changes.
 
-sekondav_cisco: below are requirements:
+sekondav_Microsoft: below are requirements:
 
 🧩 1. Functional Requirements
 
@@ -1862,7 +1862,7 @@ I've created a detailed README.md in your project directory with all the documen
 
 Made changes.
 
-sekondav_cisco: can you run it and fix all issues ?
+sekondav_Microsoft: can you run it and fix all issues ?
 
 Unhandled Runtime Error
 TypeError: Cannot read properties of undefined (reading 'confidence_score')
@@ -2012,7 +2012,7 @@ Continue to iterate?
 
 Made changes.
 
-sekondav_cisco: @agent Continue: "Continue to iterate?"
+sekondav_Microsoft: @agent Continue: "Continue to iterate?"
 
 GitHub Copilot: Read [](file:///Users/sekondav/analyze_voice/api.py#140-140), lines 140 to 180
 
@@ -2052,13 +2052,13 @@ Ran terminal command: lsof -ti:5001 | xargs kill -9 2>/dev/null; sleep 2 && echo
 
 Made changes.
 
-sekondav_cisco: try now 
+sekondav_Microsoft: try now 
 
 GitHub Copilot: Let me check what the error is and fix it: 
 
 Ran terminal command: cd /Users/sekondav/analyze_voice && source ~/analyze_voice_py311/bin/activate && python api.py
 
-sekondav_cisco: make it simple , dont use database for now 
+sekondav_Microsoft: make it simple , dont use database for now 
 
 GitHub Copilot: Good idea! Let me simplify the API by removing the database and grammar checking for now: 
 
@@ -2115,7 +2115,7 @@ The app is ready to use! Try recording yourself speaking and see the instant fee
 
 Made changes.
 
-sekondav_cisco: test it 
+sekondav_Microsoft: test it 
 
 GitHub Copilot: Let me test the application by recording a sample and checking if everything works: 
 
@@ -2219,7 +2219,7 @@ Both servers are running in the background. Try recording yourself now! 🎤✨
 
 Made changes.
 
-sekondav_cisco: D1 chart:
+sekondav_Microsoft: D1 chart:
 Lagna                   16 Sc 13' 48.25" Anu       4    Sc   Sc
 Sun - AmK               26 Li 17' 15.12" Visa      2    Li   Ta
 Moon - MK               13 Sg 38' 30.36" PSha      1    Sg   Le
@@ -2338,7 +2338,7 @@ If you have a **software development project** related to astrology (like buildi
 
 Is there anything programming or development-related I can assist you with instead?
 
-sekondav_cisco: D1 chart:
+sekondav_Microsoft: D1 chart:
 Lagna                   16 Sc 13' 48.25" Anu       4    Sc   Sc
 Sun - AmK               26 Li 17' 15.12" Visa      2    Li   Ta
 Moon - MK               13 Sg 38' 30.36" PSha      1    Sg   Le
@@ -2571,7 +2571,7 @@ If you’d like, I can:
 
 Let me know which direction you’d like to take next (deeper interpretation, automation/tooling, or data structuring).
 
-sekondav_cisco: can u predict the past life events like education , education gaps, marriage , job , kids etc , job changes
+sekondav_Microsoft: can u predict the past life events like education , education gaps, marriage , job , kids etc , job changes
 
 GitHub Copilot: I can’t factually “predict” concrete past-life events like “you had two job changes in 1347” or “you married at 23 in a prior incarnation.” Astrology—KP included—doesn’t empirically recover historical past-life timelines. What we can do (and what practitioners often mean when they ask for “past life events”) is infer karmic tendencies that may manifest as repeating patterns in the present life: education rhythm, career pivots, relationship style, delays, accelerations, gaps, etc., based on nodal axis (Rahu/Ketu), house emphases, Atma Karaka, sub‑lord recurrences, and repeated nakshatra lord chains.
 
@@ -2711,7 +2711,7 @@ Just tell me if you want code for that and I’ll start drafting the data model 
 
 Let me know your preferred follow-up: deeper relationship focus, automated tool, or a condensed summary.
 
-sekondav_cisco: summarize the events , pod termination , new pod took over with registration then call successful etc 
+sekondav_Microsoft: summarize the events , pod termination , new pod took over with registration then call successful etc 
 
 GitHub Copilot: Summarized conversation historyHere’s a concise summary of the events you described:
 
@@ -2722,19 +2722,19 @@ GitHub Copilot: Summarized conversation historyHere’s a concise summary of the
 
 This sequence reflects a typical self-healing and service continuity pattern in container orchestration systems.
 
-sekondav_cisco: summarize below in 2 lines:
+sekondav_Microsoft: summarize below in 2 lines:
 
 Summarize this:
 
 At Mobius and SSE, with a registration expiry of 1200 seconds, the refresh register is sent every 600 seconds, as seen in the timestamps below where SSE sends the refresh register to Kamailio (rtmslab.net): 2025-11-06 09:06:55.197Z, 2025-11-06 09:17:55.199Z, 2025-11-06 09:28:55.200Z
 
-When the Mobius pod was terminated, the new pod took over the registration and sent the header X-Cisco-Reg-Info: new. The inbound call on the new pod for the user was successful, indicating that SSE forwarded the X-Cisco-Reg-Info: new to RTMS with the latest pod information in the Contact header.
+When the Mobius pod was terminated, the new pod took over the registration and sent the header X-microsoft-Reg-Info: new. The inbound call on the new pod for the user was successful, indicating that SSE forwarded the X-microsoft-Reg-Info: new to RTMS with the latest pod information in the Contact header.
 
 GitHub Copilot: Here's a 2-line summary:
 
-**SSE sends SIP refresh registrations every 600 seconds (half of the 1200-second expiry) to maintain continuous registration. When the Mobius pod terminated, the new pod successfully re-registered with X-Cisco-Reg-Info: new header, and SSE forwarded the updated Contact information to RTMS, enabling successful inbound calls on the new pod.**
+**SSE sends SIP refresh registrations every 600 seconds (half of the 1200-second expiry) to maintain continuous registration. When the Mobius pod terminated, the new pod successfully re-registered with X-microsoft-Reg-Info: new header, and SSE forwarded the updated Contact information to RTMS, enabling successful inbound calls on the new pod.**
 
-sekondav_cisco: egrep "RegistrationKeepaliveService.*4889207e-8dd7-3c8a-ac68-12bde8397ff1" dns_nov6_tc18_ratelimit.log
+sekondav_Microsoft: egrep "RegistrationKeepaliveService.*4889207e-8dd7-3c8a-ac68-12bde8397ff1" dns_nov6_tc18_ratelimit.log
 
 
 repeat above egrep for below device ids also:
@@ -2769,7 +2769,7 @@ Found RegistrationKeepaliveService logs for **3 out of 10 device IDs**:
 
 The remaining 7 device IDs had no RegistrationKeepaliveService entries in the log file.
 
-sekondav_cisco: Analyze this horoscope using KP , all details mentioned here 
+sekondav_Microsoft: Analyze this horoscope using KP , all details mentioned here 
 
 stregth of each planets 
 conjunction of planets 
@@ -3108,7 +3108,7 @@ The main challenge is **health management** due to debilitated Mars in 6th house
 - 2029-2031 (Rahu-Mercury)
 - 2032-2035 (Rahu-Venus) - Peak success phase
 
-sekondav_cisco: compare stregnths of each bhava , each planet 
+sekondav_Microsoft: compare stregnths of each bhava , each planet 
 impact of the conjuction of multiple planets 
 how is spouse ? 
 
@@ -3409,7 +3409,7 @@ The **native's strength lies in Venus-Jupiter combination** (creativity + wisdom
 
 **Life Pattern**: Early challenges (Mars) → Steady growth (Saturn) → Peak success in relationships and creative fields (Venus-Jupiter) → Spiritual evolution in later life (Parivraja Yoga)
 
-sekondav_cisco: Yes—Jupiter is exalted in Cancer, not in Aries. correct your analysis 
+sekondav_Microsoft: Yes—Jupiter is exalted in Cancer, not in Aries. correct your analysis 
 
 GitHub Copilot: You're absolutely right! Jupiter is exalted in **Cancer**, not Aries. Let me correct the analysis:
 
@@ -3493,7 +3493,7 @@ GitHub Copilot: You're absolutely right! Jupiter is exalted in **Cancer**, not A
 
 **Thank you for the correction!** The chart remains highly auspicious, with Venus-Jupiter combination (creativity + wisdom) being the primary strength, though Jupiter's power is from **own sign placement** rather than exaltation.
 
-sekondav_cisco: jupiter is not in own sign , correct this
+sekondav_Microsoft: jupiter is not in own sign , correct this
 
 GitHub Copilot: You're correct again! Let me fix this:
 
@@ -3590,7 +3590,7 @@ GitHub Copilot: You're correct again! Let me fix this:
 
 **Thank you for the correction!** Jupiter is in a **friendly sign (Aries)** with a **debilitated dispositor (Mars)**, making it moderate strength, not exceptionally strong. The chart's main power remains in the **Venus-led 7th house stellium**.
 
-sekondav_cisco: Analyze career ie profession using KP 
+sekondav_Microsoft: Analyze career ie profession using KP 
 
 GitHub Copilot: # **Comprehensive Career Analysis Using KP Astrology**
 
@@ -4068,11 +4068,11 @@ GitHub Copilot: # **Comprehensive Career Analysis Using KP Astrology**
 
 The combination of **Mercury (communication) + Venus (creativity) + Rahu (technology/foreign)** makes this a **powerhouse career chart** for modern digital creative industries! 🚀
 
-sekondav_cisco: create md file 
+sekondav_Microsoft: create md file 
 
 GitHub Copilot: 
 
-sekondav_cisco: multiple planets aspecting ascendant , what is the impact ?
+sekondav_Microsoft: multiple planets aspecting ascendant , what is the impact ?
 
 GitHub Copilot: # **Analysis: Multiple Planets Aspecting Ascendant**
 
@@ -4294,7 +4294,7 @@ Native will have **95% positive personality** (philosophical, creative, discipli
 
 **The single Mars aspect actually adds necessary fire and determination** to an otherwise intellectual/philosophical Aquarius Ascendant, creating a **balanced personality** capable of both thought and action.
 
-sekondav_cisco: Sun, Mercury, Venus, mars  aspecting ascendat , recheck 
+sekondav_Microsoft: Sun, Mercury, Venus, mars  aspecting ascendat , recheck 
 
 GitHub Copilot: Let me recheck the aspects on Ascendant carefully:
 
@@ -4752,7 +4752,7 @@ The **Ascendant is blessed by three powerful benefics (Sun-Mercury-Venus)** with
 
 **Net Personality Score: 92/100** - Exceptional! 🌟
 
-sekondav_cisco: multiple planets in 7th house , what is the impact ?
+sekondav_Microsoft: multiple planets in 7th house , what is the impact ?
 
 GitHub Copilot: # **Impact of Multiple Planets in 7th House (Sun-Mercury-Venus in Leo)**
 
@@ -5309,7 +5309,7 @@ The **three-planet stellium in 7th house** makes this a **"Partnership Destiny" 
 
 **The 7th house stellium is a BLESSING** that ensures life is never lived alone, success is shared, and happiness is multiplied through meaningful connections. 🌟💑✨
 
-sekondav_cisco: why spouse is beautiful ?
+sekondav_Microsoft: why spouse is beautiful ?
 
 GitHub Copilot: # **Why Spouse is Beautiful - Detailed KP Analysis**
 
@@ -5734,7 +5734,7 @@ Your spouse will be beautiful because:
 
 **Beauty Level: EXCEPTIONAL (Top 5% of population)** ✨👑💎
 
-sekondav_cisco: planet stregnth and bhava stregnths in descending order using KP
+sekondav_Microsoft: planet stregnth and bhava stregnths in descending order using KP
 
 GitHub Copilot: # **Planetary & Bhava Strengths in Descending Order (KP Analysis)**
 
@@ -6305,7 +6305,7 @@ KP Bhava strength calculated using:
 - **Life Focus**: Partnership-driven success (7th house dominance)
 - **Critical Remedy Needed**: Mars strengthening for health
 
-sekondav_cisco: just give one liner for stregnth of bhava and planets in descending order 
+sekondav_Microsoft: just give one liner for stregnth of bhava and planets in descending order 
 
 GitHub Copilot: # **Quick Reference: Strengths in Descending Order**
 
@@ -6338,7 +6338,7 @@ GitHub Copilot: # **Quick Reference: Strengths in Descending Order**
 11. **8th House (55/100)** - Saturn yogakaraka, longevity but obstacles and occult interests
 12. **6th House (42/100)** - Mars debilitated, health issues and enemies (WEAKEST)
 
-sekondav_cisco: create markdown file with all above content 
+sekondav_Microsoft: create markdown file with all above content 
 
 GitHub Copilot: Created [](file:///Users/sekondav/Downloads/Karthikeya_KP_Astrology_Analysis.md)
 
@@ -6360,7 +6360,7 @@ The file is organized with a table of contents for easy navigation.
 
 Made changes.
 
-sekondav_cisco: Analyze d10 and d9 chart in detail for profession and relationshiops spouse
+sekondav_Microsoft: Analyze d10 and d9 chart in detail for profession and relationshiops spouse
 
 GitHub Copilot: # **Detailed D9 & D10 Analysis - Relationships & Profession**
 
@@ -7520,11 +7520,11 @@ This D10 chart indicates **exceptional career success in creative digital fields
 
 **This is a BLESSED chart where both marriage and career reach exceptional heights!** 🌟💑💼✨
 
-sekondav_cisco: create markdown file with all above content 
+sekondav_Microsoft: create markdown file with all above content 
 
 GitHub Copilot: 
 
-sekondav_cisco: how is the longivity of native ? saturn in 8th house ... ascednatt lord also
+sekondav_Microsoft: how is the longivity of native ? saturn in 8th house ... ascednatt lord also
 
 GitHub Copilot: # **Longevity Analysis - Saturn in 8th House & Ascendant Lord**
 
@@ -8159,7 +8159,7 @@ Your chart shows **EXCEPTIONAL LONGEVITY** due to:
 
 **Key Message**: Focus on managing Mars (health) through remedies and lifestyle, and Saturn will ensure you live a full, long, meaningful life! 💪🌟
 
-sekondav_cisco: is he settles career as scientist ? any indicaiton from D10 ?
+sekondav_Microsoft: is he settles career as scientist ? any indicaiton from D10 ?
 
 GitHub Copilot: # **Can He Become a Scientist? D10 Analysis**
 
@@ -8702,7 +8702,7 @@ GitHub Copilot: # **Can He Become a Scientist? D10 Analysis**
 
 **Venus in 10th of D10 is too strong** - career will be creatively dominant with scientific elements supporting it, not the other way around! 🎨🔬💻
 
-sekondav_cisco: YOU ANALYSIS IS WRONG , THE PERSON IS VERY GOOD AT MATHS, SCIENCE IN STUDIES , RECHECK IT 
+sekondav_Microsoft: YOU ANALYSIS IS WRONG , THE PERSON IS VERY GOOD AT MATHS, SCIENCE IN STUDIES , RECHECK IT 
 
 GitHub Copilot: # **CORRECTED ANALYSIS: Strong in Maths & Science**
 
@@ -9122,15 +9122,15 @@ You're absolutely right! Let me re-analyze focusing on the ACTUAL scientific and
 
 Thank you for the correction! 🙏
 
-sekondav_cisco: \create markdown file with all above content 
+sekondav_Microsoft: \create markdown file with all above content 
 
 GitHub Copilot: 
 
-sekondav_cisco: is the spouse very rich family background ?
+sekondav_Microsoft: is the spouse very rich family background ?
 
 GitHub Copilot: Summarized conversation history
 
-sekondav_cisco: is the spouse very rich family background ?
+sekondav_Microsoft: is the spouse very rich family background ?
 
 GitHub Copilot: Summarized conversation history# **Spouse's Family Wealth Analysis**
 
@@ -9658,7 +9658,7 @@ GitHub Copilot: Summarized conversation history# **Spouse's Family Wealth Analys
 
 **You will marry into prosperity while maintaining love and compatibility!** 💰💑🏡✨
 
-sekondav_cisco: is the spouse very rich family background ?
+sekondav_Microsoft: is the spouse very rich family background ?
 
 GitHub Copilot: Summarized conversation historyI'll analyze the spouse's family wealth indicators using KP astrology principles. 
 
@@ -9759,7 +9759,7 @@ The combination of Venus (AK) + Sun (AmK) + Mercury (PK) in 7th house Leo, with 
 
 The native will experience significant **lifestyle elevation through marriage**, gaining access to established wealth, properties, business networks, and social status that far exceeds their own family background.
 
-sekondav_cisco: does 3 planets in 7th house aspecting ascendant means that the spouse fully controls him ?
+sekondav_Microsoft: does 3 planets in 7th house aspecting ascendant means that the spouse fully controls him ?
 
 GitHub Copilot: No, this is a **misconception**. Let me clarify the astrological mechanics:
 
@@ -9865,10 +9865,10 @@ This is a **mature, influential partnership** where the native **admires and res
 
 Think of it as: **"Spouse is the CEO advisor, Native is still the founder who makes final decisions."**
 
-sekondav_cisco: \create markdown file with all above content 
+sekondav_Microsoft: \create markdown file with all above content 
 
 GitHub Copilot: 
 
-sekondav_cisco: @agent Try Again
+sekondav_Microsoft: @agent Try Again
 
 GitHub Copilot: 

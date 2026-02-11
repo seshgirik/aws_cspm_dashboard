@@ -1366,7 +1366,7 @@ B
 **Configuration Example:**
 ```yaml
 Resources:
-  CISConformancePack:
+  microsoftnformancePack:
     Type: AWS::Config::ConformancePack
     Properties:
       ConformancePackName: cis-aws-foundations-benchmark

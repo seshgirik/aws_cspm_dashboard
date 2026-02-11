@@ -1,4 +1,4 @@
-sekondav_cisco: summarize this transcript in detail
+sekondav_Microsoft: summarize this transcript in detail
 
 GitHub Copilot: I don’t see the transcript content. Please provide the text you want summarized.
 
@@ -11,7 +11,7 @@ Optional: Specify audience (exec, technical, legal) or max length.
 
 Send the transcript to proceed.
 
-sekondav_cisco: CloudSecurity_transcript.log is the transcript , check and summarize it 
+sekondav_Microsoft: CloudSecurity_transcript.log is the transcript , check and summarize it 
 
 GitHub Copilot: I don’t have the contents of CloudSecurity_transcript.log yet.
 
@@ -29,7 +29,7 @@ If it’s huge, you can extract only meaningful sections (e.g. lines with “ACT
 
 Let me know how you’d like it summarized (depth, audience).
 
-sekondav_cisco: see the context file
+sekondav_Microsoft: see the context file
 
 GitHub Copilot: ### Detailed Summary of CloudSecurity_transcript.log
 
@@ -170,7 +170,7 @@ GitHub Copilot: ### Detailed Summary of CloudSecurity_transcript.log
 
 Let me know if you want: (a) executive-only summary, (b) checklist export, or (c) conversion into a training outline.
 
-sekondav_cisco: sample soc2 report for cloud provider
+sekondav_Microsoft: sample soc2 report for cloud provider
 
 GitHub Copilot: Below is a generic SOC 2 Type II style outline you can adapt (no proprietary wording). Replace placeholders with your specifics.
 
@@ -241,7 +241,7 @@ This is a synthetic template; a real SOC 2 report must be issued by a licensed C
 
 Need a filled-in mock version or a Markdown export? Ask and specify which Trust Categories.
 
-sekondav_cisco: Need a filled-in mock version in Markdown export
+sekondav_Microsoft: Need a filled-in mock version in Markdown export
 
 GitHub Copilot: # Mock SOC 2 Type II Report (Sample - Markdown)
 

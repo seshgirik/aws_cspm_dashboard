@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atlassian Cisco SSO Authentication Flow</title>
+    <title>Enterprise SSO Authentication Flow</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <style>
         body {
@@ -140,7 +140,7 @@
         <div class="info-grid" style="margin-bottom: 30px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
             <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
                 <h3>📌 Flow 1: SAML 2.0 SSO</h3>
-                <p style="font-size: 0.9em; opacity: 0.9;">Atlassian (Confluence + Jira) + Cisco Identity</p>
+                <p style="font-size: 0.9em; opacity: 0.9;">Enterprise Application + Corporate Identity</p>
             </div>
             <div class="info-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
                 <h3>📌 Flow 2: OIDC</h3>
@@ -148,7 +148,7 @@
             </div>
             <div class="info-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
                 <h3>📌 Flow 3: Hybrid SAML + OAuth</h3>
-                <p style="font-size: 0.9em; opacity: 0.9;">Cisco IDbroker + Real Production Data (HAR)</p>
+                <p style="font-size: 0.9em; opacity: 0.9;">Identity Broker + Production Data</p>
             </div>
             <div class="info-card" style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);">
                 <h3>📌 Flow 4: Client Credentials Grant</h3>
@@ -156,50 +156,50 @@
             </div>
         </div>
 
-        <h2 style="color: #e74c3c; border-left: 5px solid #e74c3c; padding-left: 15px; margin-top: 40px;">Flow 1: SAML 2.0 SSO (Atlassian Products with Cisco Identity)</h2>
+        <h2 style="color: #e74c3c; border-left: 5px solid #e74c3c; padding-left: 15px; margin-top: 40px;">Flow 1: SAML 2.0 SSO (Enterprise Applications with Corporate Identity)</h2>
         <div style="background: #ffe5e5; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px; border-radius: 4px;">
             <strong>Grant Type:</strong> N/A (SAML is not OAuth-based)<br/>
             <strong>Flow Type:</strong> SAML Web Browser SSO Profile (SP-Initiated or IdP-Initiated)<br/>
             <strong>Protocol:</strong> SAML 2.0 (Security Assertion Markup Language)<br/>
-            <strong>Applications:</strong> Confluence (id.atlassian.com), Jira (jira-eng-gpk2.cisco.com)<br/>
-            <strong>Identity Provider:</strong> Cisco Identity (id.cisco.com) via Okta<br/>
-            <strong>HAR Sources:</strong> Confluence login flow + Jira Engineering login (jira-eng-gpk2.cisco.com.har)
+            <strong>Applications:</strong> Enterprise SaaS Applications (Confluence, Jira, Salesforce)<br/>
+            <strong>Identity Provider:</strong> Corporate Identity Service (Okta, Azure AD, Auth0)<br/>
+            <strong>Use Case:</strong> Enterprise Single Sign-On for workforce applications
         </div>
         
         <div class="diagram-container">
             <div class="mermaid">
 sequenceDiagram
     participant User as 👤 User Browser
-    participant App as Atlassian App<br/>(Confluence/Jira)<br/>Service Provider (SP)
-    participant CiscoID as Cisco Identity<br/>(id.cisco.com via Okta)<br/>SAML IdP
-    participant Resource as Resource<br/>(Confluence Space / Jira Issue)
+    participant App as Enterprise App<br/>(Confluence/Jira/Salesforce)<br/>Service Provider (SP)
+    participant CorpID as Corporate Identity<br/>(Okta/Azure AD/Auth0)<br/>SAML IdP
+    participant Resource as Resource<br/>(Workspace / Project / Record)
 
     Note over User,Resource: 🔴 SAML 2.0 Web Browser SSO Profile (SP-Initiated)
     rect rgb(255, 235, 238)
-    Note over User,Resource: Works for: Confluence (ciscoteams.atlassian.net), Jira (jira-eng-gpk2.cisco.com)
+    Note over User,Resource: Works for: Enterprise SaaS applications with corporate SSO
     end
 
-    User->>App: 1️⃣ Access Atlassian Resource<br/>(Confluence IPCBU space / Jira Issue CALL-190355)
+    User->>App: 1️⃣ Access Protected Resource<br/>(Project Space / Issue / Record)
     
     Note over App: No valid session found<br/>Redirect to SSO
     
-    App->>User: 2️⃣ Redirect to Cisco Identity<br/>SAMLRequest in URL
+    App->>User: 2️⃣ Redirect to Corporate Identity<br/>SAMLRequest in URL
 
-    User->>CiscoID: 3️⃣ GET /sso/saml?SAMLRequest=...<br/>RelayState=7424d1de-cbb2-4cc0-9cb9-2025eb983284
+    User->>CorpID: 3️⃣ GET /sso/saml?SAMLRequest=...<br/>RelayState=<uuid>
     
-    Note over CiscoID: Okta-powered Cisco Identity<br/>Check user session<br/>Verify enterprise credentials
+    Note over CorpID: Corporate Identity Service<br/>Check user session<br/>Verify enterprise credentials
     
-    CiscoID->>User: 4️⃣ Prompt for Cisco credentials<br/>(if not authenticated)
+    CorpID->>User: 4️⃣ Prompt for corporate credentials<br/>(if not authenticated)
     
-    User->>CiscoID: 5️⃣ Submit credentials + MFA (Duo)
+    User->>CorpID: 5️⃣ Submit credentials + MFA (Duo/Authenticator)
     
     rect rgb(255, 235, 238)
-    Note over CiscoID: ✅ SAML AUTHENTICATION<br/>✅ Validate credentials<br/>✅ Multi-factor auth (MFA)<br/>✅ Generate SAML assertion
+    Note over CorpID: ✅ SAML AUTHENTICATION<br/>✅ Validate credentials<br/>✅ Multi-factor auth (MFA)<br/>✅ Generate SAML assertion
     end
     
-    CiscoID->>User: 6️⃣ SAML Response redirect<br/>(POST to /samlconsumer)
+    CorpID->>User: 6️⃣ SAML Response redirect<br/>(POST to /samlconsumer)
 
-    User->>App: 7️⃣ POST /plugins/servlet/samlconsumer<br/>(SAML Response with assertion)
+    User->>App: 7️⃣ POST /samlconsumer<br/>(SAML Response with assertion)
     
     rect rgb(255, 235, 238)
     Note over App: ✅ SAML VALIDATION<br/>✅ Validate SAML signature<br/>✅ Extract user identity<br/>✅ Create user session
@@ -210,7 +210,7 @@ sequenceDiagram
     App->>Resource: 9️⃣ Check RBAC permissions<br/>(space/issue access control)
     
     alt ✅ Has Access
-        Resource->>User: 🔓 Grant access<br/>Load Confluence page / Jira issue
+        Resource->>User: 🔓 Grant access<br/>Load resource
     else ❌ No Access
         Resource->>User: 🔒 Request access<br/>Show authorization page
     end
@@ -224,9 +224,9 @@ sequenceDiagram
                 <h3>🔑 Authentication Phase</h3>
                 <ul>
                     <li>Protocol: SAML 2.0</li>
-                    <li>Identity Provider: Cisco Identity (id.cisco.com)</li>
-                    <li>Service Providers: Confluence, Jira</li>
-                    <li>MFA: Duo/Cisco Secure</li>
+                    <li>Identity Provider: Corporate Identity Service</li>
+                    <li>Service Providers: Enterprise Applications</li>
+                    <li>MFA: Duo/Microsoft Authenticator/Okta Verify</li>
                     <li>Session: Enterprise-wide SSO</li>
                     <li>Endpoints: /sso/saml (IdP), /samlconsumer (SP)</li>
                 </ul>
@@ -237,17 +237,17 @@ sequenceDiagram
                 <ul>
                     <li>Protocol: OAuth 2.0 / OIDC (optional)</li>
                     <li>Token Type: JWT Bearer (for API access)</li>
-                    <li>Resource: ARI-based (Confluence) / Issue-based (Jira)</li>
-                    <li>Scope: Space/Project access permissions</li>
-                    <li>RBAC: Space-level / Project-level permissions</li>
-                    <li>Real Examples: IPCBU wiki, CALL-190355 issue</li>
+                    <li>Resource: Application-specific identifiers</li>
+                    <li>Scope: Project/Workspace access permissions</li>
+                    <li>RBAC: Resource-level permissions</li>
+                    <li>Examples: Project access, issue management</li>
                 </ul>
             </div>
 
             <div class="info-card" style="background: linear-gradient(135deg, #16a085 0%, #138d75 100%);">
                 <h3>🛡️ Security Layers</h3>
                 <ul>
-                    <li>Layer 1: Cisco Enterprise Auth</li>
+                    <li>Layer 1: Corporate Authentication</li>
                     <li>Layer 2: Multi-Factor Auth (MFA)</li>
                     <li>Layer 3: SAML Assertion Signing</li>
                     <li>Layer 4: OAuth Token Validation</li>
@@ -256,7 +256,7 @@ sequenceDiagram
             </div>
 
             <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
-                <h3>🔒 Security Headers (from Jira HAR)</h3>
+                <h3>🔒 Security Headers (Production Best Practices)</h3>
                 <ul>
                     <li><strong>Strict-Transport-Security:</strong> max-age=31536000 (1 year HSTS)</li>
                     <li><strong>X-Frame-Options:</strong> SAMEORIGIN (clickjacking protection)</li>
@@ -270,14 +270,14 @@ sequenceDiagram
             </div>
 
             <div class="info-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
-                <h3>🔐 Atlassian-Specific Security</h3>
+                <h3>🔐 Application-Specific Security</h3>
                 <ul>
-                    <li><strong>atlassian-token:</strong> CSRF protection token (BOZI-RZAB-0Q2B-FFXS...)</li>
-                    <li><strong>JSESSIONID:</strong> Session tracking cookie</li>
-                    <li><strong>Seraph:</strong> Atlassian auth framework</li>
-                    <li><strong>SAML Binding:</strong> HTTP POST (9419 bytes SAML Response)</li>
-                    <li><strong>RelayState:</strong> 7424d1de-cbb2-4cc0-9cb9-2025eb983284</li>
-                    <li><strong>Origin Validation:</strong> https://id.cisco.com</li>
+                    <li><strong>CSRF Token:</strong> Anti-CSRF protection token</li>
+                    <li><strong>Session Cookie:</strong> Session tracking (HttpOnly, Secure)</li>
+                    <li><strong>Auth Framework:</strong> Application authentication layer</li>
+                    <li><strong>SAML Binding:</strong> HTTP POST (typical size 8-10KB)</li>
+                    <li><strong>RelayState:</strong> State parameter for flow continuation</li>
+                    <li><strong>Origin Validation:</strong> IdP origin verification</li>
                     <li><strong>Sec-Fetch-Site:</strong> same-site (cross-site protection)</li>
                 </ul>
             </div>
@@ -330,14 +330,14 @@ sequenceDiagram
         <p style="color: #7f8c8d; margin-left: 20px;">
             <strong>Use Cases:</strong><br/>
             • Generic OIDC: https://xmy.com/login/callback?code=66H8OA25Z9...&state=xN4uTl4xVxfZn0REMsu2zcQqKapXPwgF66MTv<br/>
-            • HashiCorp Vault: https://east.keeper.cisco.com/ui/vault/auth/oidc/oidc/callback (via Duo Security SSO)
+            • HashiCorp Vault: https://vault.company.com/ui/vault/auth/oidc/oidc/callback (via Duo Security SSO)
         </p>
         <div style="background: #e3f2fd; border-left: 4px solid #3498db; padding: 15px; margin: 20px; border-radius: 4px;">
             <strong>Grant Type:</strong> Authorization Code Grant (with PKCE enhancement)<br/>
             <strong>Flow Type:</strong> OIDC Authorization Code Flow<br/>
             <strong>Protocol:</strong> OpenID Connect 1.0 (built on OAuth 2.0)<br/>
             <strong>Required Scope:</strong> <code>openid</code> (+ optional: profile, email, etc.)<br/>
-            <strong>HAR Sources:</strong> Generic OIDC pattern + HashiCorp Vault (east.keeper.cisco.com.har)
+            <strong>HAR Sources:</strong> Generic OIDC pattern + HashiCorp Vault (production environment)
         </div>
         <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px; border-radius: 4px;">
             <strong>⚠️ Important:</strong> OAuth 2.0 alone is for <strong>authorization</strong> (delegated access), NOT authentication (who you are). 
@@ -500,19 +500,19 @@ sequenceDiagram
             <div class="info-card" style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);">
                 <h3>🔐 HashiCorp Vault Use Case</h3>
                 <ul>
-                    <li><strong>Application:</strong> HashiCorp Vault (east.keeper.cisco.com)</li>
+                    <li><strong>Application:</strong> HashiCorp Vault (vault.company.com)</li>
                     <li><strong>OIDC Provider:</strong> Duo Security SSO (sso-dbbfec7f.sso.duosecurity.com)</li>
                     <li><strong>Vault Token:</strong> hvs.CAESIM0jccozEHwo2gMz19dRZIli4sQ... (service token)</li>
                     <li><strong>Token Lifetime:</strong> 518400 seconds (6 days)</li>
                     <li><strong>Namespace:</strong> meetpaas, app-secrets, wxt-calling</li>
-                    <li><strong>User:</strong> sekondav@cisco.com (engineer role)</li>
+                    <li><strong>User:</strong> user@company.com (engineer role)</li>
                     <li><strong>Policies:</strong> default, engineer, group-mobius-devops-rw, mobius-approle-access</li>
                     <li><strong>Use Case:</strong> Secrets management with OIDC-based authentication</li>
                 </ul>
             </div>
         </div>
 
-        <h2 style="color: #9b59b6; border-left: 5px solid #9b59b6; padding-left: 15px; margin-top: 60px;">Flow 3: Hybrid SAML + OAuth (Cisco IDbroker) with Real Production Data</h2>
+        <h2 style="color: #9b59b6; border-left: 5px solid #9b59b6; padding-left: 15px; margin-top: 60px;">Flow 3: Hybrid SAML + OAuth (Identity Broker) with Production Data</h2>
         <div style="background: #f3e5f5; border-left: 4px solid #9b59b6; padding: 15px; margin: 20px; border-radius: 4px;">
             <strong>Authentication:</strong> SAML 2.0 (Enterprise SSO)<br/>
             <strong>Authorization:</strong> OAuth 2.0 Authorization Code Grant<br/>
@@ -521,7 +521,7 @@ sequenceDiagram
             <strong>Real Data Source:</strong> HAR file from Webex Contact Center production environment (Nov 25, 2025)<br/>
             <strong>Token Lifetime:</strong> 18 hours (access), 59 days (refresh)<br/>
             <strong>Cluster:</strong> PS65 (Singapore), A52D (Global)<br/>
-            <strong>Use Case:</strong> Enterprise SSO + Modern API Integration (Cisco Webex Contact Center, Collaboration Services)
+            <strong>Use Case:</strong> Enterprise SSO + Modern API Integration (Enterprise Applications, Collaboration Services)
         </div>
 
         <div class="diagram-container">
@@ -529,8 +529,8 @@ sequenceDiagram
 sequenceDiagram
     participant User as 👤 User Browser
     participant App as Application/Client<br/>(Resource Consumer)
-    participant IDbroker as Cisco IDbroker<br/>(SAML IdP + OAuth AS)
-    participant CiscoIDP as Cisco Identity<br/>(Enterprise SSO)
+    participant IDbroker as Identity Broker<br/>(SAML IdP + OAuth AS)
+    participant CorpIDP as Corporate Identity<br/>(Enterprise SSO)
     participant API as API/Resource Server<br/>(Protected Resources)
 
     rect rgb(255, 245, 235)
@@ -548,21 +548,21 @@ sequenceDiagram
 
     Note over IDbroker: No session found<br/>Redirect to Enterprise IdP
 
-    IDbroker->>User: 4️⃣ Redirect to Cisco Identity (SAML IdP)
+    IDbroker->>User: 4️⃣ Redirect to Corporate Identity (SAML IdP)
 
-    User->>CiscoIDP: 5️⃣ SAML AuthnRequest
+    User->>CorpIDP: 5️⃣ SAML AuthnRequest
 
-    Note over CiscoIDP: Display login page
+    Note over CorpIDP: Display login page
 
-    CiscoIDP->>User: 6️⃣ Prompt for credentials + MFA
+    CorpIDP->>User: 6️⃣ Prompt for credentials + MFA
 
-    User->>CiscoIDP: 7️⃣ Submit credentials
+    User->>CorpIDP: 7️⃣ Submit credentials
 
     rect rgb(255, 235, 238)
-    Note over CiscoIDP: ✅ SAML AUTHENTICATION<br/>✅ Validate credentials<br/>✅ Multi-factor auth (MFA)<br/>✅ Generate SAML assertion
+    Note over CorpIDP: ✅ SAML AUTHENTICATION<br/>✅ Validate credentials<br/>✅ Multi-factor auth (MFA)<br/>✅ Generate SAML assertion
     end
 
-    CiscoIDP->>User: 8️⃣ SAML Response (redirect)
+    CorpIDP->>User: 8️⃣ SAML Response (redirect)
 
     User->>IDbroker: 9️⃣ POST SAML Response to IDbroker
 
@@ -611,10 +611,10 @@ sequenceDiagram
                 <ul>
                     <li><strong>Purpose:</strong> Prove WHO you are</li>
                     <li><strong>Protocol:</strong> SAML 2.0</li>
-                    <li><strong>IdP:</strong> Cisco Identity (Enterprise)</li>
+                    <li><strong>IdP:</strong> Corporate Identity (Enterprise)</li>
                     <li><strong>Output:</strong> SAML assertion with user identity</li>
                     <li><strong>Steps:</strong> 1-9 (Enterprise SSO)</li>
-                    <li><strong>MFA:</strong> ✅ Yes (Duo/Cisco)</li>
+                    <li><strong>MFA:</strong> ✅ Yes (Duo/Microsoft Authenticator)</li>
                 </ul>
             </div>
 
@@ -623,7 +623,7 @@ sequenceDiagram
                 <ul>
                     <li><strong>Purpose:</strong> Grant WHAT you can access</li>
                     <li><strong>Protocol:</strong> OAuth 2.0</li>
-                    <li><strong>Token Server:</strong> Cisco IDbroker</li>
+                    <li><strong>Token Server:</strong> Identity Broker</li>
                     <li><strong>Output:</strong> Access token + Refresh token</li>
                     <li><strong>Steps:</strong> 10-11 (Token generation)</li>
                     <li><strong>Token Type:</strong> JWT Bearer token</li>
@@ -682,7 +682,7 @@ sequenceDiagram
         </div>
 
         <div style="background: #fff3cd; border-left: 4px solid #9b59b6; padding: 20px; margin: 30px 0; border-radius: 4px;">
-            <h3 style="color: #8e44ad; margin-top: 0;">🔐 Real Cisco IDbroker Token Response</h3>
+            <h3 style="color: #8e44ad; margin-top: 0;">🔐 Production Identity Broker Token Response</h3>
             <p><strong>Endpoint:</strong> <code>POST https://idbrokerbts.webex.com/idb/oauth2/v1/access_token</code></p>
             <div style="background: #2c3e50; color: #ecf0f1; padding: 20px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9em; overflow-x: auto; margin-top: 15px;">
 <pre style="margin: 0; color: #ecf0f1;">{
@@ -719,7 +719,7 @@ Content-Type: application/json</code></pre>
             <h3 style="color: #2e7d32; margin-top: 0;">💡 Key Benefits of SAML + OAuth Hybrid</h3>
             <p><strong>Best of Both Worlds:</strong></p>
             <ul style="margin: 10px 0; padding-left: 20px;">
-                <li><strong>SAML Authentication:</strong> Leverages existing enterprise SSO infrastructure (Cisco Identity, Okta, Azure AD)</li>
+                <li><strong>SAML Authentication:</strong> Leverages existing enterprise SSO infrastructure (Corporate Identity, Okta, Azure AD)</li>
                 <li><strong>OAuth Authorization:</strong> Modern token-based API access for microservices and mobile apps</li>
                 <li><strong>Single Sign-On:</strong> User authenticates once via SAML, gets OAuth tokens for multiple APIs</li>
                 <li><strong>Token Refresh:</strong> Long-lived sessions without re-authentication via refresh tokens (18 hours access, 59 days refresh)</li>
@@ -728,16 +728,16 @@ Content-Type: application/json</code></pre>
                 <li><strong>Production Performance:</strong> Token exchange completes in ~227ms (from real HAR trace)</li>
             </ul>
             <p style="margin-top: 15px; background: white; padding: 15px; border-radius: 4px;">
-                <strong>Example Flow:</strong> Employee logs in to Cisco Webex Contact Center → SAML authenticates via Cisco Identity → IDbroker issues OAuth token with cluster info (PS65) → App uses token to call multiple APIs (Webex, Collaboration, etc.) → No password re-entry needed for 18 hours
+                <strong>Example Flow:</strong> Employee logs in to Enterprise Application → SAML authenticates via Corporate Identity → IDbroker issues OAuth token with cluster info → App uses token to call multiple APIs (Collaboration, etc.) → No password re-entry needed for 18 hours
             </p>
         </div>
 
         <h3 style="color: #16a085; margin-top: 40px; padding: 15px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 8px;">📦 Real Production Token Exchange (HAR Trace from Webex Contact Center)</h3>
         <div style="background: #e8f5e9; border-left: 4px solid #16a085; padding: 15px; margin: 20px; border-radius: 4px;">
-            <strong>Source:</strong> HAR File - <code>desktop.wxcc-sg1.cisco.com_call__sg1_to_syd_failover_nov25.har</code><br/>
+            <strong>Source:</strong> HAR File - Production environment trace<br/>
             <strong>Captured Step:</strong> Step 11 from Flow 3 above (OAuth Token Exchange)<br/>
             <strong>Token Endpoint:</strong> <code>https://idbroker-sg.webex.com/idb/oauth2/v1/access_token</code><br/>
-            <strong>Application:</strong> Cisco Webex Contact Center Desktop<br/>
+            <strong>Application:</strong> Enterprise Application Desktop<br/>
             <strong>Date:</strong> November 25, 2025 02:54:50 GMT<br/>
             <strong>Cluster:</strong> Singapore (PS65)<br/>
             <strong>Processing Time:</strong> 227ms server + 730ms total<br/>
@@ -753,7 +753,7 @@ Content-Type: application/json</code></pre>
                     <li><strong>Query Parameters:</strong>
                         <ul style="margin-top: 5px;">
                             <li>grant_type=authorization_code</li>
-                            <li>redirect_uri=https://desktop.wxcc-sg1.cisco.com</li>
+                            <li>redirect_uri=https://desktop.company.com</li>
                             <li>code=ZTc1YjYyYzUtMjI4Ni00OTYzLWE5MmMtYjVmZmE4MmNhMDUwY2Y5OTZlMTYtNzFh_PS65_...</li>
                             <li>self_contained_token=true</li>
                         </ul>
@@ -825,7 +825,7 @@ Content-Type: application/json</code></pre>
                     <li><strong>CORS Headers:</strong>
                         <ul style="margin-top: 5px;">
                             <li>access-control-allow-credentials: true</li>
-                            <li>access-control-allow-origin: https://desktop.wxcc-sg1.cisco.com</li>
+                            <li>access-control-allow-origin: https://desktop.company.com</li>
                             <li>access-control-allow-methods: POST, PUT, PATCH, HEAD, GET...</li>
                         </ul>
                     </li>
@@ -837,7 +837,7 @@ Content-Type: application/json</code></pre>
             <h3 style="color: #e67e22; margin-top: 0;">💡 Key Insights from HAR Trace</h3>
             <p><strong>What the HAR File Reveals:</strong></p>
             <ul style="margin: 10px 0; padding-left: 20px;">
-                <li><strong>Production OAuth Flow:</strong> Real authorization code grant captured from live Cisco Webex Contact Center application</li>
+                <li><strong>Production OAuth Flow:</strong> Real authorization code grant captured from live enterprise application</li>
                 <li><strong>Token Exchange Timing:</strong> 227ms server processing, 730ms total - shows real-world latency</li>
                 <li><strong>Comprehensive Scopes:</strong> 16+ different scopes for calls, telephony config, KMS, contact center, and identity management</li>
                 <li><strong>Long Token Lifetime:</strong> 18-hour access tokens and 59-day refresh tokens minimize re-authentication</li>
@@ -957,7 +957,7 @@ Content-Type: application/json</code></pre>
                     <td><strong>Example Services</strong></td>
                     <td>Google Workspace, AWS SSO</td>
                     <td>Auth0, GitHub, Google Sign-In</td>
-                    <td>Cisco IDbroker, Atlassian, Salesforce</td>
+                    <td>Identity Broker, Atlassian, Salesforce</td>
                 </tr>
                 <tr>
                     <td><strong>Best For</strong></td>
@@ -1059,7 +1059,7 @@ Content-Type: application/json</code></pre>
                 </tr>
                 <tr>
                     <td><strong>Typical Use</strong></td>
-                    <td>Enterprise web SSO (Okta, Azure AD, Cisco)</td>
+                    <td>Enterprise web SSO (Okta, Azure AD, Microsoft)</td>
                     <td>Consumer apps, mobile apps, modern web apps, SPAs</td>
                 </tr>
                 <tr>
@@ -1453,12 +1453,12 @@ grant_type=client_credentials
             </thead>
             <tbody>
                 <tr>
-                    <td><strong>Cisco IDbroker</strong></td>
+                    <td><strong>Identity Broker</strong></td>
                     <td><span class="badge badge-saml">SAML 2.0</span> + <span class="badge badge-oauth">OAuth 2.0</span></td>
                     <td>SAML authentication → OAuth token issuance for APIs</td>
                 </tr>
                 <tr>
-                    <td><strong>Atlassian Confluence (Cisco)</strong></td>
+                    <td><strong>Atlassian Confluence</strong></td>
                     <td><span class="badge badge-saml">SAML 2.0</span> + <span class="badge badge-oauth">OAuth 2.0</span></td>
                     <td>Enterprise SSO + API access</td>
                 </tr>
@@ -1506,7 +1506,7 @@ grant_type=client_credentials
             <div class="info-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
                 <h3>📋 SAML Assertion Contains</h3>
                 <ul>
-                    <li>User ID (Cisco employee ID)</li>
+                    <li>User ID (employee ID)</li>
                     <li>Email address</li>
                     <li>Display name</li>
                     <li>Groups/departments</li>
@@ -1530,7 +1530,7 @@ grant_type=client_credentials
             <div class="info-card" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">
                 <h3>🔍 URL Components</h3>
                 <ul>
-                    <li><strong>orgId:</strong> Cisco Teams organization</li>
+                    <li><strong>orgId:</strong> Organization ID</li>
                     <li><strong>resource:</strong> ari:cloud:confluence::site/...</li>
                     <li><strong>application:</strong> confluence</li>
                     <li><strong>continue:</strong> Post-auth redirect URL</li>
@@ -1728,11 +1728,11 @@ grant_type=client_credentials
                         <td><strong>API2:2023 Broken Authentication</strong></td>
                         <td>
                             <strong>🎯 Flow 1 (SAML - Atlassian):</strong><br/>
-                            ✅ SAML 2.0 authentication via Cisco Identity (id.cisco.com via Okta)<br/>
-                            ✅ MFA enforced (Duo/Cisco Secure) before SAML assertion issuance<br/>
+                            ✅ SAML 2.0 authentication via Corporate Identity (via Okta)<br/>
+                            ✅ MFA enforced (Duo/Microsoft Authenticator) before SAML assertion issuance<br/>
                             ✅ Digital signature validation on SAML Response (9419 bytes)<br/>
                             ✅ X-Seraph-LoginReason: OK header confirms successful authentication<br/>
-                            ✅ Origin header validation (https://id.cisco.com)<br/>
+                            ✅ Origin header validation (https://identity.company.com)<br/>
                             <br/>
                             <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
                             ✅ Bearer token authentication (Authorization: Bearer eyJhbGciOiJSUzI1NiI...)<br/>
@@ -1832,11 +1832,11 @@ grant_type=client_credentials
                             <strong>🎯 Flow 1 (SAML - Atlassian):</strong><br/>
                             ✅ SAML ACS (Assertion Consumer Service) URL whitelist enforced (/plugins/servlet/samlconsumer)<br/>
                             ✅ Destination attribute validation in SAML Response (must match SP endpoint)<br/>
-                            ✅ Origin header validation (must be https://id.cisco.com)<br/>
+                            ✅ Origin header validation (must be https://identity.company.com)<br/>
                             ✅ Sec-Fetch-Site: same-site prevents cross-site SSRF<br/>
                             <br/>
                             <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
-                            ✅ Redirect URI whitelist (registered with IdP: https://desktop.wxcc-sg1.cisco.com/callback)<br/>
+                            ✅ Redirect URI whitelist (registered with IdP: https://desktop.company.com/callback)<br/>
                             ✅ URL validation before OAuth redirects (exact match, no wildcard)<br/>
                             ✅ SAML ACS URL strictly validated (https://idbroker-sg.webex.com/idb/saml2/sso)<br/>
                             ✅ State parameter prevents redirect manipulation (cryptographic random string)<br/>
@@ -1865,7 +1865,7 @@ grant_type=client_credentials
                             ✅ <code>x-xss-protection: 1; mode=block</code> (XSS filter active)<br/>
                             ✅ <code>cache-control: no-cache, no-store</code> (prevents token caching)<br/>
                             ✅ <code>referrer-policy: no-referrer-when-downgrade</code> (protects referrer leakage)<br/>
-                            ✅ CORS properly configured: <code>access-control-allow-origin: https://desktop.wxcc-sg1.cisco.com</code> (not wildcard *)<br/>
+                            ✅ CORS properly configured: <code>access-control-allow-origin: https://desktop.company.com</code> (not wildcard *)<br/>
                             ✅ CORS credentials: <code>access-control-allow-credentials: true</code> (controlled credential sharing)<br/>
                             ✅ CORS methods restricted: <code>access-control-allow-methods: POST, PUT, PATCH, HEAD, GET...</code> (no DELETE in public APIs)<br/>
                             ✅ Security headers on all API responses (idbroker, webexapis, oauth endpoints)<br/>
@@ -1903,10 +1903,10 @@ grant_type=client_credentials
                         <td>
                             <strong>🎯 Flow 1 (SAML - Atlassian):</strong><br/>
                             ✅ SAML assertion signature validation (XML digital signature verification)<br/>
-                            ✅ IdP certificate validation (Cisco Identity certificate trusted)<br/>
+                            ✅ IdP certificate validation (Corporate Identity certificate trusted)<br/>
                             ✅ RelayState integrity check (7424d1de-cbb2-4cc0-9cb9-2025eb983284 preserved)<br/>
                             ✅ Input validation on SAML Response (9419 bytes, content-length verified)<br/>
-                            ✅ Origin validation (must be https://id.cisco.com)<br/>
+                            ✅ Origin validation (must be https://identity.company.com)<br/>
                             <br/>
                             <strong>🎯 Flow 3 (Hybrid SAML+OAuth - Webex):</strong><br/>
                             ✅ JWT signature verification before trusting claims (RS256, public key from JWKS endpoint)<br/>
@@ -2076,19 +2076,19 @@ grant_type=client_credentials
                 <p><strong>⚠️ OAuth 2.0 vs OIDC:</strong> OAuth 2.0 alone is ONLY for authorization (delegated access), NOT authentication. For "login" functionality, you need <strong>OIDC (OpenID Connect)</strong> which adds an authentication layer on top of OAuth 2.0.</p>
                 <p><strong>SAML 2.0:</strong> Enterprise-grade SSO for workforce authentication. Heavy, XML-based, excellent for web apps with centralized identity management.</p>
                 <p><strong>OIDC:</strong> Modern authentication + authorization. Lightweight, JSON-based, built on OAuth 2.0. Perfect for consumer apps, mobile apps, and APIs. Uses ID token for authentication and access token for authorization.</p>
-                <p><strong>Hybrid (SAML + OAuth):</strong> 🌟 Best approach for enterprises with existing SAML infrastructure. SAML handles authentication (leveraging enterprise SSO), then OAuth tokens are issued for modern API authorization. This is how <strong>Cisco IDbroker, Atlassian, and Salesforce</strong> work.</p>
+                <p><strong>Hybrid (SAML + OAuth):</strong> 🌟 Best approach for enterprises with existing SAML infrastructure. SAML handles authentication (leveraging enterprise SSO), then OAuth tokens are issued for modern API authorization. This is how <strong>Identity Brokers, Atlassian, and Salesforce</strong> work.</p>
                 <p><strong>Three Token Types in OIDC:</strong></p>
                 <ul style="margin-left: 20px;">
                     <li><strong>ID Token (JWT):</strong> Proves WHO you are (authentication) 🆔</li>
                     <li><strong>Access Token:</strong> Grants WHAT you can access (authorization) 🔑</li>
                     <li><strong>Refresh Token:</strong> Gets new tokens when they expire 🔄</li>
                 </ul>
-                <p style="margin-top: 15px;"><strong>Cisco IDbroker Pattern:</strong> Employee authenticates via SAML (Cisco Identity) → IDbroker validates SAML assertion → IDbroker issues OAuth access/refresh tokens → Application uses Bearer token for all API calls → No need to parse SAML for each API call → Stateless microservices architecture.</p>
+                <p style="margin-top: 15px;"><strong>Identity Broker Pattern:</strong> Employee authenticates via SAML (Corporate Identity) → IDbroker validates SAML assertion → IDbroker issues OAuth access/refresh tokens → Application uses Bearer token for all API calls → No need to parse SAML for each API call → Stateless microservices architecture.</p>
             </div>
             <p style="margin-top: 30px;"><strong>Examples Analyzed:</strong></p>
-            <p>1. <strong>Atlassian Products (Confluence + Jira)</strong> - Enterprise workforce authentication with SAML 2.0 via Cisco Identity (id.cisco.com). Includes Confluence IPCBU space access and Jira issue CALL-190355 from jira-eng-gpk2.cisco.com HAR trace.</p>
-            <p>2. <strong>OIDC Authentication (Generic + HashiCorp Vault)</strong> - Modern authentication using OpenID Connect (OAuth 2.0 + authentication layer). Includes: (a) Generic OIDC callback pattern (xmy.com), (b) HashiCorp Vault secrets management (east.keeper.cisco.com) with Duo Security SSO, 6-day Vault tokens, namespace-based access control (meetpaas/app-secrets/wxt-calling), and policy-based authorization (engineer, mobius-devops-rw).</p>
-            <p>3. <strong>Cisco IDbroker Hybrid Pattern + Real HAR Data</strong> - SAML authentication → OAuth token issuance with production data from Webex Contact Center (18-hour tokens, 16+ scopes, 227ms latency, PS65 cluster)</p>
+            <p>1. <strong>Atlassian Products (Confluence + Jira)</strong> - Enterprise workforce authentication with SAML 2.0 via Corporate Identity. Includes workspace and project access with production HAR trace examples.</p>
+            <p>2. <strong>OIDC Authentication (Generic + HashiCorp Vault)</strong> - Modern authentication using OpenID Connect (OAuth 2.0 + authentication layer). Includes: (a) Generic OIDC callback pattern (xmy.com), (b) HashiCorp Vault secrets management (vault.company.com) with Duo Security SSO, 6-day Vault tokens, namespace-based access control, and policy-based authorization.</p>
+            <p>3. <strong>Identity Broker Hybrid Pattern + Real HAR Data</strong> - SAML authentication → OAuth token issuance with production data from enterprise applications (18-hour tokens, 16+ scopes, 227ms latency)</p>
             <p>4. <strong>OAuth Client Credentials Grant</strong> - Machine-to-machine service authentication with no user context (webexsquare:admin, Identity:SCIM, 1-hour stateless tokens)</p>
             <p>Generated: January 21, 2026</p>
         </footer>

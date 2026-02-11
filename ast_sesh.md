@@ -332,7 +332,7 @@ Net: Rahu/Jupiter is a higher‑quality career phase than Rahu/Rahu — it’s b
 If you want, tell me the exact Rahu Mahadasha start date and I’ll map the strongest sub‑periods inside Rahu/Jupiter for job change or promotion.
 
 
-sekondav_cisco: Body                    Longitude (in D-6) Nakshatra Pada Rasi Navamsa
+sekondav_Microsoft: Body                    Longitude (in D-6) Nakshatra Pada Rasi Navamsa
 
 Lagna                    7 Cp 22' 49.47"   USha      4    Cp   Pi
 Sun - GK                 7 Vi 43' 30.72"   UPha      4    Vi   Pi

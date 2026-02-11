@@ -168,19 +168,19 @@ I'll search the codebase to understand how DNS SRV list changes trigger registra
 
 *Grep searched codebase*
 
-*Viewed [DnsApplicationEventHelper.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/DnsApplicationEventHelper.java) *
+*Viewed [DnsApplicationEventHelper.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/DnsApplicationEventHelper.java) *
 
-*Viewed [Registration.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/Registration.java) *
-
-*Grep searched codebase*
-
-*Viewed [SipCall.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/corestack/sip/jain/call/SipCall.java) *
-
-*Viewed [SipCall.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/corestack/sip/jain/call/SipCall.java) *
+*Viewed [Registration.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/Registration.java) *
 
 *Grep searched codebase*
 
-*Viewed [TtlExpiryEvent.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/corestack/sip/dns/TtlExpiryEvent.java) *
+*Viewed [SipCall.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/corestack/sip/jain/call/SipCall.java) *
+
+*Viewed [SipCall.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/corestack/sip/jain/call/SipCall.java) *
+
+*Grep searched codebase*
+
+*Viewed [TtlExpiryEvent.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/corestack/sip/dns/TtlExpiryEvent.java) *
 
 *Grep searched codebase*
 
@@ -188,21 +188,21 @@ I'll search the codebase to understand how DNS SRV list changes trigger registra
 
 *Searched filesystem*
 
-*Viewed [SipAppEventManager.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/SipAppEventManager.java) *
+*Viewed [SipAppEventManager.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/SipAppEventManager.java) *
 
 *Grep searched codebase*
 
-*Viewed [SipAppRegisterService.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/SipAppRegisterService.java) *
+*Viewed [SipAppRegisterService.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/SipAppRegisterService.java) *
 
 ### Planner Response
 
 Now let me check the handleChangeInSRV logic more carefully:
 
-*Viewed [DnsApplicationEventHelper.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/DnsApplicationEventHelper.java) *
+*Viewed [DnsApplicationEventHelper.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/DnsApplicationEventHelper.java) *
 
 *Grep searched codebase*
 
-*Viewed [DnsHelper.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/corestack/sip/dns/DnsHelper.java) *
+*Viewed [DnsHelper.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/corestack/sip/dns/DnsHelper.java) *
 
 ### Planner Response
 
@@ -217,7 +217,7 @@ After DNS SRV list change, **all registrations using the same outbound proxy wil
 ## How It Works
 
 ### Event Distribution
-```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/SipAppRegisterService.java#216:220
+```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/SipAppRegisterService.java#216:220
 SipAppEventManager eventManager = eventManagerMap.computeIfAbsent(newRegistration.getOutboundProxy(), k -> {
     logger.debug("Creating event manager object for outbound proxy: {}", newRegistration.getOutboundProxy());
     return new SipAppEventManager();
@@ -226,9 +226,9 @@ eventManager.registerListener(newRegistration);
 ```
 
 - **All registrations** with the same OBP share the **same SipAppEventManager**
-- [TtlExpiryEvent](cci:2://file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/corestack/sip/dns/TtlExpiryEvent.java:8:0-25:1) is **multicast** to all listeners
+- [TtlExpiryEvent](cci:2://file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/corestack/sip/dns/TtlExpiryEvent.java:8:0-25:1) is **multicast** to all listeners
 
-```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/SipAppEventManager.java#43:49
+```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/SipAppEventManager.java#43:49
 public Boolean publishEvent(EventObject event) {
     if (this.referenceCount.get() == 0) {
         return false;
@@ -241,7 +241,7 @@ public Boolean publishEvent(EventObject event) {
 
 ### Priority Selection Logic
 
-```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/corestack/sip/dns/DnsHelper.java#82:106
+```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/corestack/sip/dns/DnsHelper.java#82:106
 public static List<DnsSrvRecord> sortSRVRecords(List<DnsSrvRecord> records) {
     // ... code ...
     // Collect records into bins by key=priority. TreeMap sorts by the key.
@@ -267,7 +267,7 @@ public static List<DnsSrvRecord> sortSRVRecords(List<DnsSrvRecord> records) {
 
 ### Migration Trigger
 
-```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/DnsApplicationEventHelper.java#235:244
+```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/DnsApplicationEventHelper.java#235:244
 public void handleStaleDns() {
     logger.info("Stale DNS found, updating current primary and re-registering...");
     this.staleDns = false;
@@ -281,7 +281,7 @@ public void handleStaleDns() {
 }
 ```
 
-**Key**: [updateCurrentPrimary(0)](cci:1://file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/DnsApplicationEventHelper.java:126:4-130:5) always selects **index 0** (highest priority SSE)
+**Key**: [updateCurrentPrimary(0)](cci:1://file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/DnsApplicationEventHelper.java:126:4-130:5) always selects **index 0** (highest priority SSE)
 
 ---
 
@@ -305,7 +305,7 @@ If the primary SSE returned by DNS server is still not up and current registrati
 Why is this issue seen
 This issue is seen SSE in DNS response with highest priority is still down and not able to serve requests.
 Fix Approach
-1. Retrying to backup SSE is already handled as part of https://sqbu-github.cisco.com/webrtc-calling/mobius/pull/524 where instead of waiting for retry task to expire, we immediately retry to backup as soon as we get a connection timeout error from primary.
+1. Retrying to backup SSE is already handled as part of https://sqbu-github.Microsoft.com/webrtc-calling/mobius/pull/524 where instead of waiting for retry task to expire, we immediately retry to backup as soon as we get a connection timeout error from primary.
 2. Actual intention of failbackStart and failbackEnd is to progressively increase the threshold start count after each failed attempt e.g. first fallback attempt should be made on 2nd TTL event, if it fails then ttlCount should be reset to 0, failbackStart should be incremented to 3, next 2 TTL events should be ignored and next failback attempt will be made on 3rd TTL event. failbackStart value gets reset to its original value once it crosses failbackEnd. This should reduce the frequency of failback attempts.
 Future considerations: If we still observe such failures in mobius where we are in a state of not able to accept new incoming calls because of fallback attempts, then we can consider adding an OPTIONS check on all the SRVs returned on SRV refresh from dns server. Whichever SRVs are reachable would only be published in refreshed SRV list to all the registered devices.
 Attaching logs from local testing in attachments.
@@ -337,17 +337,17 @@ When primary SSE was down and device was on backup SSE:
 
 Let me check the code to explain their exact behavior:
 
-*Viewed [DnsApplicationEventHelper.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/DnsApplicationEventHelper.java) *
+*Viewed [DnsApplicationEventHelper.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/DnsApplicationEventHelper.java) *
 
 *Grep searched codebase*
 
 *Grep searched codebase*
 
-*Viewed [SipAppConfigProperties.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/SipAppConfigProperties.java) *
+*Viewed [SipAppConfigProperties.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/SipAppConfigProperties.java) *
 
-*Viewed [SipAppConfigProperties.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/SipAppConfigProperties.java) *
+*Viewed [SipAppConfigProperties.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/SipAppConfigProperties.java) *
 
-*Viewed [SipAppConfigProperties.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/SipAppConfigProperties.java) *
+*Viewed [SipAppConfigProperties.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/SipAppConfigProperties.java) *
 
 *Grep searched codebase*
 
@@ -360,7 +360,7 @@ Now I have all the information from the code. Let me provide a comprehensive exp
 ## What are `failbackStart` and `failbackEnd`?
 
 ### Configuration Values
-```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/SipAppConfigProperties.java#127:128
+```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/SipAppConfigProperties.java#127:128
 private static final int FAILBACK_CYCLE_START = 2;
 private static final int FAILBACK_CYCLE_END = 6;
 ```
@@ -377,7 +377,7 @@ These parameters control **progressive back-off** for primary SSE fallback attem
 ## How the Mechanism Works
 
 ### Core Logic
-```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/DnsApplicationEventHelper.java#197:222
+```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/DnsApplicationEventHelper.java#197:222
 private void fallBackToPrimary() {
     if (ttlExpiryCount >= failbackStart) {
         if (currPrimary.equals(dnsSRVRecords.getFirst())) {
@@ -505,7 +505,7 @@ _sips._tcp  60  IN  SRV  4  500  8934  sse5.public.wjfkwxc-int-1.prod.infra.webe
 
 - **TTL = 60 seconds**: DNS cache should refresh every 60 seconds
 - After 60 seconds, Mobius triggers a DNS lookup to get the latest SRV records
-- [TtlExpiryEvent](cci:2://file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/corestack/sip/dns/TtlExpiryEvent.java:8:0-25:1) is fired to all registered devices using this outbound proxy
+- [TtlExpiryEvent](cci:2://file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/corestack/sip/dns/TtlExpiryEvent.java:8:0-25:1) is fired to all registered devices using this outbound proxy
 
 This is the value that drives the `ttlExpiryCount` counter used in the fallback logic.
 
@@ -651,7 +651,7 @@ After the first failed fallback at `08:56:40`:
 
 The system is still exhibiting the old bug behavior with fallback attempts happening **every 30 seconds** instead of progressively increasing intervals (60s → 90s → 120s → 150s → 180s).
 
-*Viewed [DnsApplicationEventHelper.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/DnsApplicationEventHelper.java) *
+*Viewed [DnsApplicationEventHelper.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/DnsApplicationEventHelper.java) *
 
 ### User Input
 
@@ -778,13 +778,13 @@ from the code check what is the difference between  "Fail-back won't be attempte
 
 *Grep searched codebase*
 
-*User accepted the command `git log -p --all -S "Fail-back won't be attempted in this cycle" -- server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/DnsApplicationEventHelper.java | head -100`*
+*User accepted the command `git log -p --all -S "Fail-back won't be attempted in this cycle" -- server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/DnsApplicationEventHelper.java | head -100`*
 
-*User accepted the command `git log --oneline --all --grep="fallback" -- server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/DnsApplicationEventHelper.java | head -20`*
+*User accepted the command `git log --oneline --all --grep="fallback" -- server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/DnsApplicationEventHelper.java | head -20`*
 
 *User accepted the command `git show 768fc1f7 --stat`*
 
-*User accepted the command `git show 768fc1f7 -- server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/DnsApplicationEventHelper.java | grep -A5 -B5 "Fail-back won't"`*
+*User accepted the command `git show 768fc1f7 -- server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/DnsApplicationEventHelper.java | grep -A5 -B5 "Fail-back won't"`*
 
 ### Planner Response
 
@@ -832,7 +832,7 @@ The system needs to be redeployed with the code from commit `768fc1f7` or later 
 1. Progressive backoff logic fix
 2. Debug logging to verify it's working
 
-*Viewed [DnsApplicationEventHelper.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/DnsApplicationEventHelper.java) *
+*Viewed [DnsApplicationEventHelper.java](file:///Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/DnsApplicationEventHelper.java) *
 
 ### User Input
 
@@ -1212,7 +1212,7 @@ After reaching `failbackStart = 6` (the `failbackEnd` limit), the code should:
 
 Looking at the code:
 
-```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/ciscospark/mobius/sip/appservice/register/DnsApplicationEventHelper.java#197-231
+```@/Users/sekondav/Documents/GitHub/mobius/server/sip-app/src/main/java/com/Microsoftspark/mobius/sip/appservice/register/DnsApplicationEventHelper.java#197-231
 ```
 
 The issue might be in the **reset logic**. When `ttlExpiryCount >= failbackStart` at the 6 TTL boundary:
@@ -1814,7 +1814,7 @@ I can see the MCP configuration in your VSCode settings. Let me add it to your W
 ```json
 "chat.mcp.servers": {
   "opensearch": {
-    "url": "https://aicoding-mcp-opensearch.cisco.com/mcp/",
+    "url": "https://aicoding-mcp-opensearch.Microsoft.com/mcp/",
     "type": "http"
   }
 }

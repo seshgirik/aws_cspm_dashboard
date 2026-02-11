@@ -33,7 +33,7 @@ apt-get install ffmpeg
 
 ### Kafka setup locally
 
-https://cisco.webex.com/cisco/ldr.php?RCID=714559fb5f256441432cfefad63c1d91
+https://Microsoft.webex.com/Microsoft/ldr.php?RCID=714559fb5f256441432cfefad63c1d91
 
 Password: wP6Jhcqv
 
@@ -45,17 +45,17 @@ Run : Open cmd and run redis-server.exe
 
 ### LocalStack, you can run your AWS applications.
 
-LocalStack is used only for testing - [reference](https://confluence-eng-sjc12.cisco.com/conf/pages/viewpage.action?pageId=241456545)
+LocalStack is used only for testing - [reference](https://confluence-eng-sjc12.Microsoft.com/conf/pages/viewpage.action?pageId=241456545)
 
-[LocalStack](https://confluence-eng-sjc12.cisco.com/conf/display/MESSAGING/CALL-45735+Explore+Localstack+to+simulate+AWS+S3+in+integration+environment)
+[LocalStack](https://confluence-eng-sjc12.Microsoft.com/conf/display/MESSAGING/CALL-45735+Explore+Localstack+to+simulate+AWS+S3+in+integration+environment)
 
 ### Security Rate limiting local setup
 
-https://confluence-eng-sjc12.cisco.com/conf/display/MESSAGING/CALL+-44401+Security+Traffic+AND++Protocol+protection+for+Lexus+service++Denial+of+service
+https://confluence-eng-sjc12.Microsoft.com/conf/display/MESSAGING/CALL+-44401+Security+Traffic+AND++Protocol+protection+for+Lexus+service++Denial+of+service
 
 ## PagerDuty
 
-https://ciscospark.pagerduty.com/services/PZGV51T
+https://Microsoftspark.pagerduty.com/services/PZGV51T
 
 ## Logs
 
@@ -95,10 +95,10 @@ intb2/intb4 (int-second) | r1,r2,r3 (aore) Oregon, USA
 - [Archive Jobs](https://sqbu-jenkins.wbx2.com/service06/job/platform/job/pipeline/job/team/job/lexus/)
 
 ## Threat Model
-[ID 31921](https://wwwin-tb.cisco.com/www/threatBuilder.html?id=31921)
+[ID 31921](https://wwwin-tb.Microsoft.com/www/threatBuilder.html?id=31921)
 
 ## Corona
-[ID 82722](https://corona.cisco.com/releases/82722)
+[ID 82722](https://corona.Microsoft.com/releases/82722)
  
 ## TPS Compliance
-[ID 1197420429](https://tpscompliance.cisco.com/compliance/product-releases/product/1197420429) 
+[ID 1197420429](https://tpscompliance.Microsoft.com/compliance/product-releases/product/1197420429) 

@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KMS Encryption Flow Diagram</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .flow-section {
+            margin-bottom: 50px;
+        }
+        
+        .section-title {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 1.5em;
+        }
+        
+        .flow-diagram {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .flow-step {
+            background: white;
+            border-left: 5px solid #3498db;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .flow-step.client {
+            border-left-color: #27ae60;
+        }
+        
+        .flow-step.encryption {
+            border-left-color: #e74c3c;
+        }
+        
+        .flow-step.kms {
+            border-left-color: #f39c12;
+        }
+        
+        .flow-step.mercury {
+            border-left-color: #9b59b6;
+        }
+        
+        .step-number {
+            position: absolute;
+            left: -12px;
+            top: 15px;
+            background: #3498db;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .flow-step.client .step-number { background: #27ae60; }
+        .flow-step.encryption .step-number { background: #e74c3c; }
+        .flow-step.kms .step-number { background: #f39c12; }
+        .flow-step.mercury .step-number { background: #9b59b6; }
+        
+        .step-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .step-content {
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+        
+        .arrow {
+            text-align: center;
+            color: #3498db;
+            font-size: 2em;
+            margin: 10px 0;
+        }
+        
+        .component-box {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            color: white;
+            margin: 5px;
+        }
+        
+        .component-box.client { background: #27ae60; }
+        .component-box.encryption { background: #e74c3c; }
+        .component-box.kms { background: #f39c12; }
+        .component-box.mercury { background: #9b59b6; }
+        
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-color {
+            width: 40px;
+            height: 25px;
+            border-radius: 5px;
+        }
+        
+        .info-box {
+            background: #fff3cd;
+            border-left: 4px solid #f39c12;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        
+        .architecture-diagram {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .arch-component {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .arch-component h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .arch-component ul {
+            list-style: none;
+            text-align: left;
+            padding-left: 20px;
+        }
+        
+        .arch-component li {
+            padding: 5px 0;
+            color: #555;
+        }
+        
+        .arch-component li::before {
+            content: "▸ ";
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+            
+            .section-title {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 KMS Encryption Flow Diagram</h1>
+            <p>Comprehensive overview of Key Management Service encryption workflows</p>
+        </header>
+        
+        <div class="content">
+            <!-- Legend -->
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #27ae60;"></div>
+                    <span><strong>Client/Service</strong></span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span><strong>Encryption Service</strong></span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f39c12;"></div>
+                    <span><strong>KMS Cluster</strong></span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9b59b6;"></div>
+                    <span><strong>Mercury (WebSocket)</strong></span>
+                </div>
+            </div>
+            
+            <!-- Architecture Overview -->
+            <div class="flow-section">
+                <div class="section-title">🏗️ KMS Architecture Overview</div>
+                <div class="architecture-diagram">
+                    <div class="arch-component">
+                        <h3>Regional KMS Clusters</h3>
+                        <ul>
+                            <li>kms-region-1.example.com (US East)</li>
+                            <li>kms-region-2.example.com (US West)</li>
+                            <li>kms-region-3.example.com (EU)</li>
+                            <li>kms-region-4.example.com (APAC)</li>
+                        </ul>
+                    </div>
+                    <div class="arch-component">
+                        <h3>Encryption Service</h3>
+                        <ul>
+                            <li>API Front-end</li>
+                            <li>Federation Router</li>
+                            <li>REST & WebSocket</li>
+                            <li>encryption-api.example.com</li>
+                        </ul>
+                    </div>
+                    <div class="arch-component">
+                        <h3>Communication Channels</h3>
+                        <ul>
+                            <li>WebSocket (Async)</li>
+                            <li>REST API (Sync)</li>
+                            <li>Device Management URIs</li>
+                        </ul>
+                    </div>
+                    <div class="arch-component">
+                        <h3>Key Components</h3>
+                        <ul>
+                            <li>KMS Keys (bound/unbound)</li>
+                            <li>KRO (Key Resource Object)</li>
+                            <li>ECDHE Session Keys</li>
+                            <li>Authorization Lists</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Flow 1: ECDHE Session Establishment -->
+            <div class="flow-section">
+                <div class="section-title">🔑 Flow 1: ECDHE Session Key Establishment</div>
+                <div class="flow-diagram">
+                    <div class="info-box">
+                        <strong>Purpose:</strong> Establish secure ephemeral session for fast encrypted communication. Session valid for 72 hours.
+                    </div>
+                    
+                    <div class="flow-step client">
+                        <div class="step-number">1</div>
+                        <div class="step-title">
+                            <span class="component-box client">Client</span>
+                            Generate EC Key Pair (P-256)
+                        </div>
+                        <div class="step-content">
+                            Client generates elliptic curve key pair and prepares JWE payload.
+                            <div class="code-block">
+JWE(K_kms_pub, {
+  "client": {
+    "clientId": "https://device-mgmt.example.com/api/v1/devices/<uuid>",
+    "credential": { "bearer": "<token>" }
+  },
+  "method": "create",
+  "uri": "kms://kms-region-1.example.com/ecdhe",
+  "requestId": "<uuid>",
+  "jwk": {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": "...",
+    "y": "..."
+  }
+})</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step client">
+                        <div class="step-number">2</div>
+                        <div class="step-title">
+                            <span class="component-box client">Client</span>
+                            POST to Encryption Service
+                        </div>
+                        <div class="step-content">
+                            Send ECDHE request via Mercury or REST.
+                            <div class="code-block">
+POST https://encryption-api.example.com/encryption/api/v1/kms/messages
+{
+  "destination": "kms://kms-region-1.example.com",
+  "source": "https://device-mgmt.example.com/api/v1/devices/<uuid>",
+  "requestId": "<uuid>",
+  "kmsMessages": ["<JWE_compact_serialization>"]
+}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step encryption">
+                        <div class="step-number">3</div>
+                        <div class="step-title">
+                            <span class="component-box encryption">Encryption</span>
+                            Route to KMS Cluster
+                        </div>
+                        <div class="step-content">
+                            Encryption service routes request to appropriate KMS cluster based on destination URI.
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step kms">
+                        <div class="step-number">4</div>
+                        <div class="step-title">
+                            <span class="component-box kms">KMS</span>
+                            Generate Ephemeral Key Pair
+                        </div>
+                        <div class="step-content">
+                            KMS generates its own EC key pair and performs ECDH to derive shared secret.
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step kms">
+                        <div class="step-number">5</div>
+                        <div class="step-title">
+                            <span class="component-box kms">KMS</span>
+                            Return Session Key
+                        </div>
+                        <div class="step-content">
+                            KMS sends back its public key via Encryption service.
+                            <div class="code-block">
+Response (HTTP 201):
+{
+  "status": 201,
+  "requestId": "<uuid>",
+  "key": {
+    "uri": "kms://kms-region-1.example.com/ecdhe/<session-uuid>",
+    "jwk": {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "...",
+      "y": "..."
+    },
+    "userId": "<user-uuid>",
+    "clientId": "<device-uri>",
+    "createDate": "2025-11-21T06:19:56.852Z",
+    "expirationDate": "2025-11-24T06:19:56.852Z"
+  }
+}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step client">
+                        <div class="step-number">6</div>
+                        <div class="step-title">
+                            <span class="component-box client">Client</span>
+                            Derive Shared Secret
+                        </div>
+                        <div class="step-content">
+                            Both client and KMS now have shared AES-256-GCM key for fast symmetric encryption.
+                            Session valid for <strong>72 hours</strong>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Flow 2: Create Unbound Key and KRO -->
+            <div class="flow-section">
+                <div class="section-title">🔐 Flow 2: Create Unbound Key & Bind to KRO</div>
+                <div class="flow-diagram">
+                    <div class="info-box">
+                        <strong>Purpose:</strong> Create encryption key and associate it with a Key Resource Object (KRO) with authorization controls.
+                    </div>
+                    
+                    <div class="flow-step client">
+                        <div class="step-number">1</div>
+                        <div class="step-title">
+                            <span class="component-box client">Client</span>
+                            Create Unbound Key Request
+                        </div>
+                        <div class="step-content">
+                            Client encrypts request using ECDHE session key.
+                            <div class="code-block">
+JWE(K_ephemeral, {
+  "client": {
+    "clientId": "<device-uri>",
+    "credential": { "bearer": "token..." }
+  },
+  "method": "create",
+  "uri": "/keys",
+  "requestId": "<uuid>",
+  "count": 1,
+  "assignedOrgId": "<org-uuid>"
+})
+
+JWE Header:
+{
+  "kid": "kms://kms-region-1.example.com/ecdhe/<session-key-id>",
+  "alg": "dir",
+  "enc": "A256GCM"
+}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step kms">
+                        <div class="step-number">2</div>
+                        <div class="step-title">
+                            <span class="component-box kms">KMS</span>
+                            Create Unbound Key
+                        </div>
+                        <div class="step-content">
+                            KMS creates key encrypted with KEK (Key Encryption Key).
+                            <div class="code-block">
+Response:
+{
+  "uri": "kms://kms-region-1.example.com/keys/<key-uuid>",
+  "jwk": { ... },
+  "userId": "<user-uuid>",
+  "createDate": "...",
+  "bindDate": null  // Not yet bound
+}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step client">
+                        <div class="step-number">3</div>
+                        <div class="step-title">
+                            <span class="component-box client">Client</span>
+                            Create KRO and Bind Key
+                        </div>
+                        <div class="step-content">
+                            Client creates KRO with authorization list and binds the unbound key.
+                            <div class="code-block">
+JWE(K_ephemeral, {
+  "method": "create",
+  "uri": "/resources",
+  "requestId": "<uuid>",
+  "keyUris": ["kms://kms-region-1.example.com/keys/<key-uuid>"],
+  "authIds": [
+    "<user-uuid-1>",
+    "<user-uuid-2>",
+    "<machine-account-uuid>"
+  ],
+  "assignedOrgId": "<org-uuid>",
+  "ttl": 0  // Defaults to 90 days regardless
+})</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step kms">
+                        <div class="step-number">4</div>
+                        <div class="step-title">
+                            <span class="component-box kms">KMS</span>
+                            Create KRO & Associate Key
+                        </div>
+                        <div class="step-content">
+                            KMS creates KRO, binds key, and stores authorization list.
+                            <div class="code-block">
+Response:
+{
+  "uri": "kms://kms-region-1.example.com/resources/<kro-uuid>",
+  "keyUris": ["kms://kms-region-1.example.com/keys/<key-uuid>"],
+  "authIds": ["<user-uuid-1>", "<user-uuid-2>", ...],
+  "assignedOrgId": "<org-uuid>",
+  "createDate": "..."
+}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step client">
+                        <div class="step-number">5</div>
+                        <div class="step-title">
+                            <span class="component-box client">Client</span>
+                            Store KRO URI
+                        </div>
+                        <div class="step-content">
+                            Client stores KRO URI in database for future key retrieval operations.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Flow 3: Retrieve Key from KRO -->
+            <div class="flow-section">
+                <div class="section-title">🔓 Flow 3: Retrieve Key from KRO</div>
+                <div class="flow-diagram">
+                    <div class="info-box">
+                        <strong>Purpose:</strong> Retrieve encryption key from KRO to decrypt data. Authorization checked against auth list.
+                    </div>
+                    
+                    <div class="flow-step client">
+                        <div class="step-number">1</div>
+                        <div class="step-title">
+                            <span class="component-box client">Client</span>
+                            Request Keys from KRO
+                        </div>
+                        <div class="step-content">
+                            Client requests all keys associated with a KRO URI.
+                            <div class="code-block">
+JWE(K_ephemeral, {
+  "client": {
+    "clientId": "<device-uri>",
+    "credential": { "bearer": "token..." }
+  },
+  "method": "retrieve",
+  "uri": "kms://kms-region-1.example.com/resources/<kro-uuid>",
+  "requestId": "<uuid>"
+})</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step encryption">
+                        <div class="step-number">2</div>
+                        <div class="step-title">
+                            <span class="component-box encryption">Encryption</span>
+                            Check Cluster & Route
+                        </div>
+                        <div class="step-content">
+                            Encryption service identifies KMS cluster from URI and routes request.
+                            May perform federation if key is in different region.
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step kms">
+                        <div class="step-number">3</div>
+                        <div class="step-title">
+                            <span class="component-box kms">KMS</span>
+                            Verify Authorization
+                        </div>
+                        <div class="step-content">
+                            KMS checks if requesting user is in KRO's authorization list.
+                            <div class="code-block">
+Authorization Check:
+- User UUID from bearer token: "<user-uuid>"
+- KRO Auth List: ["<user-1>", "<user-2>", "<user-3>"]
+- Check: Is user-uuid in Auth List?
+  
+✅ YES → Proceed to retrieve keys
+❌ NO → Return 403 Unauthorized (errorCode: 403007)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step kms">
+                        <div class="step-number">4</div>
+                        <div class="step-title">
+                            <span class="component-box kms">KMS</span>
+                            Return Keys
+                        </div>
+                        <div class="step-content">
+                            KMS returns all keys bound to the KRO (encrypted with session key).
+                            <div class="code-block">
+Response (JWE encrypted):
+{
+  "keys": [
+    {
+      "uri": "kms://kms-region-1.example.com/keys/<key-1-uuid>",
+      "jwk": { "kty": "oct", "k": "..." },
+      "bindDate": "..."
+    },
+    {
+      "uri": "kms://kms-region-1.example.com/keys/<key-2-uuid>",
+      "jwk": { "kty": "oct", "k": "..." },
+      "bindDate": "..."
+    }
+  ]
+}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step mercury">
+                        <div class="step-number">5</div>
+                        <div class="step-title">
+                            <span class="component-box mercury">Mercury</span>
+                            Deliver Response
+                        </div>
+                        <div class="step-content">
+                            For async flow, response delivered via WebSocket to client's device URI.
+                            For sync flow, direct HTTP response.
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step client">
+                        <div class="step-number">6</div>
+                        <div class="step-title">
+                            <span class="component-box client">Client</span>
+                            Decrypt & Use Keys
+                        </div>
+                        <div class="step-content">
+                            Client decrypts response using session key, extracts encryption keys, and uses them to decrypt data.
+                            Latest key (highest bindDate) typically used for new encryptions.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Flow 4: Key Rotation -->
+            <div class="flow-section">
+                <div class="section-title">🔄 Flow 4: Key Rotation</div>
+                <div class="flow-diagram">
+                    <div class="info-box">
+                        <strong>Purpose:</strong> Rotate encryption key while preserving authorization list and KRO URI.
+                    </div>
+                    
+                    <div class="flow-step client">
+                        <div class="step-number">1</div>
+                        <div class="step-title">
+                            <span class="component-box client">Client</span>
+                            Create New Unbound Key
+                        </div>
+                        <div class="step-content">
+                            Create new key with same org assignment as existing KRO.
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step client">
+                        <div class="step-number">2</div>
+                        <div class="step-title">
+                            <span class="component-box client">Client</span>
+                            Bind to Existing KRO
+                        </div>
+                        <div class="step-content">
+                            Use <code>createNewKmsKeyWithResource()</code> function to bind new key to existing KRO URI.
+                            <div class="code-block">
+// Using KMS Client Library
+KmsKeyRequest.Builder builder = new KmsKeyRequest.Builder(
+    kmsKeyClient.getKmsRequestBody(),
+    orgId
+);
+builder.resourceUri(existingKroUri);
+
+List&lt;KmsKey&gt; newKeys = kmsKeyClient.createNewKmsKeyWithResource(builder);</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step kms">
+                        <div class="step-number">3</div>
+                        <div class="step-title">
+                            <span class="component-box kms">KMS</span>
+                            Add Key to KRO
+                        </div>
+                        <div class="step-content">
+                            KMS adds new key to existing KRO's key list. Authorization list remains unchanged.
+                            <div class="code-block">
+KRO State After Rotation:
+{
+  "uri": "kms://kms-region-1.example.com/resources/<kro-uuid>",
+  "keyUris": [
+    "kms://kms-region-1.example.com/keys/<old-key-uuid>",  // Old key
+    "kms://kms-region-1.example.com/keys/<new-key-uuid>"   // New key
+  ],
+  "authIds": ["<user-1>", "<user-2>", ...]  // Unchanged
+}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow">↓</div>
+                    
+                    <div class="flow-step client">
+                        <div class="step-number">4</div>
+                        <div class="step-title">
+                            <span class="component-box client">Client</span>
+                            Use New Key for Encryption
+                        </div>
+                        <div class="step-content">
+                            <strong>New data:</strong> Encrypted with new key<br>
+                            <strong>Old data:</strong> Still decryptable with old key<br>
+                            Both keys remain valid and accessible via same KRO URI.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Risks & Prevention -->
+            <div class="flow-section">
+                <div class="section-title">🛡️ Security Risks & Prevention Strategies</div>
+                <div class="flow-diagram">
+                    
+                    <!-- Key Compromise Risks -->
+                    <div style="background: #fff; border: 2px solid #e74c3c; border-radius: 10px; padding: 25px; margin-bottom: 30px;">
+                        <h3 style="color: #e74c3c; margin-bottom: 15px; font-size: 1.4em;">🔴 Key Compromise Risks</h3>
+                        
+                        <div class="flow-step" style="border-left-color: #e74c3c;">
+                            <div class="step-title">1. Session Key Theft</div>
+                            <div class="step-content">
+                                <strong>Risk:</strong> ECDHE session key compromised during 72-hour validity period.
+                                <br><strong>Impact:</strong> Attacker can decrypt all communications during session lifetime.
+                                <br><strong>Prevention:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>Use TLS 1.3+ for transport encryption</li>
+                                    <li>Implement certificate pinning for encryption endpoints</li>
+                                    <li>Short-lived sessions (72 hours max)</li>
+                                    <li>Monitor for unusual session creation patterns</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #e74c3c;">
+                            <div class="step-title">2. Bearer Token Leakage</div>
+                            <div class="step-content">
+                                <strong>Risk:</strong> OAuth bearer token exposed in logs, memory dumps, or replay attacks.
+                                <br><strong>Impact:</strong> Unauthorized access to user's KMS keys and encrypted data.
+                                <br><strong>Prevention:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>Use PoP (Proof of Possession) with WCA certificates instead of bearer tokens</li>
+                                    <li>Implement token scoping (only required scopes in token)</li>
+                                    <li>Short token TTL (15 minutes recommended)</li>
+                                    <li>Never log bearer tokens or encryption payloads</li>
+                                    <li>Use <code>spark:e2ei</code> scope for WCA certificate authentication</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #e74c3c;">
+                            <div class="step-title">3. KEK (Key Encryption Key) Compromise</div>
+                            <div class="step-content">
+                                <strong>Risk:</strong> Master key used to encrypt KMS keys is compromised.
+                                <br><strong>Impact:</strong> All keys encrypted with that KEK are vulnerable.
+                                <br><strong>Prevention:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>KEK stored in AWS KMS or HSM (Hardware Security Module)</li>
+                                    <li>Regular KEK rotation (annually or after incidents)</li>
+                                    <li>Multi-region KEK backup with strict access controls</li>
+                                    <li>Audit all KEK access attempts</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #e74c3c;">
+                            <div class="step-title">4. Authorization List Manipulation</div>
+                            <div class="step-content">
+                                <strong>Risk:</strong> Attacker adds unauthorized users to KRO auth list.
+                                <br><strong>Impact:</strong> Unauthorized access to encrypted data.
+                                <br><strong>Prevention:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>CloudAgent role strictly controlled (manual UUID whitelist)</li>
+                                    <li>Audit all KRO modification operations</li>
+                                    <li>Immutable audit logs stored externally</li>
+                                    <li>Alert on unexpected auth list changes</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #e74c3c;">
+                            <div class="step-title">5. Man-in-the-Middle (MITM) Attacks</div>
+                            <div class="step-content">
+                                <strong>Risk:</strong> Attacker intercepts communication between client and KMS.
+                                <br><strong>Impact:</strong> Request/response tampering, key theft, replay attacks.
+                                <br><strong>Prevention:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>Enforce TLS mutual authentication (mTLS)</li>
+                                    <li>RequestId validation (encrypted vs unencrypted envelope mismatch detection)</li>
+                                    <li>JWE integrity via GCM authentication tags</li>
+                                    <li>Certificate pinning for encryption endpoints</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AWS KMS Integration -->
+                    <div style="background: #fff; border: 2px solid #f39c12; border-radius: 10px; padding: 25px; margin-bottom: 30px;">
+                        <h3 style="color: #f39c12; margin-bottom: 15px; font-size: 1.4em;">☁️ AWS KMS & Key Management Strategies</h3>
+                        
+                        <div class="architecture-diagram" style="grid-template-columns: 1fr;">
+                            <div class="arch-component" style="border-color: #f39c12;">
+                                <h3>🔑 CMK (Customer Master Key)</h3>
+                                <div style="text-align: left; padding: 10px;">
+                                    <strong>Purpose:</strong> Top-level key in AWS KMS hierarchy for encrypting data keys.
+                                    <br><br><strong>Common Usage:</strong>
+                                    <ul style="margin-top: 10px;">
+                                        <li>KEK (Key Encryption Key) stored as AWS CMK</li>
+                                        <li>Regional CMKs in each AWS region</li>
+                                        <li>CMK never leaves AWS KMS/HSM</li>
+                                    </ul>
+                                    <br><strong>Security Features:</strong>
+                                    <ul>
+                                        <li>Automatic rotation every 365 days</li>
+                                        <li>CloudTrail auditing of all operations</li>
+                                        <li>IAM policy-based access control</li>
+                                        <li>Key deletion protection (7-30 day waiting period)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="arch-component" style="border-color: #3498db;">
+                                <h3>🔐 BYOK (Bring Your Own Key)</h3>
+                                <div style="text-align: left; padding: 10px;">
+                                    <strong>Purpose:</strong> Enterprise customers provide their own encryption keys.
+                                    <br><br><strong>Common Implementation:</strong>
+                                    <ul style="margin-top: 10px;">
+                                        <li><strong>Hybrid Deployment</strong>: Customer-managed on-premise KMS</li>
+                                        <li>Customer imports their CMK into AWS KMS</li>
+                                        <li>Customer controls key lifecycle and rotation</li>
+                                        <li>Keys stored in customer's data center or HSM</li>
+                                    </ul>
+                                    <br><strong>Advantages:</strong>
+                                    <ul>
+                                        <li>Full control over key material</li>
+                                        <li>Compliance with data sovereignty regulations</li>
+                                        <li>Can revoke access by disabling HDS</li>
+                                    </ul>
+                                    <br><strong>Risks:</strong>
+                                    <ul>
+                                        <li>On-premise KMS downtime = data inaccessibility</li>
+                                        <li>Customer responsible for key backup and DR</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="arch-component" style="border-color: #27ae60;">
+                                <h3>📦 S3 Encryption at Rest</h3>
+                                <div style="text-align: left; padding: 10px;">
+                                    <strong>Purpose:</strong> Protect stored data in S3 buckets.
+                                    <br><br><strong>Encryption Options:</strong>
+                                    <ul style="margin-top: 10px;">
+                                        <li><strong>SSE-S3</strong>: AWS-managed keys (AES-256)</li>
+                                        <li><strong>SSE-KMS</strong>: AWS KMS managed keys (recommended)</li>
+                                        <li><strong>SSE-C</strong>: Customer-provided keys</li>
+                                        <li><strong>Client-side</strong>: Encrypt before upload (best practice)</li>
+                                    </ul>
+                                    <br><strong>Best Practice Pattern:</strong>
+                                    <ul>
+                                        <li>Data encrypted with KMS key <strong>before</strong> S3 upload (defense in depth)</li>
+                                        <li>S3 bucket encryption (SSE-KMS) as additional layer</li>
+                                        <li>Keys stored in KMS, never in S3 metadata</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="arch-component" style="border-color: #9b59b6;">
+                                <h3>🔧 AWS Managed Keys vs Customer Managed</h3>
+                                <div style="text-align: left; padding: 10px;">
+                                    <strong>AWS Managed Keys (Default):</strong>
+                                    <ul style="margin-top: 10px;">
+                                        <li>AWS creates and manages CMK automatically</li>
+                                        <li>Automatic rotation every 3 years</li>
+                                        <li>Cannot be deleted, exported, or viewed</li>
+                                        <li>Free to use, pay for API calls only</li>
+                                    </ul>
+                                    <br><strong>Customer Managed Keys (Recommended):</strong>
+                                    <ul>
+                                        <li>Full control over key policies and access</li>
+                                        <li>Configurable rotation (365 days recommended)</li>
+                                        <li>Can enable/disable, delete (with waiting period)</li>
+                                        <li>Detailed CloudTrail auditing</li>
+                                        <li>Cross-account access via key policies</li>
+                                    </ul>
+                                    <br><strong>Recommended:</strong> Customer Managed CMKs for KEK storage
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Best Practices -->
+                    <div style="background: #fff; border: 2px solid #27ae60; border-radius: 10px; padding: 25px; margin-bottom: 30px;">
+                        <h3 style="color: #27ae60; margin-bottom: 15px; font-size: 1.4em;">✅ Security Best Practices</h3>
+                        
+                        <div class="architecture-diagram">
+                            <div class="arch-component">
+                                <h3>🔄 Key Rotation</h3>
+                                <ul>
+                                    <li>Rotate application keys annually</li>
+                                    <li>AWS CMK automatic rotation (365 days)</li>
+                                    <li>ECDHE session keys expire in 72 hours</li>
+                                    <li>Old keys retained for decryption only</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="arch-component">
+                                <h3>📊 Audit & Monitoring</h3>
+                                <ul>
+                                    <li>CloudTrail logging for all KMS operations</li>
+                                    <li>CloudWatch metrics for API call rates</li>
+                                    <li>Alert on unauthorized access attempts (403 errors)</li>
+                                    <li>Monitor for RequestId mismatches (MITM detection)</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="arch-component">
+                                <h3>🔒 Access Control</h3>
+                                <ul>
+                                    <li>Principle of least privilege for auth lists</li>
+                                    <li>Separate machine accounts per region</li>
+                                    <li>CloudAgent role for exceptional cases only</li>
+                                    <li>IAM policies for AWS KMS CMK access</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="arch-component">
+                                <h3>💾 Backup & DR</h3>
+                                <ul>
+                                    <li>Multi-region KEK replication</li>
+                                    <li>FEMO (Federation Migration) for key migration</li>
+                                    <li>KRO export/import capability</li>
+                                    <li>Immutable audit log backups</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="arch-component">
+                                <h3>🌐 Network Security</h3>
+                                <ul>
+                                    <li>VPC endpoints for AWS KMS (private connectivity)</li>
+                                    <li>TLS 1.3 with forward secrecy</li>
+                                    <li>Certificate pinning for KMS endpoints</li>
+                                    <li>Network isolation for HDS deployments</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="arch-component">
+                                <h3>🚨 Incident Response</h3>
+                                <ul>
+                                    <li>Key revocation procedures documented</li>
+                                    <li>Emergency KEK rotation runbooks</li>
+                                    <li>Automated alerting for anomalies</li>
+                                    <li>Post-incident key re-encryption</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Defense in Depth -->
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; padding: 25px;">
+                        <h3 style="margin-bottom: 15px; font-size: 1.4em;">🛡️ Defense in Depth Layers</h3>
+                        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; margin-top: 15px;">
+                            <strong>Layer 1: Transport</strong> → TLS 1.3 with mTLS<br>
+                            <strong>Layer 2: Session</strong> → ECDHE ephemeral keys (72h expiry)<br>
+                            <strong>Layer 3: Message</strong> → JWE with A256GCM authenticated encryption<br>
+                            <strong>Layer 4: Application Key</strong> → KMS keys for actual data encryption<br>
+                            <strong>Layer 5: KEK</strong> → AWS KMS CMK in HSM<br>
+                            <strong>Layer 6: Authorization</strong> → Auth lists + IAM policies<br>
+                            <strong>Layer 7: Audit</strong> → Immutable CloudTrail logs<br>
+                            <strong>Layer 8: Detection</strong> → Real-time monitoring & alerting
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            
+            <!-- Error Handling -->
+            <div class="flow-section">
+                <div class="section-title">⚠️ Common Error Scenarios</div>
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        <div class="step-title">401001 - Empty Bearer Token</div>
+                        <div class="step-content">
+                            Missing or invalid authorization token in request payload.
+                        </div>
+                    </div>
+                    
+                    <div class="flow-step">
+                        <div class="step-title">403007 - Unauthorized</div>
+                        <div class="step-content">
+                            User not in KRO authorization list. Cannot access keys.
+                        </div>
+                    </div>
+                    
+                    <div class="flow-step">
+                        <div class="step-title">404 - KMS Not Found</div>
+                        <div class="step-content">
+                            HDS offline or cluster name incorrect. Check cluster URI.
+                        </div>
+                    </div>
+                    
+                    <div class="flow-step">
+                        <div class="step-title">409001 - Unable to Bind Key</div>
+                        <div class="step-content">
+                            Key created in different region than KRO. ECDHE session determines region.
+                        </div>
+                    </div>
+                    
+                    <div class="flow-step">
+                        <div class="step-title">410 - Gone</div>
+                        <div class="step-content">
+                            HDS permanently decommissioned. Keys no longer accessible.
+                        </div>
+                    </div>
+                    
+                    <div class="flow-step">
+                        <div class="step-title">503 - Service Unavailable</div>
+                        <div class="step-content">
+                            KMS/Encryption down, CI token refresh failed, or Mercury connection issues.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Common Production Issues -->
+            <div class="flow-section">
+                <div class="section-title">🚨 Common Production Issues & Troubleshooting</div>
+                <div class="flow-diagram">
+                    <div class="info-box" style="background: #fff3cd; border-left: 4px solid #e74c3c;">
+                        <strong>⭐ = Very Common in Production</strong><br>
+                        These issues account for 80%+ of KMS-related production incidents.
+                    </div>
+                    
+                    <!-- Very Common Issues -->
+                    <div style="background: #fff; border: 2px solid #e74c3c; border-radius: 10px; padding: 25px; margin-bottom: 30px;">
+                        <h3 style="color: #e74c3c; margin-bottom: 15px; font-size: 1.3em;">⭐ Top 5 Most Common Issues</h3>
+                        
+                        <div class="flow-step" style="border-left-color: #e74c3c; background: #ffebee;">
+                            <div class="step-title">⭐ AccessDeniedException (Very Common)</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> "User is not authorized to perform: kms:Decrypt/Encrypt"
+                                <br><strong>Root Causes:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>IAM role/user missing KMS permissions</li>
+                                    <li>KMS key policy doesn't grant access to principal</li>
+                                    <li>Service role lacks <code>kms:Decrypt</code> permission</li>
+                                    <li>Authorization list doesn't include user ID</li>
+                                </ul>
+                                <br><strong>Troubleshooting Steps:</strong>
+                                <div class="code-block">
+# 1. Check IAM policy
+aws iam get-role-policy --role-name MyServiceRole --policy-name KMSPolicy
+
+# 2. Check KMS key policy
+aws kms get-key-policy --key-id <key-id> --policy-name default
+
+# 3. Test access
+aws kms decrypt --ciphertext-blob fileb://encrypted.txt --key-id <key-id>
+
+# 4. Check KRO auth list
+# Verify user ID is in KRO authIds via service logs</div>
+                                <br><strong>Fix:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>Add IAM policy: <code>kms:Decrypt, kms:Encrypt, kms:GenerateDataKey</code></li>
+                                    <li>Update KMS key policy to include principal ARN</li>
+                                    <li>Add user to KRO authorization list</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #e74c3c; background: #ffebee;">
+                            <div class="step-title">⭐ ThrottlingException (Very Common at Scale)</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> "Rate exceeded" errors during high traffic
+                                <br><strong>Root Causes:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>Default AWS KMS limits: 5,500-30,000 req/sec (varies by API)</li>
+                                    <li>Decrypt/Encrypt calls in hot path without caching</li>
+                                    <li>Each API call counts separately (no batching)</li>
+                                </ul>
+                                <br><strong>AWS KMS API Limits (per second):</strong>
+                                <div class="code-block">
+Encrypt: 10,000 req/s (shared with Decrypt, GenerateDataKey)
+Decrypt: 10,000 req/s (shared pool)
+GenerateDataKey: 10,000 req/s (shared pool)
+DescribeKey: 30,000 req/s
+GetPublicKey: 2,000 req/s
+Sign: 2,000 req/s</div>
+                                <br><strong>Fix:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li><strong>Cache data keys</strong>: Use data key caching (AWS Encryption SDK)</li>
+                                    <li><strong>Session caching</strong>: ECDHE session caching (72 hours) reduces KMS calls</li>
+                                    <li><strong>Request limit increase</strong>: AWS Support ticket (can get 10x increase)</li>
+                                    <li><strong>Use envelope encryption</strong>: One GenerateDataKey for many encrypt operations</li>
+                                    <li><strong>Implement exponential backoff</strong>: Retry with jitter</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #e74c3c; background: #ffebee;">
+                            <div class="step-title">⭐ Region Mismatch (Common)</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> "Key '<key-arn>' does not exist" when decrypting
+                                <br><strong>Root Causes:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>Data encrypted in us-east-1, decryption attempted in us-west-2</li>
+                                    <li>KMS keys are region-specific (cannot cross regions)</li>
+                                    <li>ECDHE session in Region 1, trying to access Region 2 key</li>
+                                </ul>
+                                <br><strong>Example Context:</strong>
+                                <div class="code-block">
+# ECDHE session determines region
+Session: kms://kms-region-1.example.com/ecdhe/<uuid>  → Region 1
+Key must be: kms://kms-region-1.example.com/keys/<uuid>
+
+# WRONG: Cross-region attempt
+Session: kms://kms-region-1.example.com/ecdhe/<uuid>
+Key: kms://kms-region-2.example.com/keys/<uuid>  ❌ Error</div>
+                                <br><strong>Fix:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>Use Multi-Region Keys (MRK) for AWS KMS</li>
+                                    <li>Create separate ECDHE session in target region</li>
+                                    <li>Store region with encrypted data metadata</li>
+                                    <li>Use <code>createNewKmsKeyWithResource()</code> to ensure same region</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #e74c3c; background: #ffebee;">
+                            <div class="step-title">⭐ Cross-Account Permission Issue (Very Common in Org Setups)</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> Account A can't access Account B's KMS key
+                                <br><strong>Root Causes:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>KMS key policy doesn't allow external account</li>
+                                    <li>Both key policy AND IAM policy required for cross-account</li>
+                                    <li>Organization SCPs blocking access</li>
+                                </ul>
+                                <br><strong>Required Configuration:</strong>
+                                <div class="code-block">
+# Account B: KMS Key Policy (must include Account A)
+{
+  "Sid": "AllowAccountAAccess",
+  "Effect": "Allow",
+  "Principal": {
+    "AWS": "arn:aws:iam::ACCOUNT-A-ID:root"
+  },
+  "Action": [
+    "kms:Decrypt",
+    "kms:DescribeKey"
+  ],
+  "Resource": "*"
+}
+
+# Account A: IAM Policy (must reference Account B key)
+{
+  "Effect": "Allow",
+  "Action": ["kms:Decrypt"],
+  "Resource": "arn:aws:kms:region:ACCOUNT-B-ID:key/<key-id>"
+}</div>
+                                <br><strong>Fix:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>Update KMS key policy in Account B</li>
+                                    <li>Add IAM permissions in Account A</li>
+                                    <li>Check for SCPs blocking cross-account KMS</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #e74c3c; background: #ffebee;">
+                            <div class="step-title">⭐ Encryption Context Mismatch (Common)</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> Decryption fails with "Invalid ciphertext"
+                                <br><strong>Root Causes:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>Encryption context at encrypt time differs from decrypt time</li>
+                                    <li>Context is additional authenticated data (AAD) in GCM mode</li>
+                                    <li>Commonly used for: user ID, session ID, request ID</li>
+                                </ul>
+                                <br><strong>Example Mismatch:</strong>
+                                <div class="code-block">
+# Encryption
+aws kms encrypt \
+  --key-id <key-id> \
+  --plaintext "data" \
+  --encryption-context user=alice,session=123
+
+# Decryption (WRONG context)
+aws kms decrypt \
+  --ciphertext-blob <blob> \
+  --encryption-context user=bob,session=123  ❌ Fails
+
+# Correct decryption
+aws kms decrypt \
+  --ciphertext-blob <blob> \
+  --encryption-context user=alice,session=123  ✅ Works</div>
+                                <br><strong>Fix:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>Store encryption context with ciphertext metadata</li>
+                                    <li>Use deterministic context (not timestamps)</li>
+                                    <li>Validate context matches before decrypt</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Other Common Issues -->
+                    <div style="background: #fff; border: 2px solid #f39c12; border-radius: 10px; padding: 25px; margin-bottom: 30px;">
+                        <h3 style="color: #f39c12; margin-bottom: 15px; font-size: 1.3em;">⚠️ Other Common Issues</h3>
+                        
+                        <div class="flow-step" style="border-left-color: #f39c12;">
+                            <div class="step-title">⭐ Missing Service Role Permission (Very Common)</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> EC2/Lambda/ECS can't decrypt data
+                                <br><strong>Fix:</strong> Add KMS permissions to service execution role
+                                <div class="code-block">
+{
+  "Effect": "Allow",
+  "Action": [
+    "kms:Decrypt",
+    "kms:DescribeKey"
+  ],
+  "Resource": "arn:aws:kms:*:*:key/<key-id>"
+}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #f39c12;">
+                            <div class="step-title">Key Disabled</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> "Key is disabled"
+                                <br><strong>Troubleshooting:</strong>
+                                <div class="code-block">
+# Check key state
+aws kms describe-key --key-id <key-id>
+
+# Enable key
+aws kms enable-key --key-id <key-id></div>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #f39c12;">
+                            <div class="step-title">Key Pending Deletion</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> "Key is pending deletion"
+                                <br><strong>Impact:</strong> Key unusable, scheduled deletion in 7-30 days
+                                <br><strong>Fix:</strong> Cancel deletion before waiting period expires
+                                <div class="code-block">
+aws kms cancel-key-deletion --key-id <key-id></div>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #f39c12;">
+                            <div class="step-title">⭐ Unexpected High Cost (Common at High Traffic)</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> AWS bill shows high KMS charges
+                                <br><strong>Root Causes:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>Each API call costs $0.03 per 10,000 requests</li>
+                                    <li>No caching = repeated decrypt for same data</li>
+                                    <li>Encryption on every write instead of once</li>
+                                </ul>
+                                <br><strong>Cost Optimization:</strong>
+                                <ul style="margin-top: 10px; margin-left: 20px;">
+                                    <li>Use data key caching (reduce 1000x calls)</li>
+                                    <li>ECDHE sessions reduce KMS API calls significantly</li>
+                                    <li>Envelope encryption: 1 GenerateDataKey → many encrypts</li>
+                                    <li>Monitor CloudWatch metrics: <code>NumberOfRequests</code></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #f39c12;">
+                            <div class="step-title">Alias Misconfiguration</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> Alias points to wrong or deleted key
+                                <br><strong>Fix:</strong>
+                                <div class="code-block">
+# Check alias target
+aws kms list-aliases
+
+# Update alias
+aws kms update-alias \
+  --alias-name alias/my-key \
+  --target-key-id <new-key-id></div>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #f39c12;">
+                            <div class="step-title">Imported Key Material Expired</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> Decryption fails after key material expiration
+                                <br><strong>Context:</strong> For BYOK scenarios with expiring imported keys
+                                <br><strong>Fix:</strong> Re-import key material before expiration
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #f39c12;">
+                            <div class="step-title">VPC Endpoint Policy Block</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> KMS calls work from internet but not from VPC
+                                <br><strong>Root Cause:</strong> VPC endpoint policy denies KMS access
+                                <br><strong>Fix:</strong> Update VPC endpoint policy
+                                <div class="code-block">
+{
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": "*",
+    "Action": "kms:*",
+    "Resource": "*"
+  }]
+}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flow-step" style="border-left-color: #f39c12;">
+                            <div class="step-title">Multi-Region Key Confusion</div>
+                            <div class="step-content">
+                                <strong>Symptom:</strong> Wrong MRK replica used for decrypt
+                                <br><strong>Context:</strong> Multi-Region Keys have primary + replicas
+                                <br><strong>Fix:</strong> Use correct replica in each region, or use primary key ARN
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Troubleshooting Order -->
+                    <div style="background: #fff; border: 2px solid #27ae60; border-radius: 10px; padding: 25px;">
+                        <h3 style="color: #27ae60; margin-bottom: 15px; font-size: 1.3em;">🔍 Troubleshooting Order (When Decrypt Fails)</h3>
+                        
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                            <strong>Step 1: Check Key State</strong>
+                            <div class="code-block" style="margin-top: 10px;">
+aws kms describe-key --key-id <key-id>
+# Look for: KeyState (Enabled/Disabled/PendingDeletion)</div>
+                            
+                            <br><strong>Step 2: Verify Region</strong>
+                            <div class="code-block" style="margin-top: 10px;">
+# Ensure key ARN region matches current region
+# Check ECDHE session URI matches key URI region</div>
+                            
+                            <br><strong>Step 3: Check Permissions</strong>
+                            <div class="code-block" style="margin-top: 10px;">
+# IAM policy
+aws iam get-role-policy --role-name <role> --policy-name <policy>
+
+# KMS key policy
+aws kms get-key-policy --key-id <key-id> --policy-name default
+
+# Check KRO authorization list</div>
+                            
+                            <br><strong>Step 4: Validate Encryption Context</strong>
+                            <div class="code-block" style="margin-top: 10px;">
+# Ensure same context used for encrypt and decrypt
+# Check stored metadata for original context</div>
+                            
+                            <br><strong>Step 5: Check Rate Limits</strong>
+                            <div class="code-block" style="margin-top: 10px;">
+# CloudWatch Metrics
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/KMS \
+  --metric-name ThrottleCount \
+  --dimensions Name=KeyId,Value=<key-id></div>
+                            
+                            <br><strong>Step 6: Review CloudTrail Logs</strong>
+                            <div class="code-block" style="margin-top: 10px;">
+# Look for denied requests
+aws cloudtrail lookup-events \
+  --lookup-attributes AttributeKey=ResourceName,AttributeValue=<key-id> \
+  --max-results 10</div>
+                            
+                            <br><strong>Step 7: Test with AWS CLI</strong>
+                            <div class="code-block" style="margin-top: 10px;">
+# Isolate issue - test direct KMS call
+aws kms decrypt --ciphertext-blob fileb://encrypted.dat</div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        
+        <footer style="background: #2c3e50; color: white; padding: 20px; text-align: center;">
+            <p><strong>KMS Encryption Flow Diagram</strong> | Enterprise Key Management Service</p>
+            <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.8;">Generated: February 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

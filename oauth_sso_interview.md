@@ -87,7 +87,7 @@ GitHub Copilot: # 📚 No Problem! Let Me Explain RelayState
 | Step | What Happens |
 |------|--------------|
 | 1️⃣ | User tries to access `https://confluence.com/spaces/IPCBU/security-docs` |
-| 2️⃣ | No session → Redirect to IdP (Cisco Identity) with `RelayState=7424d1de...` |
+| 2️⃣ | No session → Redirect to IdP (microsoft Identity) with `RelayState=7424d1de...` |
 | 3️⃣ | User logs in at IdP |
 | 4️⃣ | IdP sends SAML Response back **with the same RelayState** |
 | 5️⃣ | SP (Confluence) reads RelayState → Redirects user to original page! |
@@ -205,14 +205,14 @@ Server validates: SHA256(code_verifier) == code_challenge ✅
 
 ## Question 4 of 10
 
-**In the Hybrid SAML + OAuth flow (Flow 3 - Cisco IDbroker), why would an enterprise use BOTH SAML and OAuth together instead of just one?**
+**In the Hybrid SAML + OAuth flow (Flow 3 - microsoft IDbroker), why would an enterprise use BOTH SAML and OAuth together instead of just one?**
 
 Think about:
 - What is SAML good at?
 - What is OAuth good at?
 - Why combine them?
 
-Example from document: Cisco Webex Contact Center uses this pattern.
+Example from document: microsoft Webex Contact Center uses this pattern.
 
 ---
 
@@ -261,11 +261,11 @@ You nailed the core concept: **SAML authenticates** (proves identity) and **OAut
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 💡 Real-World Benefits (from Cisco Webex example):
+### 💡 Real-World Benefits (from microsoft Webex example):
 
 | Benefit | How It Works |
 |---------|--------------|
-| **Enterprise SSO** | Login once with Cisco Identity (SAML) → access all apps |
+| **Enterprise SSO** | Login once with microsoft Identity (SAML) → access all apps |
 | **MFA Integration** | Duo MFA handled by SAML IdP |
 | **API Access** | OAuth Bearer tokens for Webex APIs |
 | **Token Refresh** | OAuth refresh_token extends session without re-login |
@@ -569,7 +569,7 @@ Note: "✅ Validate state (CSRF protection)"
 
 Hints:
 - SP = Service Provider (e.g., Confluence, Jira)
-- IdP = Identity Provider (e.g., Cisco Identity/Okta)
+- IdP = Identity Provider (e.g., microsoft Identity/Okta)
 - Flow 1 in the document is "SP-Initiated" - what does that mean?
 - Who starts the authentication process?
 
@@ -598,7 +598,7 @@ GitHub Copilot: # 📚 Let Me Explain SP-Initiated vs IdP-Initiated SSO
 
 ```
 ┌─────────┐         ┌─────────────┐         ┌─────────────┐
-│  User   │         │ Confluence  │         │ Cisco IdP   │
+│  User   │         │ Confluence  │         │ microsoft IdP   │
 │         │         │    (SP)     │         │   (Okta)    │
 └────┬────┘         └──────┬──────┘         └──────┬──────┘
      │                     │                       │
@@ -626,8 +626,8 @@ GitHub Copilot: # 📚 Let Me Explain SP-Initiated vs IdP-Initiated SSO
 ```
 
 **Real Example from Document:**
-> User tries to access `https://ciscoteams.atlassian.net/wiki/spaces/IPCBU`
-> → No session → Redirect to Cisco Identity → Login → Back to Confluence
+> User tries to access `https://Microsoftteams.atlassian.net/wiki/spaces/IPCBU`
+> → No session → Redirect to microsoft Identity → Login → Back to Confluence
 
 ---
 
@@ -637,7 +637,7 @@ GitHub Copilot: # 📚 Let Me Explain SP-Initiated vs IdP-Initiated SSO
 
 ```
 ┌─────────┐         ┌─────────────┐         ┌─────────────┐
-│  User   │         │ Cisco IdP   │         │ Confluence  │
+│  User   │         │ microsoft IdP   │         │ Confluence  │
 │         │         │   (Okta)    │         │    (SP)     │
 └────┬────┘         └──────┬──────┘         └──────┬──────┘
      │                     │                       │
@@ -666,7 +666,7 @@ GitHub Copilot: # 📚 Let Me Explain SP-Initiated vs IdP-Initiated SSO
 ```
 
 **Real Example:**
-> Go to `https://myapps.microsoft.com` or `https://cisco.okta.com`
+> Go to `https://myapps.microsoft.com` or `https://Microsoft.okta.com`
 > → Login once → See all your apps (Salesforce, Jira, Slack...)
 > → Click an app → Automatically logged in!
 
@@ -957,7 +957,7 @@ eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4
 {
   // Registered Claims (standard)
   "iss": "https://idbroker.webex.com",  // Issuer
-  "sub": "user@cisco.com",              // Subject (user ID)
+  "sub": "user@Microsoft.com",              // Subject (user ID)
   "aud": "webex-api",                   // Audience (intended recipient)
   "exp": 1706832000,                    // Expiration (Unix timestamp)
   "iat": 1706745600,                    // Issued At
@@ -967,7 +967,7 @@ eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4
   // Custom Claims
   "scope": "spark:kms webexsquare:admin",
   "cluster": "A52D",
-  "org_id": "cisco-org-123"
+  "org_id": "Microsoft-org-123"
 }
 ```
 
